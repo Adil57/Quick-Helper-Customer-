@@ -6,9 +6,8 @@ import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, 
 import { getFirestore, onSnapshot, collection, query, limit, addDoc, doc, setDoc } from 'firebase/firestore';
 
 // --- SERVICE API KEYS (Placeholders) ---
-// Note: In Live APK, these placeholders MUST be replaced with actual keys.
-const GOOGLE_MAPS_API_KEY = "YOUR_GOOGLE_MAPS_API_KEY_HERE"; // For Live Map Integration in React Native
-const RAZORPAY_PUBLISHABLE_KEY = "rzp_test_YOUR_RAZORPAY_PUBLISHABLE_KEY_HERE"; // For Live Payments
+const GOOGLE_MAPS_API_KEY = "YOUR_GOOGLE_MAPS_API_KEY_HERE";
+const RAZORPAY_PUBLISHABLE_KEY = "rzp_test_YOUR_RAZORPAY_PUBLISHABLE_KEY_HERE"; 
 
 // --- Global App Constants ---
 const APP_NAME = "Quick Helper (Customer)";
@@ -243,7 +242,7 @@ const HelperCard = ({ helper }) => (
 const AppContent = () => {
   const [db, setDb] = useState(null);
   const [auth, setAuth] = useState(null);
-  const [user, setUser] = useState(undefined); // undefined means loading
+  const [user, setUser] = useState(undefined); 
   
   const [helperList, setHelperList] = useState([]);
   const [loadingHelpers, setLoadingHelpers] = useState(true);
@@ -255,7 +254,7 @@ const AppContent = () => {
   const [estimatedHours, setEstimatedHours] = useState(2); 
   const [orderConfirmed, setOrderConfirmed] = useState(null); 
   
-  // 1. Firebase Initialization and Auth Listener (STABLE FIX)
+  // 1. Firebase Initialization and Auth Listener
   useEffect(() => {
     const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
     const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
@@ -463,4 +462,10 @@ const AppContent = () => {
           {loadingHelpers ? (
             <div className="flex items-center justify-center p-8 bg-white rounded-xl shadow-lg">
               <LoaderCircle className="w-6 h-6 animate-spin mr-2 text-indigo-500" />
-              <span className="text-gray-600">Loading Helper 
+              <span className="text-gray-600">Loading Helper Data...</span>
+            </div>
+          ) : (
+            helperList.length > 0 ? (
+              <div>
+                {helperList.map((helper) => (
+                  <Helper
