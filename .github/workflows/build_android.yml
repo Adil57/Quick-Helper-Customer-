@@ -24,10 +24,7 @@ jobs:
         with:
           channel: 'stable'
           
-      # CRITICAL FIX: GitHub Actions ko batao ki code root mein hai
-      # Agar aapka pubspec.yaml root mein hai, toh yeh code chalega.
-      # Lekin agar woh kisi folder mein hai, toh wahan path dalna padega.
-      
+      # CRITICAL FIX: PROJECT ROOT KO FORCE KARNA
       - name: Get Flutter dependencies
         run: flutter pub get
         
