@@ -1,481 +1,545 @@
 // lib/main.dart
+import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as math;
-import 'package:flutter/material.dart';
 
 // -----------------------------------------------------------------------------
-// Quick Helper (Version A) - Full single-file compile-ready app
-// - Login / Register / Guest
-// - Home (Swiggy-style) with categories, helpers, map placeholder
-// - Helper profile modal with Contentful hook
-// - Booking summary + createBooking mock (pretend MongoDB backend via REST)
-// - NO Firebase usage / imports
-//
-// How to supply real keys safely (do NOT hardcode keys in source):
-// flutter run --dart-define=API_BASE=https://your-api.example.com \
-//              --dart-define=CONTENTFUL_SPACE_ID=xxxx \
-//              --dart-define=CONTENTFUL_DELIVERY_TOKEN=xxxx \
-//              --dart-define=AUTH0_DOMAIN=yourdomain.auth0.com \
-//              --dart-define=AUTH0_CLIENT_ID=xxxx
-//
-// In this mock-ready build, if dart-define values are missing the app uses
-// local mock behaviour so it always compiles and runs.
+// GLOBAL CONFIGURATION (Make sure to replace placeholders)
 // -----------------------------------------------------------------------------
 
-const String APP_NAME = "Quick Helper (Customer)";
-const double AVG_HELPER_RATE_PER_HOUR = 145;
-const double APP_COMMISSION_PER_HOUR = 20;
+// TODO: AUTH0 CONFIG HERE (Currently unused in the logic below)
+const String auth0Domain = "YOUR_AUTH0_DOMAIN";
+const String auth0ClientId = "YOUR_AUTH0_CLIENT_ID";
+const String auth0RedirectUri = "YOUR_REDIRECT_URI";
 
-// Read environment values (may be null in mock mode)
-final String? API_BASE = const String.fromEnvironment('API_BASE');
-final String? CONTENTFUL_SPACE_ID = const String.fromEnvironment('CONTENTFUL_SPACE_ID');
-final String? CONTENTFUL_DELIVERY_TOKEN = const String.fromEnvironment('CONTENTFUL_DELIVERY_TOKEN');
-final String? AUTH0_DOMAIN = const String.fromEnvironment('AUTH0_DOMAIN');
-final String? AUTH0_CLIENT_ID = const String.fromEnvironment('AUTH0_CLIENT_ID');
+// TODO: MONGODB API STRING HERE (Backend endpoint for login/register/helpers)
+const String mongoApiBase = "YOUR_MONGODB_BACKEND_ENDPOINT";
 
-// ------------------ Utilities ------------------
-double calculateCost(double hours) {
-  final helperEarnings = hours * AVG_HELPER_RATE_PER_HOUR;
-  final appCommission = hours * APP_COMMISSION_PER_HOUR;
-  return helperEarnings + appCommission;
-}
+// TODO: CONTENTFUL CONFIG HERE (Used for image links/placeholders)
+const String contentfulSpaceId = "YOUR_SPACE_ID";
+const String contentfulToken = "YOUR_CONTENTFUL_TOKEN";
 
-double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-  const R = 6371;
-  final dLat = (lat2 - lat1) * (math.pi / 180);
-  final dLon = (lon2 - lon1) * (math.pi / 180);
-  final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
-      math.cos(lat1 * (math.pi / 180)) * math.cos(lat2 * (math.pi / 180)) *
-          math.sin(dLon / 2) * math.sin(dLon / 2);
-  final c = 2 * math.asin(math.sqrt(a));
-  return R * c;
-}
+// -----------------------------------------------------------------------------
+// MAIN ENTRY
+// -----------------------------------------------------------------------------
 
-// ------------------ Models ------------------
-class LocalUser {
-  final String uid;
-  final String email;
-  final bool isGuest;
-  LocalUser({required this.uid, required this.email, this.isGuest = true});
-}
-
-class HelperModel {
-  final String id;
-  final String name;
-  final String specialty;
-  final double distanceKm;
-  final double rating;
-  final List<String> photos;
-  HelperModel({
-    required this.id,
-    required this.name,
-    required this.specialty,
-    required this.distanceKm,
-    required this.rating,
-    this.photos = const [],
-  });
-}
-
-// ------------------ Auth Service (Mock / Placeholder) ------------------
-class AuthService {
-  LocalUser? _user;
-  Future<LocalUser> signInAnonymously() async {
-    await Future.delayed(const Duration(milliseconds: 600));
-    _user = LocalUser(uid: 'guest_${DateTime.now().millisecondsSinceEpoch}', email: 'guest@quickhelper.com', isGuest: true);
-    return _user!;
-  }
-
-  Future<LocalUser> signInWithEmail(String email, String password) async {
-    // Replace with Auth0 / real auth later
-    await Future.delayed(const Duration(milliseconds: 700));
-    _user = LocalUser(uid: 'u_${email.hashCode}', email: email, isGuest: false);
-    return _user!;
-  }
-
-  Future<LocalUser> registerWithEmail(String email, String password) async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    _user = LocalUser(uid: 'u_${email.hashCode}', email: email, isGuest: false);
-    return _user!;
-  }
-
-  LocalUser? get currentUser => _user;
-  Future<void> signOut() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    _user = null;
-  }
-}
-
-// ------------------ Contentful Client (minimal) ------------------
-class ContentfulClient {
-  final String? spaceId;
-  final String? deliveryToken;
-  ContentfulClient({this.spaceId, this.deliveryToken});
-
-  Future<List<String>> fetchMediaUrlsForHelper(String helperId) async {
-    if (spaceId == null || deliveryToken == null) {
-      return [
-        'https://via.placeholder.com/600x400.png?text=${Uri.encodeComponent(helperId)}+1',
-        'https://via.placeholder.com/600x400.png?text=${Uri.encodeComponent(helperId)}+2',
-      ];
-    }
-
-    // Minimal Contentful call - keep simple and robust
-    final base = 'https://cdn.contentful.com/spaces/$spaceId/environments/master';
-    final query = '?access_token=$deliveryToken&content_type=helperMedia&fields.helperId=$helperId';
-    final url = Uri.parse('$base/entries$query');
-
-    try {
-      final client = HttpClient();
-      final req = await client.getUrl(url);
-      final resp = await req.close();
-      final body = await resp.transform(utf8.decoder).join();
-      client.close();
-      final Map<String, dynamic> parsed = json.decode(body);
-      final items = parsed['items'] as List<dynamic>? ?? [];
-      final assets = parsed['includes']?['Asset'] as List<dynamic>? ?? [];
-      final List<String> urls = [];
-      // Try to extract via includes.Asset mapping
-      for (final asset in assets) {
-        final file = asset['fields']?['file'] as Map<String, dynamic>?;
-        final urlStr = file?['url'] as String?;
-        if (urlStr != null) urls.add(urlStr.startsWith('http') ? urlStr : 'https:$urlStr');
-      }
-      return urls.isNotEmpty ? urls : ['https://via.placeholder.com/600x400.png?text=No+Media'];
-    } catch (e) {
-      return ['https://via.placeholder.com/600x400.png?text=Contentful+Error'];
-    }
-  }
-}
-
-// ------------------ API Service (Mock / placeholder for backend) ----------
-class ApiService {
-  final String? baseUrl;
-  ApiService({this.baseUrl});
-
-  Future<List<HelperModel>> fetchHelpers({double lat = 19.1834, double lng = 72.8407}) async {
-    await Future.delayed(const Duration(milliseconds: 700));
-    if (baseUrl == null) {
-      return [
-        HelperModel(id: 'h1', name: 'Rakesh Sharma', specialty: 'Electrician', distanceKm: 1.2, rating: 4.8),
-        HelperModel(id: 'h2', name: 'Sunita Devi', specialty: 'Cleaning', distanceKm: 2.5, rating: 4.5),
-        HelperModel(id: 'h3', name: 'Aman Gupta', specialty: 'Plumber', distanceKm: 3.0, rating: 4.6),
-      ];
-    }
-    try {
-      final uri = Uri.parse('$baseUrl/helpers?lat=$lat&lng=$lng');
-      final client = HttpClient();
-      final req = await client.getUrl(uri);
-      final resp = await req.close();
-      final body = await resp.transform(utf8.decoder).join();
-      client.close();
-      final List<dynamic> data = json.decode(body);
-      return data.map((d) => HelperModel(
-        id: d['id'],
-        name: d['name'],
-        specialty: d['specialty'],
-        distanceKm: (d['distanceKm'] as num).toDouble(),
-        rating: (d['rating'] as num).toDouble(),
-        photos: (d['photos'] as List<dynamic>?)?.cast<String>() ?? [],
-      )).toList();
-    } catch (e) {
-      // fallback mock
-      return [
-        HelperModel(id: 'h1', name: 'Rakesh Sharma', specialty: 'Electrician', distanceKm: 1.2, rating: 4.8),
-      ];
-    }
-  }
-
-  Future<bool> createBooking(Map<String, dynamic> booking) async {
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (baseUrl == null) return true;
-    try {
-      final uri = Uri.parse('$baseUrl/bookings');
-      final client = HttpClient();
-      final req = await client.postUrl(uri);
-      req.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
-      req.add(utf8.encode(json.encode(booking)));
-      final resp = await req.close();
-      final body = await resp.transform(utf8.decoder).join();
-      client.close();
-      return resp.statusCode == 200 || resp.statusCode == 201;
-    } catch (e) {
-      return false;
-    }
-  }
-}
-
-// ------------------ App ------------------
 void main() {
-  runApp(const QuickHelperApp());
+  runApp(const MyApp());
 }
 
-class QuickHelperApp extends StatelessWidget {
-  const QuickHelperApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: APP_NAME,
+      title: "My App",
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.indigo),
-      home: const AuthEntry(),
+      theme: ThemeData(brightness: Brightness.light, primarySwatch: Colors.blue),
+      home: const LoginScreen(),
     );
   }
 }
 
-// ------------------ Auth Entry (chooses login or home) ------------------
-class AuthEntry extends StatefulWidget {
-  const AuthEntry({super.key});
+// ---------------- LOGIN SCREEN ---------------- //
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
   @override
-  State<AuthEntry> createState() => _AuthEntryState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _AuthEntryState extends State<AuthEntry> {
-  final AuthService _auth = AuthService();
-  LocalUser? _user;
-  late final ApiService apiService;
-  late final ContentfulClient contentful;
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController email = TextEditingController();
+  final TextEditingController password = TextEditingController();
+  bool isLoading = false;
 
-  @override
-  void initState() {
-    super.initState();
-    apiService = ApiService(baseUrl: API_BASE);
-    contentful = ContentfulClient(spaceId: CONTENTFUL_SPACE_ID, deliveryToken: CONTENTFUL_DELIVERY_TOKEN);
-    // Attempt silent anonymous sign-in so app is usable immediately
-    _auth.signInAnonymously().then((u) {
-      if (mounted) setState(() => _user = u);
-    });
+  Future<void> loginUser() async {
+    // Basic validation
+    if (email.text.trim().isEmpty || password.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Email and Password are required.")),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final client = HttpClient();
+      final request = await client.postUrl(Uri.parse("$mongoApiBase/login"));
+      request.headers.set('Content-Type', 'application/json');
+      request.add(utf8.encode(jsonEncode({
+        "email": email.text.trim(),
+        "password": password.text.trim()
+      })));
+
+      final response = await request.close();
+      final body = await response.transform(utf8.decoder).join();
+
+      if (response.statusCode == 200) {
+        // Assuming API returns user data/token, but for now we navigate:
+        if (mounted) {
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (_) => const HomePage()));
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Login failed: ${response.statusCode} ${body}")),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Network Error: $e")),
+        );
+      }
+    }
+
+    if (mounted) setState(() => isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_user == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator(color: Colors.indigo)));
-    }
-    // If guest, show LoginPage (user can choose to sign in or continue)
-    return LoginPage(auth: _auth, api: apiService, contentful: contentful, initialUser: _user);
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(28.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text("Welcome Back!",
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 40),
+
+            TextField(
+              controller: email,
+              decoration: const InputDecoration(labelText: "Email"),
+            ),
+            TextField(
+              controller: password,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: "Password"),
+            ),
+
+            const SizedBox(height: 20),
+
+            ElevatedButton(
+              onPressed: isLoading ? null : loginUser,
+              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+              child: isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text("Login"),
+            ),
+
+            TextButton(
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const RegisterScreen()));
+              },
+              child: const Text("Create an account"),
+            )
+          ],
+        ),
+      ),
+    );
   }
 }
 
-// ------------------ Login Page ------------------
-class LoginPage extends StatefulWidget {
-  final AuthService auth;
-  final ApiService api;
-  final ContentfulClient contentful;
-  final LocalUser? initialUser;
-  const LoginPage({super.key, required this.auth, required this.api, required this.contentful, this.initialUser});
-
+// ---------------- REGISTER SCREEN ---------------- //
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginPageState extends State<LoginPage> {
-  final _emailCtr = TextEditingController();
-  final _passCtr = TextEditingController();
-  bool _isLoading = false;
-  String? _error;
-  bool _isRegisterMode = false;
+class _RegisterScreenState extends State<RegisterScreen> {
+  final TextEditingController name = TextEditingController();
+  final TextEditingController email = TextEditingController();
+  final TextEditingController password = TextEditingController();
 
-  void _toggleMode() => setState(() => _isRegisterMode = !_isRegisterMode);
+  bool isLoading = false;
 
-  Future<void> _submit() async {
-    setState(() { _isLoading = true; _error = null; });
+  Future<void> registerUser() async {
+    // Basic validation
+    if (name.text.trim().isEmpty || email.text.trim().isEmpty || password.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill all fields.")),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+
     try {
-      if (_isRegisterMode) {
-        final u = await widget.auth.registerWithEmail(_emailCtr.text.trim(), _passCtr.text.trim());
-        if (!mounted) return;
-        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => BookingScreen(user: u, api: widget.api, contentful: widget.contentful, auth: widget.auth)));
+      final client = HttpClient();
+      final request = await client.postUrl(Uri.parse("$mongoApiBase/register"));
+      request.headers.set('Content-Type', 'application/json');
+      request.add(utf8.encode(jsonEncode({
+        "name": name.text.trim(),
+        "email": email.text.trim(),
+        "password": password.text.trim()
+      })));
+
+      final response = await request.close();
+      final body = await response.transform(utf8.decoder).join();
+
+      if (response.statusCode == 200) {
+        if (mounted) {
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (_) => const HomePage()));
+        }
       } else {
-        final u = await widget.auth.signInWithEmail(_emailCtr.text.trim(), _passCtr.text.trim());
-        if (!mounted) return;
-        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => BookingScreen(user: u, api: widget.api, contentful: widget.contentful, auth: widget.auth)));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Register failed: ${response.statusCode} ${body}")),
+          );
+        }
       }
     } catch (e) {
-      setState(() { _error = 'Auth failed. Try again.'; });
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Network Error: $e")),
+        );
+      }
     }
+
+    if (mounted) setState(() => isLoading = false);
   }
 
-  void _continueAsGuest() {
-    final u = widget.initialUser ?? widget.auth.currentUser;
-    if (u != null) {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => BookingScreen(user: u, api: widget.api, contentful: widget.contentful, auth: widget.auth)));
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Register")),
+      body: Padding(
+        padding: const EdgeInsets.all(28.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: name,
+              decoration: const InputDecoration(labelText: "Full Name"),
+            ),
+            TextField(
+              controller: email,
+              decoration: const InputDecoration(labelText: "Email"),
+            ),
+            TextField(
+              controller: password,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: "Password"),
+            ),
+
+            const SizedBox(height: 20),
+
+            ElevatedButton(
+              onPressed: isLoading ? null : registerUser,
+              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+              child: isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text("Register"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------
+// HOME SCREEN — SWIGGY STYLE
+// ---------------------------------------------------------
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  // Helpers list should ideally be of a specific model type, but dynamic is used here
+  List<dynamic> helpers = [];
+  bool loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadHelpers();
+  }
+
+  // -------- LOAD HELPERS (MONGO API) -------- //
+  Future<void> loadHelpers() async {
+    try {
+      final client = HttpClient();
+      final request =
+          await client.getUrl(Uri.parse("$mongoApiBase/helpers")); // GET CALL
+
+      final response = await request.close();
+      final body = await response.transform(utf8.decoder).join();
+
+      if (response.statusCode == 200) {
+        if (mounted) {
+          setState(() {
+            helpers = jsonDecode(body);
+            loading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            loading = false;
+            helpers = [];
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Failed to load helpers: ${response.statusCode}")),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          loading = false;
+          helpers = [];
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Network Error loading helpers: $e")),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text(APP_NAME), backgroundColor: Colors.indigo),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(children: [
-          const SizedBox(height: 20),
-          Text(_isRegisterMode ? 'Create your account' : 'Customer Login', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.indigo)),
-          const SizedBox(height: 20),
-          TextField(controller: _emailCtr, decoration: const InputDecoration(labelText: 'Email Address', border: OutlineInputBorder())),
-          const SizedBox(height: 12),
-          TextField(controller: _passCtr, obscureText: true, decoration: const InputDecoration(labelText: 'Password (min 6 chars)', border: OutlineInputBorder())),
-          if (_error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_error!, style: const TextStyle(color: Colors.red))),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _isLoading ? null : _submit,
-            style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-            child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : Text(_isRegisterMode ? 'Create Account' : 'Log In'),
-          ),
-          TextButton(onPressed: _toggleMode, child: Text(_isRegisterMode ? 'Already have an account? Log In' : 'Don\'t have an account? Sign Up')),
+      backgroundColor: Colors.grey[100],
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        title: const Text(
+          "Welcome!",
+          style: TextStyle(color: Colors.black),
+        ),
+      ),
+
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+
+                  // -------- TOP BANNER -------- //
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    color: Colors.white,
+                    width: double.infinity,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text("Find Helpers Near You",
+                            style: TextStyle(
+                                fontSize: 24, fontWeight: FontWeight.bold)),
+                        SizedBox(height: 3),
+                        Text("Plumbers, Electricians, Cleaners, all nearby"),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // -------- CATEGORY SCROLLER -------- //
+                  SizedBox(
+                    height: 110,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      children: [
+                        categoryItem("Cleaning", Icons.cleaning_services),
+                        categoryItem("Electrician", Icons.electrical_services),
+                        categoryItem("Plumber", Icons.build),
+                        categoryItem("Painter", Icons.format_paint),
+                        categoryItem("Carpenter", Icons.carpenter),
+                      ],
+                    ),
+                  ),
+                  
+
+                  const SizedBox(height: 10),
+
+                  // -------- FEATURE TITLE -------- //
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text("Available Helpers",
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold)),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // -------- HELPERS GRID -------- //
+                  GridView.builder(
+                    padding: const EdgeInsets.all(12),
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: helpers.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: .78,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemBuilder: (context, index) {
+                      final h = helpers[index];
+                      // Ensure the keys match your API response exactly!
+                      return helperCard(
+                        h["name"] ?? "Unknown",
+                        h["skill"] ?? "Service", // Check if API key is 'skill' or 'specialty'
+                        h["price"] ?? 0,
+                        h["image"] ?? "", // Check if API key is 'image' or 'photoUrl'
+                      );
+                    },
+                  )
+                ],
+              ),
+            ),
+    );
+  }
+
+  // -------- CATEGORY WIDGET -------- //
+  Widget categoryItem(String title, IconData icon) {
+    return Container(
+      width: 90,
+      margin: const EdgeInsets.only(left: 12),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 34, color: Colors.blue),
           const SizedBox(height: 6),
-          OutlinedButton(onPressed: _continueAsGuest, child: const Text('Continue as Guest')),
-          const SizedBox(height: 20),
-        ]),
+          Text(title, textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+
+  // -------- HELPER CARD -------- //
+  Widget helperCard(String name, String skill, int price, String imgUrl) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => HelperDetailPage(
+                      name: name,
+                      skill: skill,
+                      price: price,
+                      imgUrl: imgUrl,
+                    )));
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+          ],
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          children: [
+            Expanded(
+              child: imgUrl.isEmpty
+                  ? Container(
+                      decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(12)),
+                    )
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(imgUrl, fit: BoxFit.cover),
+                    ),
+            ),
+            const SizedBox(height: 8),
+            Text(name,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(skill, style: const TextStyle(color: Colors.grey)),
+            const SizedBox(height: 4),
+            Text("₹$price /hr",
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ------------------ Booking / Home Screen ------------------
-class BookingScreen extends StatefulWidget {
-  final LocalUser user;
-  final ApiService api;
-  final ContentfulClient contentful;
-  final AuthService auth;
-  const BookingScreen({super.key, required this.user, required this.api, required this.contentful, required this.auth});
+// ---------------------------------------------------------
+// HELPER DETAIL PAGE
+// ---------------------------------------------------------
+
+class HelperDetailPage extends StatelessWidget {
+  final String name;
+  final String skill;
+  final int price;
+  final String imgUrl;
+
+  const HelperDetailPage(
+      {super.key,
+      required this.name,
+      required this.skill,
+      required this.price,
+      required this.imgUrl});
 
   @override
-  State<BookingScreen> createState() => _BookingScreenState();
-}
-
-class _BookingScreenState extends State<BookingScreen> {
-  String selectedTask = 'General Assistant';
-  double estimatedHours = 2.0;
-  List<HelperModel> helperList = [];
-  bool isLoading = true;
-  HelperModel? selectedHelper;
-  bool favouriteMode = false;
-
-  final List<Map<String, dynamic>> categories = [
-    {'id': 'cleaning', 'label': 'Cleaning', 'icon': Icons.cleaning_services},
-    {'id': 'electrician', 'label': 'Electrician', 'icon': Icons.flash_on},
-    {'id': 'plumbing', 'label': 'Plumbing', 'icon': Icons.plumbing},
-    {'id': 'delivery', 'label': 'Delivery', 'icon': Icons.delivery_dining},
-    {'id': 'handyman', 'label': 'Handyman', 'icon': Icons.handyman},
-    {'id': 'deep', 'label': 'Deep Clean', 'icon': Icons.bubble_chart},
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadHelpers();
-  }
-
-  Future<void> _loadHelpers() async {
-    setState(() => isLoading = true);
-    final list = await widget.api.fetchHelpers();
-    if (mounted) setState(() { helperList = list; isLoading = false; });
-  }
-
-  void _openHelperProfile(HelperModel helper) async {
-    final media = await widget.contentful.fetchMediaUrlsForHelper(helper.id);
-    if (!mounted) return;
-    showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) {
-      return DraggableScrollableSheet(expand: false, builder: (context, ctl) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(16))),
-          child: ListView(controller: ctl, children: [
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text(helper.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(context).pop()),
-            ]),
-            const SizedBox(height: 8),
-            Text(helper.specialty, style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 12),
-            Row(children: [const Icon(Icons.star, color: Colors.amber), Text('${helper.rating}'), const SizedBox(width: 12), Text('${helper.distanceKm} km away')]),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 160,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemBuilder: (c, i) => ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network(media[i], width: 260, fit: BoxFit.cover)),
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemCount: media.length,
-              ),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(name)),
+      body: Column(
+        children: [
+          Expanded(
+            child: imgUrl.isEmpty
+                ? Container(color: Colors.grey[300])
+                : Image.network(imgUrl, width: double.infinity, fit: BoxFit.cover),
+          ),
+          Container(
+            padding: const EdgeInsets.all(20),
+            width: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(skill,
+                    style:
+                        const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                Text("₹$price per hour",
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    // TODO: Implement Booking Logic/Navigation
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Booking ${name}...")),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 50)),
+                  child: const Text("Book Now"),
+                )
+              ],
             ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.of(context).pop();
-                setState(() { selectedHelper = helper; });
-                _openBookingSummary();
-              },
-              icon: const Icon(Icons.calendar_month),
-              label: const Text('Book Now'),
-            ),
-            const SizedBox(height: 8),
-            TextButton.icon(onPressed: () {}, icon: const Icon(Icons.chat_bubble_outline), label: const Text('Chat with Helper')),
-            const SizedBox(height: 12),
-            const Text('Reviews', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            ...List.generate(3, (i) => ListTile(leading: const CircleAvatar(child: Icon(Icons.person)), title: Text('Customer ${i+1}'), subtitle: const Text('Good work — recommended'), trailing: Row(mainAxisSize: MainAxisSize.min, children: const [Icon(Icons.star, color: Colors.amber), SizedBox(width: 4), Text('4.5')])))
-          ]),
-        );
-      });
-    });
-  }
-
-  void _openBookingSummary() {
-    final totalCost = calculateCost(estimatedHours);
-    showDialog(context: context, builder: (_) {
-      return AlertDialog(
-        title: const Text('Booking Summary'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          ListTile(leading: const Icon(Icons.work), title: Text(selectedTask), subtitle: Text('Hours: ${estimatedHours.toStringAsFixed(1)}')),
-          ListTile(leading: const Icon(Icons.person), title: Text(selectedHelper?.name ?? 'Auto assign')),
-          const Divider(),
-          _costRow('Helper', '₹${(estimatedHours * AVG_HELPER_RATE_PER_HOUR).toStringAsFixed(0)}'),
-          _costRow('Commission', '₹${(estimatedHours * APP_COMMISSION_PER_HOUR).toStringAsFixed(0)}'),
-          const SizedBox(height: 8),
-          _costRow('Total', '₹${totalCost.toStringAsFixed(0)}', isTotal: true),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-          ElevatedButton(onPressed: _confirmBooking, child: const Text('Confirm & Pay')),
+          )
         ],
-      );
-    });
-  }
-
-  Widget _costRow(String title, String amount, {bool isTotal = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text(title, style: TextStyle(fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
-        Text(amount, style: TextStyle(fontWeight: isTotal ? FontWeight.bold : FontWeight.w600)),
-      ]),
+      ),
     );
   }
-
-  Future<void> _confirmBooking() async {
-    Navigator.of(context).pop();
-    final bookingPayload = {
-      'userId': widget.user.uid,
-      'task': selectedTask,
-      'hours': estimatedHours,
-      'helperId': selectedHelper?.id,
-      'amount': calculateCost(estimatedHours),
-      'createdAt': DateTime.now().toIso8601String(),
-    };
-    final success = await widget.api.createBooking(bookingPayload);
-    if (!mounted) return;
-    if (success) {
-      showDialog(context: context, builder: (_) => AlertDialog(title: const Text('Booking Confirmed'), content: const Text('Your booking has been placed successfully.'), actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK'))]));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Booking failed. Try again.'), backgroundColor: Colors.red));
-    }
-  }
-
-  Widget _buildHeader() {
-    return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-     
+}
