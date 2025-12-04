@@ -1,22 +1,27 @@
-// lib/main.dart (Final Code - Class Order Corrected)
+// lib/main.dart (Final Fixed Code - Syntax Error Solved)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http; 
-// import 'package:provider/provider.dart'; // Provider Subah add karna
+// Provider ki lines subah tum add karoge!
+// import 'package:provider/provider.dart'; 
+
 
 // -----------------------------------------------------------------------------
 // GLOBAL CONFIGURATION (MANDATORY TO REPLACE)
 // -----------------------------------------------------------------------------
+
 const String mongoApiBase = "https://YOUR_LIVE_RENDER_URL/api"; 
 const String auth0Domain = "adil888.us.auth0.com"; 
 const String auth0ClientId = "OdsfeU9MvAcYGxK0Vd8TAlta9XAprMxx"; 
 const String auth0RedirectUri = "com.quickhelper.app://login-callback"; 
 
+
 // 🟢 Auth0 Instance
 final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
+
 
 // -----------------------------------------------------------------------------
 // ❌ DUMMY STATE MANAGEMENT (COMPILE ONLY)
@@ -30,6 +35,7 @@ class UserAuth {
   Future<void> logout(BuildContext context) async {}
 }
 final UserAuth tempAuth = UserAuth();
+
 
 // -----------------------------------------------------------------------------
 // MAIN ENTRY & APP THEME
@@ -74,8 +80,9 @@ class AuthGate extends StatelessWidget {
   }
 }
 
+
 // ---------------- LOGIN / REGISTER SCREENS ---------------- //
-// [LoginScreen, RegisterScreen, MainNavigator classes remain here]
+// [LoginScreen, RegisterScreen, MainNavigator remain here]
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
   @override
@@ -87,11 +94,32 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
   String? _error;
 
-  Future<void> loginWithAuth0() async { /* ... logic ... */ }
-  Future<void> registerUser() async { /* ... logic ... */ }
+  Future<void> loginWithAuth0() async { 
+      setState(() { _error = null; isLoading = true; });
+      try {
+        final result = await auth0.webAuthentication(scheme: auth0RedirectUri.split('://').first).login();
+        if (mounted) {
+          tempAuth.setUser(result.user); 
+          Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => const MainNavigator()));
+        }
+      } on Exception catch (e) {
+        if (mounted) {
+          setState(() { _error = 'Auth0 Login Failed: Check Redirect URL/Network.'; });
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_error!)));
+        }
+      } finally {
+        if (mounted) setState(() => isLoading = false);
+      }
+  }
+
+  Future<void> registerUser() async {
+    setState(() => isLoading = true);
+    // [API call logic]
+    if (mounted) setState(() => isLoading = false);
+  }
 
   @override
-  Widget build(BuildContext context) { /* ... UI ... */
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(28.0),
@@ -114,6 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
             const SizedBox(height: 20),
             
+            // 🟢 AUTH0 LOGIN BUTTON
             ElevatedButton(
               onPressed: isLoading ? null : loginWithAuth0, 
               style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50), backgroundColor: Colors.indigo),
@@ -150,10 +179,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController password = TextEditingController();
   bool isLoading = false;
   String? _error;
-  Future<void> registerUser() async { /* ... logic ... */ }
+  Future<void> registerUser() async {
+    setState(() => isLoading = true);
+    // [API call logic]
+    if (mounted) setState(() => isLoading = false);
+  }
 
   @override
-  Widget build(BuildContext context) { 
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Register")),
       body: Padding(
@@ -231,6 +264,7 @@ class _MainNavigatorState extends State<MainNavigator> {
   }
 }
 
+
 // ------------------ 🟢 MOVED: BOOKING SCREEN ------------------
 class BookingScreen extends StatefulWidget {
   final String helperName;
@@ -242,15 +276,15 @@ class BookingScreen extends StatefulWidget {
   @override
   State<BookingScreen> createState() => _BookingScreenState();
 }
-// ✅ FIX: Missing brace of _BookingScreenState is now correctly closed
 class _BookingScreenState extends State<BookingScreen> { 
   DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
   double estimatedHours = 2.0;
   bool isCreatingBooking = false;
+
   Future<void> _selectDate(BuildContext context) async { /* ... logic ... */ }
   double get totalCost => estimatedHours * widget.price * 1.2; 
   Future<void> _createBooking() async { /* ... logic ... */ }
-  Widget _buildDatePicker() { /* ... UI ... */ return ListTile(leading: const Icon(Icons.calendar_month, color: Colors.indigo),title: const Text('Service Date'),subtitle: Text('${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),trailing: TextButton(onPressed: () => _selectDate(context),child: const Text('CHANGE', style: TextStyle(color: Colors.indigo)),),); }
+  Widget _buildDatePicker() { /* ... UI ... */ return ListTile(leading: const Icon(Icons.calendar_month, color: Colors.indigo),title: const Text('Service Date'),subtitle: Text('${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),trailing: TextButton(onPressed: () => _selectDate(context),child: const Text('CHANGE', style: TextStyle(color: Colors.indigo)),),);}
   Widget _buildTimeSlider() { /* ... UI ... */ return Column(crossAxisAlignment: CrossAxisAlignment.start,children: [Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),child: Text('Estimated Hours: ${estimatedHours.toStringAsFixed(1)} hours',style: const TextStyle(fontWeight: FontWeight.bold),),),Slider(value: estimatedHours,min: 1.0,max: 8.0,divisions: 14,label: estimatedHours.toStringAsFixed(1),activeColor: Colors.indigo,onChanged: (double value) {setState(() {estimatedHours = value;});},),],);}
   Widget _buildCostSummary() { /* ... UI ... */ return Container(padding: const EdgeInsets.all(16),decoration: BoxDecoration(color: Colors.indigo.shade50,borderRadius: BorderRadius.circular(12),),child: Column(children: [_costRow("Helper Rate (${widget.price}/hr)", "₹${(estimatedHours * widget.price).toStringAsFixed(0)}"),_costRow("Service Fee (20%)", "₹${(totalCost - (estimatedHours * widget.price)).toStringAsFixed(0)}"),const Divider(),_costRow("TOTAL COST", "₹${totalCost.toStringAsFixed(0)}", isTotal: true),],),);}
   Widget _costRow(String title, String amount, {bool isTotal = false}) { /* ... UI ... */ return Padding(padding: const EdgeInsets.symmetric(vertical: 4.0),child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,children: [Text(title, style: TextStyle(fontWeight: isTotal ? FontWeight.bold : FontWeight.w500, fontSize: isTotal ? 16 : 14)),Text(amount, style: TextStyle(fontWeight: isTotal ? FontWeight.bold : FontWeight.w600, fontSize: isTotal ? 16 : 14, color: isTotal ? Colors.indigo : Colors.black)),],),);}
@@ -385,118 +419,89 @@ class HelperDetailPage extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------
-// HOME SCREEN (CONTENT)
-// ---------------------------------------------------------
-// [HomePage remains here]
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  List<dynamic> helpers = [];
-  bool loading = true;
-  @override
-  void initState() {
-    super.initState();
-    _loadHelpers();
-  }
-  // [Load helpers logic]
-  Future<void> _loadHelpers() async {
-    setState(() => loading = true);
-    if (mounted) setState(() => loading = false);
-  }
+// ---------------- 🟢 NEW: ACCOUNT SCREEN (Profile Page) ---------------- //
+class AccountScreen extends StatelessWidget {
+  const AccountScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final userName = tempAuth.user?.name ?? "Customer"; 
+    // ❌ FIX: Provider replaced with dummy check
+    final auth = tempAuth; 
+    final userName = auth.user?.name ?? auth.user?.nickname ?? "Customer";
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: Text("Welcome, $userName!", style: const TextStyle(color: Colors.black)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person_pin_outlined, color: Colors.black),
-            onPressed: () {
-               // Navigation to Account tab of MainNavigator (Optional advanced routing)
-            },
-          ),
-        ],
+      appBar: AppBar(title: Text(userName, style: const TextStyle(fontSize: 24))),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Profile Header
+            ListTile(
+              leading: const CircleAvatar(radius: 25, child: Icon(Icons.person)),
+              title: Text(userName, style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text(auth.user?.email ?? "Not Available"),
+            ),
+            const Divider(height: 10),
+            
+            // Action Cards 
+            _buildActionCard(context, "Help", Icons.help_outline),
+            _buildActionCard(context, "Wallet", Icons.account_balance_wallet_outlined),
+            _buildActionCard(context, "Safety", Icons.security),
+            _buildActionCard(context, "Inbox", Icons.mail_outline),
+            
+            // Example Promo Card
+            _buildPromoCard(), 
+            
+            // Logout button
+            _buildActionCard(context, "Logout", Icons.exit_to_app, isLogout: true),
+          ],
+        ),
       ),
+    );
+  }
 
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator( 
-              onRefresh: _loadHelpers,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
+  Widget _buildActionCard(BuildContext context, String title, IconData icon, {bool isLogout = false}) {
+    // ❌ FIX: Provider replaced with dummy logout
+    final logoutAction = () => tempAuth.logout(context); 
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: ListTile(
+        leading: Icon(icon, color: Colors.indigo),
+        title: Text(title),
+        trailing: isLogout ? null : const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        onTap: isLogout 
+            ? logoutAction // Secure Logout
+            : () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$title clicked! (TODO)"))),
+      ),
+    );
+  }
+
+  Widget _buildPromoCard() {
+      // ✅ FIX: Missing parentheses fixed, syntax error solved
+      return Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), 
+        elevation: 2,
+        child: Padding( 
+          padding: const EdgeInsets.all(16.0), 
+          child: Row(
+            children: [
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // [UI Content (Banner, Categories, Grid) remains the same]
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      color: Colors.white,
-                      width: double.infinity,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text("Find Helpers Near You",
-                              style: TextStyle(
-                                  fontSize: 24, fontWeight: FontWeight.bold)),
-                          SizedBox(height: 3),
-                          Text("Plumbers, Electricians, Cleaners, all nearby"),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    SizedBox(
-                      height: 110,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        children: [
-                          categoryItem("Cleaning", Icons.cleaning_services),
-                          categoryItem("Electrician", Icons.electrical_services),
-                          categoryItem("Plumber", Icons.plumbing),
-                          categoryItem("Painter", Icons.format_paint),
-                          categoryItem("Carpenter", Icons.carpenter),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text("Available Helpers",
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.bold)),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    GridView.builder(
-                      padding: const EdgeInsets.all(12),
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: helpers.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: .78,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                      ),
-                      itemBuilder: (context, index) {
-                        final h = helpers[index];
-                        return helperCard(
-                          h["name"] ?? "Unknown",
-                          h["skill"] ?? "Service", 
-                          h["price"] ?? 0
+                  children: const [
+                    Text("You have multiple promos", style: TextStyle(fontWeight: FontWeight.bold)),
+                    SizedBox(height: 4),
+                    Text("We'll automatically apply the one that saves you the most", style: TextStyle(color: Colors.grey)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.local_offer, size: 40, color: Colors.purple),
+            ],
+          ),
+        ),
+      );
+  }
+}
