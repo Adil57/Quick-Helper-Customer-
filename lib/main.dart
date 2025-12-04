@@ -1,7 +1,7 @@
 // lib/main.dart (Final Code: MongoDB + Auth0 SDK)
 
 import 'package:flutter/material.dart';
-import 'package:auth0_flutter/auth0_flutter.dart'; // 🟢 New Auth0 SDK
+import 'package:auth0_flutter/auth0_flutter.dart'; 
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -12,16 +12,16 @@ import 'package:http/http.dart' as http;
 // GLOBAL CONFIGURATION (MANDATORY TO REPLACE)
 // -----------------------------------------------------------------------------
 
-// ⚠️ 1. RENDER SERVER BASE URL (Tumhara Render deploy kiya hua URL)
-const String mongoApiBase = "https://quick-helper-backend.onrender.com/api"; 
+// ⚠️ 1. RENDER SERVER BASE URL (Apna Live Render URL yahan daalo)
+const String mongoApiBase = "https://YOUR_LIVE_RENDER_URL/api"; 
 
-// ⚠️ 2. AUTH0 DOMAIN (e.g., dev-abc1234.us.auth0.com)
-const String auth0Domain = "YOUR_AUTH0_DOMAIN"; 
+// ⚠️ 2. AUTH0 DOMAIN (Tumhari set ki hui value)
+const String auth0Domain = "adil888.us.auth0.com"; 
 
-// ⚠️ 3. AUTH0 CLIENT ID
+// ⚠️ 3. AUTH0 CLIENT ID (Auth0 Dashboard se Client ID yahan daalo)
 const String auth0ClientId = "YOUR_AUTH0_CLIENT_ID"; 
 
-// ⚠️ 4. AUTH0 REDIRECT URI (Must match Auth0 dashboard's 'Allowed Callback URLs')
+// ⚠️ 4. AUTH0 REDIRECT URI (Auth0 dashboard mein bhi yahi hona chahiye)
 const String auth0RedirectUri = "com.quickhelper.app://login-callback"; 
 
 
@@ -72,8 +72,10 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       try {
+        // Auth0 SDK use karke login shuru karo
         await auth0.webAuthentication(scheme: auth0RedirectUri.split('://').first).login();
         
+        // Agar login successful hua, toh app Home Page par navigate karegi
         if (mounted) {
           Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (_) => const HomePage()));
@@ -96,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
   // 🔴 Register User Function (Backend API call placeholder)
   Future<void> registerUser() async {
     setState(() => isLoading = true);
-    // [... API call logic ... Removed for brevity, same as last time]
+
     try {
       final response = await http.post(
         Uri.parse("$mongoApiBase/register"),
@@ -107,16 +109,25 @@ class _LoginScreenState extends State<LoginScreen> {
           "password": password.text.trim()
         }),
       );
+
       if (response.statusCode == 200) {
         if (mounted) {
           Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (_) => const HomePage()));
         }
       } else {
-        // Handle error
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Register failed: ${response.statusCode} ${response.body}")),
+          );
+        }
       }
     } catch (e) {
-      // Handle network error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Network Error: $e")),
+        );
+      }
     }
 
     if (mounted) setState(() => isLoading = false);
@@ -172,8 +183,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// [Rest of RegisterScreen, HomePage, HelperDetailPage classes remains the same as before]
-// ... (The rest of your code from RegisterScreen onwards)
 // ---------------- REGISTER SCREEN ---------------- //
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -335,6 +344,7 @@ class _HomePageState extends State<HomePage> {
           style: TextStyle(color: Colors.black),
         ),
         actions: [
+          // Dummy Sign Out function
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.black),
             onPressed: () {
