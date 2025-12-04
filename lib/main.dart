@@ -1,17 +1,19 @@
-// lib/main.dart (Final Code - Syntax Fixed for Compile)
+// lib/main.dart (Final Fixed Code - Syntax Error Solved)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http; 
-// import 'package:provider/provider.dart'; // ❌ Provider Temporarily Removed
+// Provider ki lines subah tum add karoge!
+// import 'package:provider/provider.dart'; 
+
 
 // -----------------------------------------------------------------------------
 // GLOBAL CONFIGURATION (MANDATORY TO REPLACE)
 // -----------------------------------------------------------------------------
 
-const String mongoApiBase = "https://YOUR_LIVE_RENDER_URL/api"; 
+const String mongoApiBase = "https://quick-helper-backend.onrender.com/api"; 
 const String auth0Domain = "adil888.us.auth0.com"; 
 const String auth0ClientId = "OdsfeU9MvAcYGxK0Vd8TAlta9XAprMxx"; 
 const String auth0RedirectUri = "com.quickhelper.app://login-callback"; 
@@ -22,7 +24,7 @@ final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
 
 
 // -----------------------------------------------------------------------------
-// 🟢 OLD/DUMMY STATE MANAGEMENT (For compile only)
+// ❌ DUMMY STATE MANAGEMENT (COMPILE ONLY)
 // -----------------------------------------------------------------------------
 // Note: Subah tumhein yeh provider se replace karna hai!
 class UserAuth {
@@ -34,6 +36,7 @@ class UserAuth {
   Future<void> logout(BuildContext context) async {}
 }
 final UserAuth tempAuth = UserAuth(); // Temporary instance
+
 
 // -----------------------------------------------------------------------------
 // MAIN ENTRY & APP THEME
@@ -47,7 +50,7 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    // ❌ FIX: ChangeNotifierProvider removed for compile
+    // ❌ FIX: Provider widget removed for compile
     return MaterialApp(
         title: "Quick Helper",
         debugShowCheckedModeBanner: false,
@@ -72,7 +75,7 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ❌ FIX: Provider.of replaced with dummy check
+    // ❌ FIX: Provider replaced with dummy check
     if (tempAuth.isAuthenticated) { 
       return const MainNavigator(); 
     }
@@ -199,7 +202,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> registerUser() async {
     setState(() => isLoading = true);
+
     // [API call logic]
+    
     if (mounted) setState(() => isLoading = false);
   }
 
@@ -444,7 +449,6 @@ class _HomePageState extends State<HomePage> {
         Navigator.push(
             context,
             MaterialPageRoute(
-                // ✅ FIX: HelperDetailPage constructor used correct parameters
                 builder: (_) => HelperDetailPage(
                       helperName: name, 
                       helperSkill: skill,
@@ -501,7 +505,6 @@ class AccountScreen extends StatelessWidget {
     final auth = tempAuth; 
     final userName = auth.user?.name ?? auth.user?.nickname ?? "Customer";
 
-    // ✅ FIX: Missing closing brace of AccountScreen removed from error chain
     return Scaffold(
       appBar: AppBar(title: Text(userName, style: const TextStyle(fontSize: 24))),
       body: SingleChildScrollView(
@@ -572,4 +575,14 @@ class AccountScreen extends StatelessWidget {
                 ),
               ),
               const Icon(Icons.local_offer, size: 40, color: Colors.purple),
-      
+            ],
+          ),
+        ),
+      );
+  }
+}
+
+
+// ---------------------------------------------------------
+// HELPER DETAIL PAGE 
+// --------------------
