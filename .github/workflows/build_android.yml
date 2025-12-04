@@ -3,7 +3,7 @@ name: Flutter Android Build (APK)
 on:
   push:
     branches:
-      - main  # Jab bhi aap main branch par code daloge, yeh build shuru hoga
+      - main
 
 jobs:
   build:
@@ -24,21 +24,25 @@ jobs:
         with:
           channel: 'stable'
           
-      # CRITICAL FIX: Project ka root directory set karna
-      - name: Get Flutter dependencies
-        run: flutter pub get
-        working-directory: . # Project root (jahan pubspec.yaml hai)
+      # CRITICAL FIX: Sahi directory mein jaana
+      - name: Change Directory to Project Root
+        run: cd quick_helper_customer/ || echo "No directory change needed" 
+        # Note: Agar aapne files ROOT mein daali hain, toh yeh line ignore karo.
+        # Agar files 'quick_helper_customer' folder mein hain, toh woh path yahan aana chahiye.
 
+      - name: Get Flutter dependencies
+        # Yeh command pubspec.yaml dhoondh legi
+        run: flutter pub get 
+      
       - name: Build Android Release APK
-        # Working directory build step mein bhi zaroori hai
         run: flutter build apk --release
-        working-directory: .
       
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          # Path ko theek karo agar files root mein nahi hain
+          path: build/app/outputs/flutter-apk/app-release.apk 
 
       - name: Notify on Success
         if: success()
