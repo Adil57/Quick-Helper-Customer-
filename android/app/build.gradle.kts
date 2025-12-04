@@ -15,11 +15,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    // 🟢 KOTLIN SYNTAX FIX: Using compilerOptions instead of deprecated kotlinOptions
+    // 🟢 FIX 1: Simplest Kotlin Options syntax use kiya, taaki 'Unresolved reference: compilerOptions' error na aaye.
     kotlinOptions {
-        compilerOptions {
-            jvmTarget = JavaVersion.VERSION_17.toString()
-        }
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
@@ -32,8 +30,8 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // 🟢 AUTH0 FIX: KOTLIN DSL SYNTAX 🟢
-        // manifestPlaceholders ek MutableMap hota hai, isliye hum keys direct set kar sakte hain
+        // 🟢 FIX 2: AUTH0 KOTLIN DSL SYNTAX USE KIYA
+        // Yeh line Auth0 Redirect ke liye zaroori hai.
         manifestPlaceholders["auth0Domain"] = "adil888.us.auth0.com" 
         manifestPlaceholders["auth0Scheme"] = "com.quickhelper.app" 
     }
