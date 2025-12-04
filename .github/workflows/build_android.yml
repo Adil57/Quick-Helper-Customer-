@@ -1,13 +1,14 @@
-name: Build Android APK
+name: Flutter Android Build (APK)
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -15,26 +16,31 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: 'zulu'
           java-version: '17'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-
+          
+      # CRITICAL FIX: GitHub Actions ko batao ki code root mein hai
+      # Agar aapka pubspec.yaml root mein hai, toh yeh code chalega.
+      # Lekin agar woh kisi folder mein hai, toh wahan path dalna padega.
+      
       - name: Get Flutter dependencies
         run: flutter pub get
-        working-directory: .
-
+        
       - name: Build Android Release APK
+        # Flutter ka build command
         run: flutter build apk --release
-        working-directory: .
-
-      # UPDATED → v4 (required)
+        
       - name: Upload Artifact (APK)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4 
         with:
-          name: app-release
+          name: app-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-          
+
+      - name: Notify on Success
+        if: success()
+        run: echo "APK build successful! Check Artifacts tab."
