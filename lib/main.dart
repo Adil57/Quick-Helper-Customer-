@@ -13,7 +13,7 @@ import 'package:http/http.dart' as http;
 // -----------------------------------------------------------------------------
 
 // ⚠️ 1. RENDER SERVER BASE URL (Apna Live Render URL yahan daalo)
-const String mongoApiBase = "https://quick-helper-backend.onrender.com/"; 
+const String mongoApiBase = "https://quick-helper-backend.onrender.com/api"; 
 
 // ⚠️ 2. AUTH0 DOMAIN (Tumhari set ki hui value)
 const String auth0Domain = "adil888.us.auth0.com"; 
