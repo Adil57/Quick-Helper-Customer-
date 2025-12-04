@@ -1,10 +1,19 @@
-# pubspec.yaml
+# pubspec.yaml (Final Corrected Code for SDK Constraint)
+
+name: quick_helper_customer
+description: Customer App for booking helper services.
+version: 1.0.0
+
+environment:
+  # 🟢 FIX: Correct SDK constraint added here.
+  # Yeh line Dart ko batayegi ki kaunsa version use karna hai.
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
   
-  # 🟢 New Official Auth0 SDK
+  # For Auth0 web-based login (Official SDK)
   auth0_flutter: ^3.0.0 
   
   # For making API calls to Render/MongoDB server
