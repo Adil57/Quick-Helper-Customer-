@@ -1,0 +1,54 @@
+# This is a generated file. Do not edit.
+packages:
+  cloud_firestore:
+    dependency: "direct main"
+    version: "4.13.3"
+  cupertino_icons:
+    dependency: "direct main"
+    version: "1.0.2"
+  fake_async:
+    dependency: "transitive"
+    version: "1.3.1"
+  firebase_auth:
+    dependency: "direct main"
+    version: "4.15.2"
+  firebase_core:
+    dependency: "direct main"
+    version: "2.24.2"
+  flutter:
+    dependency: "sdk"
+    version: "0.0.0"
+  flutter_lints:
+    dependency: "dev"
+    version: "2.0.0"
+  flutter_test:
+    dependency: "sdk"
+    version: "0.0.0"
+  font_awesome_flutter:
+    dependency: "direct main"
+    version: "10.6.0"
+  http:
+    dependency: "transitive"
+    version: "1.1.0"
+  intl:
+    dependency: "transitive"
+    version: "0.18.1"
+  meta:
+    dependency: "transitive"
+    version: "1.10.0"
+  provider:
+    dependency: "direct main"
+    version: "6.0.5"
+  source_span:
+    dependency: "transitive"
+    version: "1.10.0"
+  stream_transform:
+    dependency: "transitive"
+    version: "2.1.0"
+  uuid:
+    dependency: "transitive"
+    version: "4.2.1"
+  vector_math:
+    dependency: "transitive"
+    version: "1.4.1"
+sdk: "dart"
