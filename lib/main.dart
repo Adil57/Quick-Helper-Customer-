@@ -1,4 +1,4 @@
-// lib/main.dart (Final Code: MongoDB + Auth0 SDK)
+// lib/main.dart (Final Customer App Code with Booking Flow)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -64,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
   String? _error;
 
-  // 🟢 AUTH0 LOGIN FUNCTION (Using auth0_flutter SDK)
+  // 🟢 AUTH0 LOGIN FUNCTION
   Future<void> loginWithAuth0() async {
       setState(() {
         _error = null;
@@ -72,10 +72,8 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       try {
-        // Auth0 SDK use karke login shuru karo
         await auth0.webAuthentication(scheme: auth0RedirectUri.split('://').first).login();
         
-        // Agar login successful hua, toh app Home Page par navigate karegi
         if (mounted) {
           Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (_) => const HomePage()));
@@ -95,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
   }
 
-  // 🔴 Register User Function (Backend API call placeholder)
+  // 🔴 Register User Function 
   Future<void> registerUser() async {
     setState(() => isLoading = true);
 
@@ -291,11 +289,11 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    loadHelpers();
+    _loadHelpers();
   }
 
   // -------- LOAD HELPERS (RENDER API) -------- //
-  Future<void> loadHelpers() async {
+  Future<void> _loadHelpers() async {
     setState(() => loading = true);
 
     try {
@@ -303,6 +301,7 @@ class _HomePageState extends State<HomePage> {
 
       if (response.statusCode == 200) {
         if (mounted) {
+          // Assuming the server returns mock data if DB fails, or real data if connected
           setState(() {
             helpers = jsonDecode(response.body);
             loading = false;
@@ -344,11 +343,10 @@ class _HomePageState extends State<HomePage> {
           style: TextStyle(color: Colors.black),
         ),
         actions: [
-          // Dummy Sign Out function
+          // Dummy Sign Out function (Auth0 session clear nahi karta)
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.black),
             onPressed: () {
-               // Log out and navigate back to LoginScreen
                Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
             },
           ),
@@ -357,77 +355,82 @@ class _HomePageState extends State<HomePage> {
 
       body: loading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    color: Colors.white,
-                    width: double.infinity,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text("Find Helpers Near You",
-                            style: TextStyle(
-                                fontSize: 24, fontWeight: FontWeight.bold)),
-                        SizedBox(height: 3),
-                        Text("Plumbers, Electricians, Cleaners, all nearby"),
-                      ],
+          : RefreshIndicator( // Refresh Indicator added for pulling to refresh helpers
+              onRefresh: _loadHelpers,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      color: Colors.white,
+                      width: double.infinity,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text("Find Helpers Near You",
+                              style: TextStyle(
+                                  fontSize: 24, fontWeight: FontWeight.bold)),
+                          SizedBox(height: 3),
+                          Text("Plumbers, Electricians, Cleaners, all nearby"),
+                        ],
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 12),
 
-                  SizedBox(
-                    height: 110,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      children: [
-                        categoryItem("Cleaning", Icons.cleaning_services),
-                        categoryItem("Electrician", Icons.electrical_services),
-                        categoryItem("Plumber", Icons.plumbing),
-                        categoryItem("Painter", Icons.format_paint),
-                        categoryItem("Carpenter", Icons.carpenter),
-                      ],
+                    SizedBox(
+                      height: 110,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        children: [
+                          categoryItem("Cleaning", Icons.cleaning_services),
+                          categoryItem("Electrician", Icons.electrical_services),
+                          categoryItem("Plumber", Icons.plumbing),
+                          categoryItem("Painter", Icons.format_paint),
+                          categoryItem("Carpenter", Icons.carpenter),
+                        ],
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(height: 10),
+                    const SizedBox(height: 10),
 
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text("Available Helpers",
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold)),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  GridView.builder(
-                    padding: const EdgeInsets.all(12),
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: helpers.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: .78,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text("Available Helpers",
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold)),
                     ),
-                    itemBuilder: (context, index) {
-                      final h = helpers[index];
-                      return helperCard(
-                        h["name"] ?? "Unknown",
-                        h["skill"] ?? "Service", 
-                        h["price"] ?? 0,
-                        h["image"] ?? "", 
-                      );
-                    },
-                  )
-                ],
+
+                    const SizedBox(height: 12),
+
+                    // GridView: Use GridView.builder
+                    GridView.builder(
+                      padding: const EdgeInsets.all(12),
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: helpers.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: .78,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                      ),
+                      itemBuilder: (context, index) {
+                        final h = helpers[index];
+                        return helperCard(
+                          h["name"] ?? "Unknown",
+                          h["skill"] ?? "Service", 
+                          h["price"] ?? 0,
+                          h["image"] ?? "", 
+                        );
+                      },
+                    )
+                  ],
+                ),
               ),
             ),
     );
@@ -465,8 +468,8 @@ class _HomePageState extends State<HomePage> {
             context,
             MaterialPageRoute(
                 builder: (_) => HelperDetailPage(
-                      name: name,
-                      skill: skill,
+                      helperName: name, // Variable names changed to match HelperDetailPage constructor
+                      helperSkill: skill,
                       price: price,
                       imgUrl: imgUrl,
                     )));
@@ -510,26 +513,26 @@ class _HomePageState extends State<HomePage> {
 }
 
 // ---------------------------------------------------------
-// HELPER DETAIL PAGE
+// HELPER DETAIL PAGE (Enhanced with Booking Navigation)
 // ---------------------------------------------------------
 
 class HelperDetailPage extends StatelessWidget {
-  final String name;
-  final String skill;
+  final String helperName; // Variable names updated
+  final String helperSkill;
   final int price;
   final String imgUrl;
 
   const HelperDetailPage(
       {super.key,
-      required this.name,
-      required this.skill,
+      required this.helperName,
+      required this.helperSkill,
       required this.price,
       required this.imgUrl});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(name)),
+      appBar: AppBar(title: Text(helperName)),
       body: Column(
         children: [
           Expanded(
@@ -543,7 +546,7 @@ class HelperDetailPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(skill,
+                Text(helperSkill,
                     style:
                         const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 6),
@@ -553,13 +556,20 @@ class HelperDetailPage extends StatelessWidget {
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Booking ${name}...")),
-                    );
+                    // 🟢 NAVIGATE TO BOOKING SCREEN
+                     Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => BookingScreen(
+                                  helperName: helperName,
+                                  helperSkill: helperSkill,
+                                  price: price,
+                                )));
                   },
                   style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50)),
-                  child: const Text("Book Now"),
+                      minimumSize: const Size(double.infinity, 50),
+                      backgroundColor: Colors.indigo),
+                  child: const Text("Book Now", style: TextStyle(color: Colors.white)),
                 )
               ],
             ),
@@ -569,3 +579,36 @@ class HelperDetailPage extends StatelessWidget {
     );
   }
 }
+
+// ------------------ BOOKING SCREEN (New Page with Logic) ------------------
+class BookingScreen extends StatefulWidget {
+  final String helperName;
+  final String helperSkill;
+  final int price;
+
+  const BookingScreen({super.key, required this.helperName, required this.helperSkill, required this.price});
+
+  @override
+  State<BookingScreen> createState() => _BookingScreenState();
+}
+
+class _BookingScreenState extends State<BookingScreen> {
+  DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
+  double estimatedHours = 2.0;
+  bool isCreatingBooking = false;
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+    );
+    if (picked != null && picked != selectedDate) {
+      setState(() {
+        selectedDate = picked;
+      });
+    }
+  }
+
+  // Cost calculation fu
