@@ -13,13 +13,13 @@ import 'package:http/http.dart' as http;
 // -----------------------------------------------------------------------------
 
 // ⚠️ 1. RENDER SERVER BASE URL (Apna Live Render URL yahan daalo)
-const String mongoApiBase = "https://YOUR_LIVE_RENDER_URL/api"; 
+const String mongoApiBase = "https://quick-helper-backend.onrender.com/"; 
 
 // ⚠️ 2. AUTH0 DOMAIN (Tumhari set ki hui value)
 const String auth0Domain = "adil888.us.auth0.com"; 
 
 // ⚠️ 3. AUTH0 CLIENT ID (Auth0 Dashboard se Client ID yahan daalo)
-const String auth0ClientId = "YOUR_AUTH0_CLIENT_ID"; 
+const String auth0ClientId = "OdsfeU9MvAcYGxK0Vd8TAlta9XAprMxx"; 
 
 // ⚠️ 4. AUTH0 REDIRECT URI (Auth0 dashboard mein bhi yahi hona chahiye)
 const String auth0RedirectUri = "com.quickhelper.app://login-callback"; 
