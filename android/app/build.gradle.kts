@@ -28,6 +28,12 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // 🟢 FIX: AUTH0 CONFIGURATION ADDED HERE 🟢
+        manifestPlaceholders += [
+            auth0Domain: "adil888.us.auth0.com", 
+            auth0Scheme: "com.quickhelper.app" 
+        ]
     }
 
     buildTypes {
