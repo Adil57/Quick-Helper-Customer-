@@ -1,18 +1,11 @@
-# pubspec.yaml (MongoDB + Auth0 + Contentful Setup)
-
-name: quick_helper_customer
-description: Customer App for booking helper services.
-version: 1.0.0
-
-environment:
-  sdk: '>=3.0.0 <4.0.0'
+# pubspec.yaml
 
 dependencies:
   flutter:
     sdk: flutter
   
-  # For Auth0 web-based login
-  flutter_web_auth_2: ^2.2.1 
+  # 🟢 New Official Auth0 SDK
+  auth0_flutter: ^3.0.0 
   
   # For making API calls to Render/MongoDB server
   http: ^1.2.1 
