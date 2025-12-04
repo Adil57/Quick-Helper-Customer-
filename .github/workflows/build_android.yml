@@ -24,13 +24,13 @@ jobs:
         with:
           channel: 'stable'
           
-      # CRITICAL FIX: Working directory ko project root (jahan pubspec.yaml hai) mein set karna
+      # CRITICAL FIX: Sahi directory mein jana aur flutter pub get chalana
       - name: Get Flutter dependencies
         run: flutter pub get
-        working-directory: ./ # . ka matlab ROOT folder
+        working-directory: ./ # Root directory ko set karo
         
       - name: Build Android Release APK
-        # Working directory ko build step mein bhi set karna
+        # Working directory ko build step mein bhi set karo
         run: flutter build apk --release
         working-directory: ./
       
@@ -38,7 +38,7 @@ jobs:
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk # Flutter ka standard output path
+          path: build/app/outputs/flutter-apk/app-release.apk
 
       - name: Notify on Success
         if: success()
