@@ -1,19 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'dart:async';
-import 'dart:math' as math; // CRITICAL FIX: math library ko prefix (math.) diya
-
-// --- SERVICE API KEYS (Placeholders) ---
-const String RAZORPAY_PUBLISHABLE_KEY = "rzp_test_YOUR_RAZORPAY_PUBLISHABLE_KEY_HERE"; 
+import 'dart:math' as math;
 
 // --- Global App Constants ---
 const String APP_NAME = "Quick Helper (Customer)";
 const double AVG_HELPER_RATE_PER_HOUR = 145;
 const double APP_COMMISSION_PER_HOUR = 20;
-const Map<String, double> USER_LOCATION = {'lat': 19.1834, 'lng': 72.8407}; // Mumbai location
 
 // --- Utility Functions ---
 double calculateCost(double hours) {
@@ -22,48 +14,25 @@ double calculateCost(double hours) {
   return helperEarnings + appCommission;
 }
 
-// Haversine formula FIX
 double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    const R = 6371;
-    final dLat = (lat2 - lat1) * (math.pi / 180);
-    final dLon = (lon2 - lon1) * (math.pi / 180);
-    final a = 
-        math.sin(dLat / 2) * math.sin(dLat / 2) + 
-        math.cos(lat1 * (math.pi / 180)) * math.cos(lat2 * (math.pi / 180)) * math.sin(dLon / 2) * math.sin(dLon / 2); 
-    final c = 2 * math.asin(math.sqrt(a)); 
-    return R * c;
+  const R = 6371;
+  final dLat = (lat2 - lat1) * (math.pi / 180);
+  final dLon = (lon2 - lon1) * (math.pi / 180);
+  final a = math.sin(dLat / 2) * math.sin(dLat / 2) + 
+      math.cos(lat1 * (math.pi / 180)) * math.cos(lat2 * (math.pi / 180)) * 
+      math.sin(dLon / 2) * math.sin(dLon / 2);
+  final c = 2 * math.asin(math.sqrt(a));
+  return R * c;
 }
 
-// --- User Placeholder FIX ---
-// Is class mein saare methods ko 'Future<void>' return karna zaroori tha.
-class UserPlaceholder extends User {
-    UserPlaceholder(); // Add a constructor to avoid 'no unnamed constructor' error
-    
-    @override String get uid => 'guest_user_id';
-    @override String? get email => 'guest@quickhelper.com';
-    @override bool get isAnonymous => true;
-    @override bool get emailVerified => true;
-    @override Future<void> delete() async {} // FIX: Returns Future<void>
-    @override Future<void> reload() async {}
-    @override Future<String> getIdToken([bool forceRefresh = false]) => Future.value('token');
+// --- Dummy Local User ---
+class LocalUser {
+  final String uid;
+  final String email;
+  final bool isGuest;
 
-    // Dummy implementations for required abstract methods
-    @override List<UserInfo> get providerData => [];
-    @override String get providerId => 'firebase';
-    @override Future<void> updateDisplayName(String? displayName) async {}
-    @override Future<void> updatePhotoURL(String? photoURL) async {}
-    @override Future<void> updateEmail(String newEmail, [ActionCodeSettings? actionCodeSettings]) async {}
-    @override Future<void> updatePassword(String newPassword) async {}
-    @override Future<UserCredential> linkWithCredential(AuthCredential credential) async => throw UnimplementedError(); // FIX: Returns Future<UserCredential>
-    @override String? get displayName => 'Quick Helper Guest';
-    @override DateTime get metadataCreationTime => DateTime.now();
-    @override DateTime get metadataLastSignInTime => DateTime.now();
-    @override List<String> get providerIds => [];
-    @override String? get phoneNumber => null;
-    @override String? get photoURL => null;
-    @override String get tenantId => 'tenant';
+  LocalUser({required this.uid, required this.email, this.isGuest = true});
 }
-
 
 // --- MAIN WIDGET ---
 void main() async {
@@ -86,115 +55,43 @@ class QuickHelperApp extends StatelessWidget {
   }
 }
 
-// --- Authentication Wrapper ---
-class AuthWrapper extends StatelessWidget {
+// --- Authentication Wrapper (Mock) ---
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator(color: Colors.indigo)),
-          );
-        }
-        
-        final user = snapshot.data;
-        if (user == null || user.isAnonymous) {
-          return LoginPage();
-        }
-        
-        return BookingScreen(user: user);
-      },
-    );
-  }
+  _AuthWrapperState createState() => _AuthWrapperState();
 }
 
-// --- Login/Signup Screen ---
-class LoginPage extends StatefulWidget {
+class _AuthWrapperState extends State<AuthWrapper> {
+  LocalUser? user;
+
   @override
-  _LoginPageState createState() => _LoginPageState();
-}
+  void initState() {
+    super.initState();
+    // Simulate anonymous login
+    Future.delayed(Duration(seconds: 1), () {
+      setState(() {
+        user = LocalUser(uid: 'guest_user_id', email: 'guest@quickhelper.com');
+      });
+    });
+  }
 
-class _LoginPageState extends State<LoginPage> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool isLogin = true;
-  String? error;
-
-  Future<void> handleSubmit() async {
-    try {
-      // Simulate auth process
-      await Future.delayed(Duration(seconds: 1)); 
-      
-      // In live APK, successful login would change the StreamBuilder state
-      
-    } on FirebaseAuthException catch (e) {
-      setState(() { error = e.message; });
-    } catch (e) {
-      setState(() { error = "Auth Failed (Check Firebase setup in APK)"; });
+  @override
+  Widget build(BuildContext context) {
+    if (user == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator(color: Colors.indigo)),
+      );
     }
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(APP_NAME, style: TextStyle(color: Colors.white)), backgroundColor: Colors.indigo, elevation: 0),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(isLogin ? "Customer Login" : "Create Account", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.indigo)),
-              SizedBox(height: 24),
-              TextField(
-                controller: _emailController,
-                decoration: InputDecoration(labelText: "Email Address", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-              ),
-              SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: InputDecoration(labelText: "Password (min 6 chars)", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-              ),
-              if (error != null) 
-                Padding(
-                  padding: const EdgeInsets.only(top: 16.0),
-                  child: Text(error!, style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                ),
-              SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: handleSubmit,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  backgroundColor: Colors.indigo,
-                ),
-                child: Text(isLogin ? "Log In" : "Create Account", style: TextStyle(fontSize: 18, color: Colors.white)),
-              ),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    isLogin = !isLogin;
-                    error = null;
-                  });
-                },
-                child: Text(isLogin ? "Don't have an account? Sign Up" : "Already have an account? Log In", style: TextStyle(color: Colors.indigo)),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return BookingScreen(user: user!);
   }
 }
 
 // --- Main Booking Screen ---
 class BookingScreen extends StatefulWidget {
-  final User user;
+  final LocalUser user;
   const BookingScreen({super.key, required this.user});
 
   @override
@@ -220,35 +117,18 @@ class _BookingScreenState extends State<BookingScreen> {
     _fetchHelperData();
   }
 
-  // Helper Data Fetching Logic (Live APK mein chalta hai)
   void _fetchHelperData() {
-    Future.delayed(Duration(seconds: 2)).then((_) {
-      if(mounted) {
-          setState(() {
-            // Simulated Data
-            helperList = [
-                {'name': 'Rakesh Sharma', 'specialty': 'Electrician', 'distance': '1.2', 'rating': 4.8, 'id': 'h1'},
-                {'name': 'Sunita Devi', 'specialty': 'Cleaning', 'distance': '2.5', 'rating': 4.5, 'id': 'h2'},
-            ];
-            isLoading = false;
-          });
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        setState(() {
+          helperList = [
+            {'name': 'Rakesh Sharma', 'specialty': 'Electrician', 'distance': '1.2', 'rating': 4.8, 'id': 'h1'},
+            {'name': 'Sunita Devi', 'specialty': 'Cleaning', 'distance': '2.5', 'rating': 4.5, 'id': 'h2'},
+          ];
+          isLoading = false;
+        });
       }
     });
-  }
-
-  // Booking Logic (Called after Payment Simulation)
-  Future<void> handleBooking() async {
-    final nearestHelper = helperList.isNotEmpty ? helperList.first : null;
-    if (nearestHelper == null) return;
-
-    final totalCost = calculateCost(estimatedHours);
-    // Firestore setup and order saving logic here...
-    
-    // Show Success Message
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text("Order Processed! Total: ₹${totalCost.toStringAsFixed(0)}"),
-      backgroundColor: Colors.green,
-    ));
   }
 
   @override
@@ -260,40 +140,31 @@ class _BookingScreenState extends State<BookingScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(APP_NAME, style: TextStyle(color: Colors.white)),
+        title: Text(APP_NAME, style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.indigo,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout, color: Colors.white),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-            },
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Location Bar ---
             Container(
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.indigo.shade50,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.location_on, color: Colors.indigo),
-                  SizedBox(width: 8),
-                  Expanded(child: Text("Current Location: Malad West, Mumbai", style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold))),
+                  const Icon(Icons.location_on, color: Colors.indigo),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text("Current Location: Malad West, Mumbai", style: TextStyle(color: Colors.indigo.shade800, fontWeight: FontWeight.bold))),
                 ],
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-            // --- Map Tracker Simulation (This will be a real map in the final APK) ---
+            // Map Placeholder
             Container(
               height: 200,
               decoration: BoxDecoration(
@@ -305,32 +176,30 @@ class _BookingScreenState extends State<BookingScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.map, size: 40, color: Colors.indigo),
-                    SizedBox(height: 8),
-                    Text("Live Map Tracker (Placeholder)", style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text(nearestHelper != null ? "Nearest Helper: ${nearestHelper['distance']} KM" : "Searching...", style: TextStyle(fontSize: 12)),
+                    const Icon(Icons.map, size: 40, color: Colors.indigo),
+                    const SizedBox(height: 8),
+                    Text(nearestHelper != null ? "Nearest Helper: ${nearestHelper['distance']} KM" : "Searching...", style: const TextStyle(fontSize: 12)),
                   ],
                 ),
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-            // --- Helper List ---
-            Text("Available Helpers", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 10),
-            if (isLoading) Center(child: CircularProgressIndicator(color: Colors.indigo, strokeWidth: 3)),
-            if (!isLoading && helperList.isEmpty) Text("No Helpers Found.", style: TextStyle(color: Colors.red)),
+            // Helper List
+            const Text("Available Helpers", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            if (isLoading) const Center(child: CircularProgressIndicator(color: Colors.indigo)),
+            if (!isLoading && helperList.isEmpty) const Text("No Helpers Found.", style: TextStyle(color: Colors.red)),
             ...helperList.map((h) => HelperCard(helper: h)).toList(),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-
-            // --- Task Selection ---
-            Text("1. Select Your Service", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 10),
+            // Task Selection
+            const Text("1. Select Your Service", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
             GridView.builder(
               shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 4,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
@@ -353,7 +222,7 @@ class _BookingScreenState extends State<BookingScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(task['icon'] as IconData, color: isSelected ? Colors.white : Colors.indigo),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text((task['name'] as String).split(' ')[0], textAlign: TextAlign.center, style: TextStyle(fontSize: 10, color: isSelected ? Colors.white : Colors.black)),
                       ],
                     ),
@@ -361,13 +230,14 @@ class _BookingScreenState extends State<BookingScreen> {
                 );
               },
             ),
-            SizedBox(height: 20),
 
-            // --- Estimated Hours ---
-            Text("2. Estimated Hours Required", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 10),
+            const SizedBox(height: 20),
+
+            // Estimated Hours
+            const Text("2. Estimated Hours Required", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
             Container(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)]),
               child: Column(
                 children: [
@@ -375,7 +245,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text("${estimatedHours.toStringAsFixed(1)} Hour(s)", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.indigo)),
-                      Icon(Icons.access_time, color: Colors.indigo),
+                      const Icon(Icons.access_time, color: Colors.indigo),
                     ],
                   ),
                   Slider(
@@ -393,17 +263,18 @@ class _BookingScreenState extends State<BookingScreen> {
                 ],
               ),
             ),
-            SizedBox(height: 20),
 
-            // --- Cost Breakdown ---
+            const SizedBox(height: 20),
+
+            // Cost Breakdown
             Container(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(color: Colors.indigo.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.indigo.shade200)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text("3. Cost Breakdown (Estimate)", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo.shade800)),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   _buildCostRow("Helper's Earnings", "₹${helperEarnings.toStringAsFixed(0)}"),
                   _buildCostRow("App Commission", "₹${appCommission.toStringAsFixed(0)}", isCommission: true),
                   Divider(height: 20, color: Colors.indigo.shade200),
@@ -411,28 +282,28 @@ class _BookingScreenState extends State<BookingScreen> {
                 ],
               ),
             ),
-            SizedBox(height: 32),
 
-            // --- Proceed to Payment Button ---
+            const SizedBox(height: 32),
+
             Center(
               child: ElevatedButton(
-                onPressed: helperList.isEmpty ? null : () => {}, // Payment modal call
+                onPressed: helperList.isEmpty ? null : () => {}, // Placeholder
                 style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 55),
+                  minimumSize: const Size(double.infinity, 55),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                   backgroundColor: helperList.isEmpty ? Colors.grey : Colors.green,
                 ),
-                child: Text("Proceed to Payment (₹${totalCost.toStringAsFixed(0)})", style: TextStyle(fontSize: 18, color: Colors.white)),
+                child: Text("Proceed to Payment (₹${totalCost.toStringAsFixed(0)})", style: const TextStyle(fontSize: 18, color: Colors.white)),
               ),
             ),
-            SizedBox(height: 40),
+
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 
-  // Helper Widgets
   Widget _buildCostRow(String title, String amount, {bool isCommission = false, bool isTotal = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -440,18 +311,10 @@ class _BookingScreenState extends State<BookingScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(title, style: TextStyle(fontSize: isTotal ? 18 : 14, fontWeight: isTotal ? FontWeight.bold : FontWeight.normal, color: isTotal ? Colors.indigo.shade900 : Colors.black87)),
-          Text(amount, style: TextStyle(
-            fontSize: isTotal ? 22 : 14, 
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
-            color: isCommission ? Colors.red : Colors.black,
-          )),
+          Text(amount, style: TextStyle(fontSize: isTotal ? 22 : 14, fontWeight: isTotal ? FontWeight.bold : FontWeight.w600, color: isCommission ? Colors.red : Colors.black)),
         ],
       ),
     );
-  }
-
-  void _showPaymentModal(BuildContext context, double amount) {
-    // ... Payment modal logic
   }
 }
 
@@ -462,41 +325,34 @@ class HelperCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-        margin: EdgeInsets.only(bottom: 12),
-        elevation: 2,
-        child: Container(
-            decoration: BoxDecoration(
-                border: Border(left: BorderSide(color: Colors.green, width: 4)),
-            ),
-            padding: EdgeInsets.all(12),
-            child: Row(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      child: Container(
+        decoration: const BoxDecoration(border: Border(left: BorderSide(color: Colors.green, width: 4))),
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            const CircleAvatar(child: Icon(Icons.person, color: Colors.indigo)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                    CircleAvatar(child: Icon(Icons.person, color: Colors.indigo)),
-                    SizedBox(width: 10),
-                    Expanded(
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                                Text(helper['name'], style: TextStyle(fontWeight: FontWeight.bold)),
-                                Text(helper['specialty'], style: TextStyle(fontSize: 12, color: Colors.grey)),
-                            ],
-                        ),
-                    ),
-                    Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                            Row(children: [Icon(Icons.star, color: Colors.yellow.shade800, size: 16), Text(helper['rating']?.toString() ?? 'N/A')]),
-                            Text("${helper['distance']} KM away", style: TextStyle(color: Colors.green, fontSize: 12)),
-                        ],
-                    ),
+                  Text(helper['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text(helper['specialty'], style: const TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
+              ),
             ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Row(children: [Icon(Icons.star, color: Colors.yellow.shade800, size: 16), Text(helper['rating']?.toString() ?? 'N/A')]),
+                Text("${helper['distance']} KM away", style: const TextStyle(color: Colors.green, fontSize: 12)),
+              ],
+            ),
+          ],
         ),
+      ),
     );
   }
 }
-
-class UserPlaceholder extends User {
-    UserPlaceholder(); 
-    
-    @override String
