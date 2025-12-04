@@ -3,7 +3,7 @@ name: Flutter Android Build (APK)
 on:
   push:
     branches:
-      - main  # Jab bhi aap main branch par push karoge, yeh build shuru hoga
+      - main  # Jab bhi aap main branch par code daloge, yeh build shuru hoga
 
 jobs:
   build:
@@ -11,28 +11,30 @@ jobs:
     
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4 # Use latest checkout version
+        uses: actions/checkout@v4
 
       - name: Set up Java
-        uses: actions/setup-java@v4 # Use latest Java setup
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
       - name: Set up Flutter
-        uses: subosito/flutter-action@v2 # Stable Flutter action
+        uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-
+          
+      # CRITICAL FIX: Project ka root directory set karna
       - name: Get Flutter dependencies
         run: flutter pub get
-      
+        working-directory: . # Project root (jahan pubspec.yaml hai)
+
       - name: Build Android Release APK
-        # Final APK compilation
+        # Working directory build step mein bhi zaroori hai
         run: flutter build apk --release
+        working-directory: .
       
       - name: Upload Artifact (APK)
-        # **CRITICAL FIX:** Using actions/upload-artifact@v4 (latest)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
@@ -40,4 +42,4 @@ jobs:
 
       - name: Notify on Success
         if: success()
-        run: echo "APK build successful! Check Artifacts tab on the right side."
+        run: echo "APK build successful! Check Artifacts tab."
