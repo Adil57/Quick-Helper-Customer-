@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'dart:async';
-import 'dart:math' as math; // CRITICAL FIX 1: math library ko prefix (math.) diya taaki functions clash na hon
+import 'dart:math' as math; // CRITICAL FIX: math library ko prefix (math.) diya
 
 // --- SERVICE API KEYS (Placeholders) ---
 const String RAZORPAY_PUBLISHABLE_KEY = "rzp_test_YOUR_RAZORPAY_PUBLISHABLE_KEY_HERE"; 
@@ -25,18 +25,47 @@ double calculateCost(double hours) {
 // Haversine formula FIX
 double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const R = 6371;
-    // CRITICAL FIX 2: math.pi use kiya
     final dLat = (lat2 - lat1) * (math.pi / 180);
     final dLon = (lon2 - lon1) * (math.pi / 180);
     final a = 
-        math.sin(dLat / 2) * math.sin(dLat / 2) + // FIX: math.sin()
-        math.cos(lat1 * (math.pi / 180)) * math.cos(lat2 * (math.pi / 180)) * math.sin(dLon / 2) * math.sin(dLon / 2); // FIX: math.cos()
-    final c = 2 * math.asin(math.sqrt(a)); // FIX: math.asin(math.sqrt(a))
+        math.sin(dLat / 2) * math.sin(dLat / 2) + 
+        math.cos(lat1 * (math.pi / 180)) * math.cos(lat2 * (math.pi / 180)) * math.sin(dLon / 2) * math.sin(dLon / 2); 
+    final c = 2 * math.asin(math.sqrt(a)); 
     return R * c;
 }
 
-// --- MAIN WIDGET ---
+// --- User Placeholder FIX ---
+// Is class mein saare methods ko 'Future<void>' return karna zaroori tha.
+class UserPlaceholder extends User {
+    UserPlaceholder(); // Add a constructor to avoid 'no unnamed constructor' error
+    
+    @override String get uid => 'guest_user_id';
+    @override String? get email => 'guest@quickhelper.com';
+    @override bool get isAnonymous => true;
+    @override bool get emailVerified => true;
+    @override Future<void> delete() async {} // FIX: Returns Future<void>
+    @override Future<void> reload() async {}
+    @override Future<String> getIdToken([bool forceRefresh = false]) => Future.value('token');
 
+    // Dummy implementations for required abstract methods
+    @override List<UserInfo> get providerData => [];
+    @override String get providerId => 'firebase';
+    @override Future<void> updateDisplayName(String? displayName) async {}
+    @override Future<void> updatePhotoURL(String? photoURL) async {}
+    @override Future<void> updateEmail(String newEmail, [ActionCodeSettings? actionCodeSettings]) async {}
+    @override Future<void> updatePassword(String newPassword) async {}
+    @override Future<UserCredential> linkWithCredential(AuthCredential credential) async => throw UnimplementedError(); // FIX: Returns Future<UserCredential>
+    @override String? get displayName => 'Quick Helper Guest';
+    @override DateTime get metadataCreationTime => DateTime.now();
+    @override DateTime get metadataLastSignInTime => DateTime.now();
+    @override List<String> get providerIds => [];
+    @override String? get phoneNumber => null;
+    @override String? get photoURL => null;
+    @override String get tenantId => 'tenant';
+}
+
+
+// --- MAIN WIDGET ---
 void main() async {
   runApp(const QuickHelperApp());
 }
@@ -83,7 +112,7 @@ class AuthWrapper extends StatelessWidget {
   }
 }
 
-// --- Login/Signup Screen (No changes needed) ---
+// --- Login/Signup Screen ---
 class LoginPage extends StatefulWidget {
   @override
   _LoginPageState createState() => _LoginPageState();
@@ -99,6 +128,8 @@ class _LoginPageState extends State<LoginPage> {
     try {
       // Simulate auth process
       await Future.delayed(Duration(seconds: 1)); 
+      
+      // In live APK, successful login would change the StreamBuilder state
       
     } on FirebaseAuthException catch (e) {
       setState(() { error = e.message; });
@@ -161,7 +192,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-// --- Main Booking Screen (Logic intact) ---
+// --- Main Booking Screen ---
 class BookingScreen extends StatefulWidget {
   final User user;
   const BookingScreen({super.key, required this.user});
@@ -403,7 +434,6 @@ class _BookingScreenState extends State<BookingScreen> {
 
   // Helper Widgets
   Widget _buildCostRow(String title, String amount, {bool isCommission = false, bool isTotal = false}) {
-    // ... Cost Row UI logic
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -467,28 +497,6 @@ class HelperCard extends StatelessWidget {
 }
 
 class UserPlaceholder extends User {
-    // ... UserPlaceholder implementation
-    @override String get uid => 'guest_user_id';
-    @override String? get email => 'guest@quickhelper.com';
-    @override bool get isAnonymous => true;
-    @override String? get displayName => 'Quick Helper Guest';
-    @override String? get phoneNumber => null;
-    @override String? get photoURL => null;
-    @override List<UserInfo> get providerData => [];
-    @override String get providerId => 'firebase';
-    @override String get tenantId => 'tenant';
-    @override DateTime get metadataCreationTime => DateTime.now();
-    @override DateTime get metadataLastSignInTime => DateTime.now();
-    @override bool get emailVerified => true;
-    @override void delete() {}
-    @override Future<String> getIdToken([bool forceRefresh = false]) => Future.value('token');
-    @override Future<void> reload() async {}
-    @override Future<void> linkWithCredential(AuthCredential credential) async {}
-    @override List<String> get providerIds => [];
-    @override Future<UserCredential> reauthenticateWithCredential(AuthCredential credential) => throw UnimplementedError();
-    @override Future<void> updateEmail(String newEmail) async {}
-    @override Future<void> updatePassword(String newPassword) async {}
-    @override Future<void> updatePhoneNumber(PhoneAuthCredential credential) async {}
-    @override Future<void> updatePhotoURL(String? photoURL) async {}
-    @override Future<void> updateProfile({String? displayName, String? photoURL}) async {}
-    @override Future<void> verifyBeforeUpdateEmail(String newEmail, [ActionCodeSettings? actionCodeSettings]) async => t
+    UserPlaceholder(); 
+    
+    @override String
