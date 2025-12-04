@@ -15,8 +15,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    // 🟢 KOTLIN SYNTAX FIX: Using compilerOptions instead of deprecated kotlinOptions
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        compilerOptions {
+            jvmTarget = JavaVersion.VERSION_17.toString()
+        }
     }
 
     defaultConfig {
@@ -29,11 +32,10 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // 🟢 FIX: AUTH0 CONFIGURATION ADDED HERE 🟢
-        manifestPlaceholders += [
-            auth0Domain: "adil888.us.auth0.com", 
-            auth0Scheme: "com.quickhelper.app" 
-        ]
+        // 🟢 AUTH0 FIX: KOTLIN DSL SYNTAX 🟢
+        // manifestPlaceholders ek MutableMap hota hai, isliye hum keys direct set kar sakte hain
+        manifestPlaceholders["auth0Domain"] = "adil888.us.auth0.com" 
+        manifestPlaceholders["auth0Scheme"] = "com.quickhelper.app" 
     }
 
     buildTypes {
