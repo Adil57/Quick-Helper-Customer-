@@ -24,25 +24,21 @@ jobs:
         with:
           channel: 'stable'
           
-      # CRITICAL FIX: Sahi directory mein jaana
-      - name: Change Directory to Project Root
-        run: cd quick_helper_customer/ || echo "No directory change needed" 
-        # Note: Agar aapne files ROOT mein daali hain, toh yeh line ignore karo.
-        # Agar files 'quick_helper_customer' folder mein hain, toh woh path yahan aana chahiye.
-
+      # CRITICAL FIX: Working directory ko project root (jahan pubspec.yaml hai) mein set karna
       - name: Get Flutter dependencies
-        # Yeh command pubspec.yaml dhoondh legi
-        run: flutter pub get 
-      
+        run: flutter pub get
+        working-directory: ./ # . ka matlab ROOT folder
+        
       - name: Build Android Release APK
+        # Working directory ko build step mein bhi set karna
         run: flutter build apk --release
+        working-directory: ./
       
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          # Path ko theek karo agar files root mein nahi hain
-          path: build/app/outputs/flutter-apk/app-release.apk 
+          path: build/app/outputs/flutter-apk/app-release.apk # Flutter ka standard output path
 
       - name: Notify on Success
         if: success()
