@@ -1,16 +1,17 @@
-// lib/main.dart (Final Code)
+// lib/main.dart (Final Code: MongoDB + Auth0)
 
 import 'package:flutter/material.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart'; // Auth0 ke liye
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter_web_auth_2/flutter_web_auth_2.dart'; // Auth0 ke liye
+import 'package:http/http.dart' as http; // API calls ke liye
 
 // -----------------------------------------------------------------------------
 // GLOBAL CONFIGURATION (MANDATORY TO REPLACE)
 // -----------------------------------------------------------------------------
 
-// ⚠️ 1. RENDER SERVER BASE URL (Tumhara Render deploy kiya hua URL)
+// ⚠️ 1. RENDER SERVER BASE URL (Jahan tumhara backend deploy hua hai)
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api"; 
 
 // ⚠️ 2. AUTH0 DOMAIN (e.g., dev-abc1234.us.auth0.com)
@@ -36,9 +37,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "My App",
+      title: "Quick Helper",
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(brightness: Brightness.light, primarySwatch: Colors.blue),
+      theme: ThemeData(brightness: Brightness.light, primarySwatch: Colors.indigo),
       home: const LoginScreen(),
     );
   }
@@ -55,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
   bool isLoading = false;
-  String? _error; // Auth0 ke errors dikhane ke liye
+  String? _error;
 
   // 🟢 AUTH0 LOGIN FUNCTION
   Future<void> loginWithAuth0() async {
@@ -72,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
             'response_type': 'token id_token',
             'client_id': auth0ClientId,
             'redirect_uri': auth0RedirectUri,
-            'scope': 'openid profile email',
+            'scope': 'openid profile email', 
             'nonce': 'random_nonce_value', 
           },
         );
@@ -81,19 +82,20 @@ class _LoginScreenState extends State<LoginScreen> {
           url: auth0Url.toString(),
           callbackUrlScheme: auth0RedirectUri.split('://').first,
         );
-
-        // Yahan result mein token hoga, production mein isko verify karna hota hai.
-        // Abhi ke liye, agar result mila toh authentication successful hai.
+        
+        // Agar result mila toh authentication successful hai.
         if (result.isNotEmpty && mounted) {
-          // Authentication success! Home Screen par navigate karo
+          // Home Screen par navigate karo
           Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (_) => const HomePage()));
+        } else {
+           throw Exception("Auth0 login cancelled.");
         }
 
       } catch (e) {
         if (mounted) {
           setState(() {
-            _error = 'Auth0 Login Failed. Check your configuration.';
+            _error = 'Auth0 Login Failed: ${e.toString()}';
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(_error!)),
             );
@@ -104,36 +106,33 @@ class _LoginScreenState extends State<LoginScreen> {
       }
   }
 
-
-  // 🔴 OLD loginUser function - Auth0 use kar rahe hain toh iski zaroorat nahi.
-  // Hum isko register ke liye re-purpose kar sakte hain ya hata sakte hain.
-  // Main isko hata raha hu.
-
-  // ---------------- REGISTER BUTTON LOGIC (Placeholder use kar rahe hain)
+  // 🔴 Register User Function (Backend API call)
   Future<void> registerUser() async {
+    // ... Simplified register logic for placeholder ...
+    // Note: Production mein Auth0 se hi register hona chahiye, but yeh API call test karne ke liye hai.
     setState(() => isLoading = true);
 
     try {
-      final client = HttpClient();
-      final request = await client.postUrl(Uri.parse("$mongoApiBase/register"));
-      request.headers.set('Content-Type', 'application/json');
-      request.add(utf8.encode(jsonEncode({
-        "email": email.text.trim(),
-        "password": password.text.trim()
-      })));
-
-      final response = await request.close();
-      final body = await response.transform(utf8.decoder).join();
+      final response = await http.post(
+        Uri.parse("$mongoApiBase/register"),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "name": "Test User",
+          "email": email.text.trim(),
+          "password": password.text.trim()
+        }),
+      );
 
       if (response.statusCode == 200) {
         if (mounted) {
+          // Register successful, Home Screen par navigate karo
           Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (_) => const HomePage()));
         }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Register failed: ${response.statusCode} ${body}")),
+            SnackBar(content: Text("Register failed: ${response.statusCode} ${response.body}")),
           );
         }
       }
@@ -160,6 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
             const SizedBox(height: 40),
 
+            // Email/Password fields rehne dete hain, agar tum standard API login bhi rakho.
             TextField(
               controller: email,
               decoration: const InputDecoration(labelText: "Email"),
@@ -172,13 +172,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
             const SizedBox(height: 20),
             
-            // 🟢 AUTH0 BUTTON
+            // 🟢 AUTH0 LOGIN BUTTON
             ElevatedButton(
-              onPressed: isLoading ? null : loginWithAuth0, // <--- Auth0 call
-              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+              onPressed: isLoading ? null : loginWithAuth0, 
+              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50), backgroundColor: Colors.indigo),
               child: isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("Login with Auth0"),
+                  : const Text("Log in with Auth0"),
             ),
             
             if (_error != null) 
@@ -186,7 +186,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
             TextButton(
               onPressed: () {
-                // Navigate to simple register screen (which uses the placeholder API route)
                 Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const RegisterScreen()));
               },
@@ -200,7 +199,6 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 // ---------------- REGISTER SCREEN ---------------- //
-// (Ismein direct API call ho rahi hai jaisa tumne pehle diya tha)
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
   @override
@@ -212,23 +210,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
   bool isLoading = false;
+  String? _error;
 
   Future<void> registerUser() async {
-    // ... [Same register logic as before] ...
+    // ... Register logic using HTTP/API ...
     setState(() => isLoading = true);
 
     try {
-      final client = HttpClient();
-      final request = await client.postUrl(Uri.parse("$mongoApiBase/register"));
-      request.headers.set('Content-Type', 'application/json');
-      request.add(utf8.encode(jsonEncode({
-        "name": name.text.trim(),
-        "email": email.text.trim(),
-        "password": password.text.trim()
-      })));
-
-      final response = await request.close();
-      final body = await response.transform(utf8.decoder).join();
+      final response = await http.post(
+        Uri.parse("$mongoApiBase/register"),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "name": name.text.trim(),
+          "email": email.text.trim(),
+          "password": password.text.trim()
+        }),
+      );
 
       if (response.statusCode == 200) {
         if (mounted) {
@@ -238,7 +235,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Register failed: ${response.statusCode} ${body}")),
+            SnackBar(content: Text("Register failed: ${response.statusCode} ${response.body}")),
           );
         }
       }
@@ -255,6 +252,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // [Rest of RegisterScreen UI]
     return Scaffold(
       appBar: AppBar(title: const Text("Register")),
       body: Padding(
@@ -272,7 +270,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             TextField(
               controller: password,
               obscureText: true,
-              decoration: const InputDecoration(labelText: "Password"),
+              decoration: const InputDecoration(labelText: "Password (min 6 chars)"),
             ),
 
             const SizedBox(height: 20),
@@ -284,6 +282,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ? const CircularProgressIndicator(color: Colors.white)
                   : const Text("Register"),
             ),
+            if (_error != null) 
+              Padding(padding: const EdgeInsets.only(top: 10), child: Text(_error!, style: const TextStyle(color: Colors.red))),
           ],
         ),
       ),
@@ -292,7 +292,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 }
 
 // ---------------------------------------------------------
-// HOME SCREEN — SWIGGY STYLE
+// HOME SCREEN — FETCHING DATA FROM RENDER API
 // ---------------------------------------------------------
 
 class HomePage extends StatefulWidget {
@@ -314,19 +314,16 @@ class _HomePageState extends State<HomePage> {
 
   // -------- LOAD HELPERS (MONGO API) -------- //
   Future<void> loadHelpers() async {
-    try {
-      final client = HttpClient();
-      // Using the updated mongoApiBase
-      final request =
-          await client.getUrl(Uri.parse("$mongoApiBase/helpers")); // GET CALL
+    setState(() => loading = true);
 
-      final response = await request.close();
-      final body = await response.transform(utf8.decoder).join();
+    try {
+      final response =
+          await http.get(Uri.parse("$mongoApiBase/helpers")); // GET CALL
 
       if (response.statusCode == 200) {
         if (mounted) {
           setState(() {
-            helpers = jsonDecode(body);
+            helpers = jsonDecode(response.body);
             loading = false;
           });
         }
@@ -365,6 +362,15 @@ class _HomePageState extends State<HomePage> {
           "Welcome!",
           style: TextStyle(color: Colors.black),
         ),
+        actions: [
+          // Dummy Sign Out button
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.black),
+            onPressed: () {
+               Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+            },
+          ),
+        ],
       ),
 
       body: loading
@@ -373,9 +379,8 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // [Rest of your UI code for Banner, Category Scroller, and Helpers Grid]
-                  
-                  // -------- TOP BANNER -------- //
+
+                  // [Rest of UI code for Home Page]
                   Container(
                     padding: const EdgeInsets.all(16),
                     color: Colors.white,
@@ -394,7 +399,6 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 12),
 
-                  // -------- CATEGORY SCROLLER -------- //
                   SizedBox(
                     height: 110,
                     child: ListView(
@@ -403,7 +407,7 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         categoryItem("Cleaning", Icons.cleaning_services),
                         categoryItem("Electrician", Icons.electrical_services),
-                        categoryItem("Plumber", Icons.build),
+                        categoryItem("Plumber", Icons.plumbing),
                         categoryItem("Painter", Icons.format_paint),
                         categoryItem("Carpenter", Icons.carpenter),
                       ],
@@ -412,7 +416,6 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 10),
 
-                  // -------- FEATURE TITLE -------- //
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Text("Available Helpers",
@@ -422,7 +425,6 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 12),
 
-                  // -------- HELPERS GRID -------- //
                   GridView.builder(
                     padding: const EdgeInsets.all(12),
                     shrinkWrap: true,
@@ -451,7 +453,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // -------- CATEGORY WIDGET -------- //
+  // [Rest of categoryItem, helperCard, and HelperDetailPage remains the same]
+  // ... (categoryItem function)
   Widget categoryItem(String title, IconData icon) {
     return Container(
       width: 90,
@@ -467,15 +470,14 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 34, color: Colors.blue),
+          Icon(icon, size: 34, color: Colors.indigo), 
           const SizedBox(height: 6),
           Text(title, textAlign: TextAlign.center),
         ],
       ),
     );
   }
-
-  // -------- HELPER CARD -------- //
+  // ... (helperCard function)
   Widget helperCard(String name, String skill, int price, String imgUrl) {
     return InkWell(
       onTap: () {
@@ -528,7 +530,7 @@ class _HomePageState extends State<HomePage> {
 }
 
 // ---------------------------------------------------------
-// HELPER DETAIL PAGE
+// HELPER DETAIL PAGE (Remains the same)
 // ---------------------------------------------------------
 
 class HelperDetailPage extends StatelessWidget {
@@ -571,7 +573,6 @@ class HelperDetailPage extends StatelessWidget {
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
-                    // TODO: Implement Booking Logic/Navigation
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text("Booking ${name}...")),
                     );
