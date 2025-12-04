@@ -24,15 +24,17 @@ jobs:
         with:
           channel: 'stable'
           
-      # CRITICAL FIX: Sahi directory mein jana aur flutter pub get chalana
+      # CRITICAL FIX: PROJECT ROOT PATH KO BATAANA
+      # GitHub Actions ki default working directory hamesha repo ka root hoti hai.
+      # Agar yeh fail ho raha hai, toh hum 'working-directory' hatate hain aur
+      # 'pub get' ko seedha 'run' command mein daalte hain.
+      
       - name: Get Flutter dependencies
         run: flutter pub get
-        working-directory: ./ # Root directory ko set karo
-        
+      
       - name: Build Android Release APK
-        # Working directory ko build step mein bhi set karo
+        # Flutter ka build command
         run: flutter build apk --release
-        working-directory: ./
       
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
