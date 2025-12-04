@@ -1,43 +1,29 @@
 workflows:
   flutter-android-apk:
-    name: QuickHelper Flutter Android Build (APK)
+    name: QuickHelper Android APK Build
     
-    # Platform settings
     environment:
-      flutter: stable  # Flutter ka stable version use hoga
-      xcode: latest    # iOS/Android build environment
-      
-      # Zaroori Variables (Agar aap secrets use kar rahe hain)
-      vars:
-        PACKAGE_NAME: "com.quickhelper.customer" # Aapka app package name
-        
-    triggering:
-      # Jab bhi aap master branch par push karoge, automatic build shuru ho jayega
-      branch: master
+      # Flutter environment setup
+      flutter: stable 
       
     scripts:
-      - name: Set Flutter PATH
-        script: |
-          echo "Setting up Flutter environment..."
-          
       - name: Get Dependencies
+        # pubspec.yaml se saari libraries download karega
         script: |
-          # Yeh command pubspec.yaml se saari libraries download karega
           flutter pub get
           
       - name: Build Android Release APK
+        # Flutter ka main command APK file banane ke liye
         script: |
-          # Flutter ka main command APK banane ke liye
           flutter build apk --release
           
     artifacts:
-      # Yahi hai woh final APK file ka path jise aap download karoge
+      # Is path par aapki APK file banegi
       - build/app/outputs/flutter-apk/app-release.apk
-      
+    
+    # Simple email notification (agar aapne Codemagic settings mein email set kiya hai)
     publishing:
-      # Optional: Email notification jab build complete ho
       email:
-        recipients:
-          - your_email@example.com # Yahan apna email dalo
-        success: true
-        failure: true
+        triggering:
+          - success
+          - failure
