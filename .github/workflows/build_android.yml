@@ -24,22 +24,21 @@ jobs:
         with:
           channel: 'stable'
           
-      # CRITICAL FIX: Dependencies fetch karna
       - name: Get Flutter dependencies
         run: flutter pub get
         
-      # 🟢 ZAROORI STEP: Extract Debug SHA-1 Fingerprint (For Google Auth)
-      # Yeh step signing report chalaayega aur logs mein SHA1 dikhega.
+      # 🟢 FINAL ZAROORI STEP: Extract Debug SHA-1 Fingerprint (Project Root Se)
+      # gradlew ab project root se chalega.
       - name: Extract Debug SHA-1 Fingerprint
         run: |
-          cd android
-          # Grant execution permission to gradlew
+          # 1. gradlew ko execute permission do
           chmod +x ./gradlew
-          # Run the standard signingReport task
+          
+          # 2. signingReport run karo. Yeh output logs mein SHA1 dega.
+          # Note: Output mein SHA1 ki value dhoondho.
           ./gradlew signingReport
           
       - name: Build Android Release APK
-        # Flutter ka build command
         run: flutter build apk --release
         
       - name: Upload Artifact (APK)
