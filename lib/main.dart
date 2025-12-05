@@ -1,8 +1,8 @@
-// lib/main.dart (FINAL FIXED CODE)
+// lib/main.dart (FINAL FIXED CODE - CLEANED SYNTAX)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
-import 'package:auth0_flutter_platform_interface/auth0_flutter_platform_interface.dart'; // IMPORTANT: Added to fix type error
+import 'package:auth0_flutter_platform_interface/auth0_flutter_platform_interface.dart'; 
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http; 
@@ -24,11 +24,9 @@ final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
 
 
 // -----------------------------------------------------------------------------
-// ❌ DUMMY STATE MANAGEMENT (FIXED TYPE to use Auth0's UserProfile)
+// ❌ DUMMY STATE MANAGEMENT 
 // -----------------------------------------------------------------------------
-// Using Auth0's UserProfile type to avoid compilation error 184
 class UserAuth {
-  // Use UserProfile from auth0_flutter_platform_interface
   UserProfile? _user = const UserProfile(name: "Test User", sub: "auth0|test"); 
   UserProfile? get user => _user;
   bool get isAuthenticated => _user != null;
@@ -101,7 +99,7 @@ class MainNavigator extends StatelessWidget {
       length: 4,
       child: Scaffold(
         body: const TabBarView(
-          physics: NeverScrollableScrollPhysics(), // Tabs are switched programmatically or via bar
+          physics: NeverScrollableScrollPhysics(), 
           children: [
             HomePage(),
             Center(child: Text("Bookings Screen")),
@@ -176,7 +174,6 @@ class _LoginScreenState extends State<LoginScreen> {
       try {
         final result = await auth0.webAuthentication(scheme: auth0RedirectUri.split('://').first).login();
         if (mounted) {
-          // Type error fixed by updating UserAuth to use Auth0's UserProfile
           tempAuth.setUser(result.user); 
           Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => const MainNavigator()));
         }
@@ -349,7 +346,6 @@ class _HomePageState extends State<HomePage> {
           IconButton(
             icon: const Icon(Icons.person_pin_outlined, color: Colors.black),
             onPressed: () {
-               // Safely navigate to Account tab
                DefaultTabController.of(context).animateTo(3); 
             },
           ),
@@ -467,7 +463,7 @@ class _HomePageState extends State<HomePage> {
         Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (_) => HelperDetailPage( // Error 474: Correct class usage
+                builder: (_) => HelperDetailPage( 
                       helperName: name, 
                       helperSkill: skill,
                       price: price,
@@ -524,7 +520,7 @@ class BookingScreen extends StatefulWidget {
   @override
   State<BookingScreen> createState() => _BookingScreenState();
 }
-class _BookingScreenState extends State<BookingScreen> { // Error 531: Missing build fixed below
+class _BookingScreenState extends State<BookingScreen> { 
   DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
   double estimatedHours = 2.0;
   bool isCreatingBooking = false;
@@ -553,12 +549,13 @@ class _BookingScreenState extends State<BookingScreen> { // Error 531: Missing b
        ScaffoldMessenger.of(context).showSnackBar(
          SnackBar(content: Text('Booking confirmed for ${widget.helperName}! Total: ₹${totalCost.toStringAsFixed(0)}'))
        );
-       Navigator.pop(context); // Go back to Helper Detail
+       // We should navigate back to the previous screen or root navigator
+       Navigator.pop(context); 
     }
     if (mounted) setState(() => isCreatingBooking = false);
   }
 
-  // FIX: Full formatting with correct parentheses and semicolons
+
   Widget _buildDatePicker() { 
     return ListTile(
       leading: const Icon(Icons.calendar_month, color: Colors.indigo),
@@ -571,8 +568,21 @@ class _BookingScreenState extends State<BookingScreen> { // Error 531: Missing b
     );
   }
 
-  // FIX: Full formatting with correct parentheses and semicolons
+  // FIX: _buildTimeSlider code is now correctly closed
   Widget _buildTimeSlider() { 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Text('Estimated Hours: ${estimatedHours.toStringAsFixed(1)} hours',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        Slider(
+          value: estimatedHours,
+          min: 1.0,
+          max: 8.0,
+          divisions: 14,
+          label: estimatedHours.toStringAsFixed(1),
+          activeColor
