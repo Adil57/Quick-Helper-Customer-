@@ -11,11 +11,15 @@ dependencies:
   flutter:
     sdk: flutter
   
-  # 🟢 FIX: Downgrading auth0_flutter to resolve dependency conflict
+  # 🟢 AUTHENTICATION
   auth0_flutter: ^1.14.0 
   
-  # For making API calls to Render/MongoDB server
+  # 🟢 API CALLS
   http: ^1.2.1 
+  
+  # 🟢 MAP SYSTEM (Live Location & Markers)
+  google_maps_flutter: ^2.5.0 # Live Map widget
+  location: ^5.0.3           # User ki current location access karne ke liye
   
   # UI/Icons
   cupertino_icons: ^1.0.2
@@ -28,4 +32,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
   
