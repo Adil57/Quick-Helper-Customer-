@@ -1,12 +1,13 @@
-// lib/main.dart (MODIFIED FOR AUTH0/CUSTOM LOGIN SPLIT)
+// lib/main.dart (FINAL FIXES APPLIED)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
 import 'package:auth0_flutter_platform_interface/auth0_flutter_platform_interface.dart'; 
+// IMPORT: Auth0 ki UserProfile class is package se aati hai
+// import 'package:auth0_flutter_platform_interface/src/user_profile.dart'; 
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http; 
-// import 'package:provider/provider.dart'; 
 
 
 // -----------------------------------------------------------------------------
@@ -16,7 +17,6 @@ import 'package:http/http.dart' as http;
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api"; 
 const String auth0Domain = "adil888.us.auth0.com"; 
 const String auth0ClientId = "OdsfeU9MvAcYGxK0Vd8TAlta9XAprMxx"; 
-// FIX: Redirect URI should be the one you configured in Auth0 (from previous error)
 const String auth0RedirectUri = "com.quickhelper.app://adil888.us.auth0.com/android/com.example.quick_helper_customer/callback"; 
 
 
@@ -25,17 +25,24 @@ final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
 
 
 // -----------------------------------------------------------------------------
-// ❌ DUMMY STATE MANAGEMENT 
+// ❌ DUMMY STATE MANAGEMENT (FIXED: Using Auth0's UserProfile)
 // -----------------------------------------------------------------------------
-class UserProfile {
-  final String name;
-  final String sub; // User ID
-  const UserProfile({required this.name, required this.sub});
-}
+// ***************************************************************
+// ERROR FIX 1: Duplicate UserProfile hata di gayi hai.
+// Ab UserAuth class Auth0's UserProfile (jo auth0_flutter_platform_interface se aati hai) use karegi.
+// ***************************************************************
+
 class UserAuth {
-  UserProfile? _user = const UserProfile(name: "Test User", sub: "auth0|test"); 
+  // tempAuth ko non-nullable se nullable kiya gaya
+  UserProfile? _user; 
+  // Initialization mein dummy user set kiya gaya
+  UserAuth() {
+    _user = const UserProfile(name: "Test User", sub: "auth0|test");
+  }
+
   UserProfile? get user => _user;
   bool get isAuthenticated => _user != null;
+  // setUser function mein parameter ko nullable kiya gaya
   void setUser(UserProfile? user) { _user = user; }
   String? get userId => _user?.sub ?? "temp_user_id_001";
   
@@ -89,7 +96,8 @@ class AuthGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (tempAuth.isAuthenticated) { 
-      return const MainNavigator(); 
+      // ERROR FIX 2: const hataya
+      return MainNavigator(); 
     }
     // Now directs to the choice screen
     return const LoginChoiceScreen(); 
@@ -117,14 +125,16 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
       try {
         final result = await auth0.webAuthentication(scheme: auth0RedirectUri.split('://').first).login();
         if (mounted) {
+          // ERROR FIX 3: Type mismatch solved, setUser now accepts Auth0's UserProfile
           tempAuth.setUser(result.user); 
           // After successful Auth0 login, navigate to main app
-          Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => const MainNavigator()));
+          // ERROR FIX 4: const hataya
+          Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => MainNavigator()));
         }
       } on Exception catch (e) {
         if (mounted) {
           // Display a friendly error message for Auth0 issues
-          String message = 'Auth0 Login Failed. Ensure redirect URL and internet connection are correct.';
+          String message = 'Login Failed. Ensure redirect URL and internet connection are correct.';
           setState(() { _error = message; });
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
           print('Auth0 Login Error: $e'); // Print detailed error to console
@@ -193,9 +203,77 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
 }
 
 
+// ----------------- 🟢 MAIN NAVIGATOR ----------------- //
+class MainNavigator extends StatelessWidget {
+  // ERROR FIX 5: const hataya
+  MainNavigator({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 4,
+      child: Scaffold(
+        body: const TabBarView(
+          physics: NeverScrollableScrollPhysics(), 
+          children: [
+            HomePage(),
+            Center(child: Text("Bookings Screen")),
+            Center(child: Text("Chat Screen")),
+            AccountScreen(),
+          ],
+        ),
+        bottomNavigationBar: Container(
+          decoration: const BoxDecoration(
+            border: Border(top: BorderSide(color: Colors.grey, width: 0.1)),
+          ),
+          child: const TabBar(
+            labelColor: Colors.indigo,
+            unselectedLabelColor: Colors.grey,
+            indicatorSize: TabBarIndicatorSize.label,
+            indicatorPadding: EdgeInsets.all(5.0),
+            indicatorColor: Colors.indigo,
+            tabs: [
+              Tab(icon: Icon(Icons.home), text: "Home"),
+              Tab(icon: Icon(Icons.receipt), text: "Bookings"),
+              Tab(icon: Icon(Icons.chat), text: "Chat"),
+              Tab(icon: Icon(Icons.person), text: "Account"),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------- ACCOUNT SCREEN ---------------- //
+class AccountScreen extends StatelessWidget {
+// ... (No major changes here)
+  const AccountScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("My Account")),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("Logged in as: ${tempAuth.user?.name ?? 'N/A'}"),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => tempAuth.logout(context),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text("Logout", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // -----------------------------------------------------------------------------
 // MODIFIED: CUSTOM LOGIN SCREEN (For MongoDB/Render API)
-// The original LoginScreen is now CustomLoginScreen
 // -----------------------------------------------------------------------------
 class CustomLoginScreen extends StatefulWidget {
   const CustomLoginScreen({super.key});
@@ -217,19 +295,20 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
     setState(() => isLoading = true);
     
     // TODO: Yahan tumhara actual MongoDB/Render API login call aayega
-    // Example: final response = await http.post(Uri.parse('$mongoApiBase/login'), body: {'email': email.text, 'password': password.text});
     
     // Simulated Success after 2 seconds
     await Future.delayed(const Duration(seconds: 2));
     
     // Assuming successful login returns user details
-    tempAuth.setUser(UserProfile(name: "Local User", sub: "local_${email.text}"));
+    // ERROR FIX 6: const hataya
+    tempAuth.setUser(UserProfile(name: "Local User", sub: "local_${email.text}")); 
     
     if (mounted) {
        ScaffoldMessenger.of(context).showSnackBar(
          const SnackBar(content: Text("Login successful!"))
        );
-       Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => const MainNavigator()));
+       // ERROR FIX 7: const hataya
+       Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => MainNavigator()));
     }
     
     if (mounted) setState(() {
@@ -289,9 +368,8 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
     );
   }
 }
-// lib/main.dart (PART 2/3) - Register, and Home Page (Rest of the file remains the same, except where noted)
+// lib/main.dart (PART 2/3) - Register, and Home Page (Rest of the code follows...)
 
-// ---------------- REGISTER SCREEN ---------------- //
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
   @override
@@ -317,13 +395,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     await Future.delayed(const Duration(seconds: 2));
 
     // After successful dummy registration, set a temporary user and navigate
+    // ERROR FIX 8: const hataya
     tempAuth.setUser(UserProfile(name: name.text, sub: "local_user_${DateTime.now().millisecondsSinceEpoch}"));
     
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Registration successful! Logging you in."))
       );
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigator()));
+      // ERROR FIX 9: const hataya
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => MainNavigator()));
     }
     
     if (mounted) setState(() {
@@ -371,11 +451,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
-
-
-// ---------------------------------------------------------
-// HOME SCREEN (CONTENT) (No Changes)
-// ---------------------------------------------------------
+// lib/main.dart (PART 2/3) - Home Page (Rest of the code follows...)
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -579,9 +655,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-// lib/main.dart (PART 3/3) - Booking and Helper Detail Pages (No Changes)
-
-// ------------------ 🟢 BOOKING SCREEN ------------------
+// lib/main.dart (PART 3/3) - Booking and Helper Detail Pages (Rest of the code follows...)
 class BookingScreen extends StatefulWidget {
   final String helperName;
   final String helperSkill;
@@ -763,8 +837,6 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 }
-
-// ------------------ 🟢 HELPER DETAIL PAGE ------------------
 class HelperDetailPage extends StatelessWidget {
   final String helperName;
   final String helperSkill;
@@ -849,3 +921,5 @@ class HelperDetailPage extends StatelessWidget {
     );
   }
 }
+
+// ... End of file
