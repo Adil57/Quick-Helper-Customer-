@@ -29,15 +29,21 @@ jobs:
           channel: 'stable'
           cache: false 
           
-      # 2. 🟢 CRITICAL FIX: Delete Pub Cache, Clean, and Get Dependencies
-      - name: Force Clean Dependencies and Pub Cache
+      # 2. 🟢 ULTIMATE FIX: Reset Tool, Delete Pub Cache, Clean, and Get
+      - name: Force Clean Everything and Re-fetch Dependencies
         run: |
-          echo "Deleting corrupted Pub Cache directory..."
-          # CRITICAL: Pub cache ko puri tarah se uda do
+          echo "Running aggressive cache cleanup..."
+          # 1. Flutter tool state ko reset karo
+          flutter doctor
+          flutter precache --force
+          
+          # 2. CRITICAL: Corrupted Pub Cache directory ko delete karo
           rm -rf ~/.pub-cache/
           
-          # Clean aur naye packages fetch karo
+          # 3. Local build directories ko clean karo
           flutter clean
+          
+          # 4. Dependencies ko fresh download karo (Ab packages milne chahiye)
           flutter pub get
         
       # 3. Grant Execute Permission to gradlew
@@ -49,7 +55,7 @@ jobs:
         run: |
           sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
           
-      # 5. FORCE KEYSTORE GENERATION (Jahan pehle fail ho raha tha)
+      # 5. FORCE KEYSTORE GENERATION
       - name: Force Generate Debug Keystore
         run: flutter build apk --debug --no-tree-shake-icons
         
