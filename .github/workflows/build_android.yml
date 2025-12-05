@@ -27,8 +27,22 @@ jobs:
         with:
           channel: 'stable'
           
-      - name: Get Flutter dependencies
-        run: flutter pub get
+      # 🟢 FIX: Map Package Dependency Error Fix
+      # Cache and get steps ko replace kiya gaya hai
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          # pub cache directory ko cache karte hain
+          path: /home/runner/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Get Flutter dependencies (Repair Pub Cache)
+        run: |
+          # Yeh command cache aur package read errors ko theek karega
+          flutter pub cache repair
+          flutter pub get
         
       # 1. gradlew ko permission dena.
       - name: Grant Execute Permission to gradlew
@@ -43,8 +57,7 @@ jobs:
       - name: Force Generate Debug Keystore
         run: flutter build apk --debug --no-tree-shake-icons
         
-      # 4. ***FINAL FIX: DYNAMIC KEYTOOL USE***
-      # File ko dhoondh kar key nikalenge, taaki location error na aaye.
+      # 4. FINAL FIX: DYNAMIC KEYTOOL USE
       - name: Extract Debug SHA-1 Fingerprint (Final Dynamic Check)
         run: |
           echo "--- DEBUG SHA-1 FINGERPRINT (KEYTOOL - DYNAMIC) ---"
