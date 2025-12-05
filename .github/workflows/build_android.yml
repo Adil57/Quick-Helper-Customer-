@@ -30,18 +30,15 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
         
-      # 🔑 FIXED STEP: Extract Debug SHA-1 Fingerprint
-      # DEFAULT_JVM_OPTS="" wala trick use kiya gaya hai error fix karne ke liye.
+      # 1. FIX: gradlew ko permission dena alag step mein
+      - name: Grant Execute Permission to gradlew
+        run: chmod +x ./gradlew
+        
+      # 2. FIX: SHA-1 Extraction ko single-line run mein karna 
+      # Ismein DEFAULT_JVM_OPTS="" se ClassNotFoundException solve ho jaana chahiye.
       - name: Extract Debug SHA-1 Fingerprint (Check Logs)
-        run: |
-          # gradlew ko execute permission do
-          chmod +x ./gradlew
-          
-          # signingReport run karo. DEFAULT_JVM_OPTS ko clear rakho.
-          echo "--- DEBUG SHA-1 FINGERPRINT LOGS ---"
-          DEFAULT_JVM_OPTS="" ./gradlew signingReport
-          echo "------------------------------------"
-          
+        run: DEFAULT_JVM_OPTS="" ./gradlew signingReport
+        
       - name: Build Android Release APK
         run: flutter build apk --release
         
