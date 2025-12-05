@@ -1,4 +1,4 @@
-// lib/main.dart (Final Fixed Code - Ready for Build)
+// lib/main.dart (Final Fixed Code - Syntax Error Solved)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -224,47 +224,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
-class MainNavigator extends StatefulWidget {
-  const MainNavigator({super.key});
-  @override
-  State<MainNavigator> createState() => _MainNavigatorState();
-}
-class _MainNavigatorState extends State<MainNavigator> {
-  int _currentIndex = 0;
-  final List<Widget> _screens = [
-    const HomePage(), 
-    const Center(child: Text("Services Screen (TODO)")), 
-    const Center(child: Text("Activity/Bookings Screen (TODO)")), 
-    const AccountScreen(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_currentIndex], 
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: Colors.indigo,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.miscellaneous_services_outlined), label: 'Services'),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Activity'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Account'),
-        ],
-      ),
-    );
-  }
-}
 
 // ---------------------------------------------------------
-// HOME SCREEN (CONTENT)
+// HOME SCREEN (CONTENT) - MOVED UP FOR RESOLUTION FIX
 // ---------------------------------------------------------
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -310,12 +272,13 @@ class _HomePageState extends State<HomePage> {
 
       body: loading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator( // ✅ FIX: Parenthesis added here
+          : RefreshIndicator( 
               onRefresh: _loadHelpers,
-              child: SingleChildScrollView( // ✅ FIX: Parenthesis added here
-                child: Column( // ✅ FIX: Parenthesis added here
+              child: SingleChildScrollView( 
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column( 
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [ // ✅ FIX: Bracket added here
+                  children: [ 
                     Container(
                       padding: const EdgeInsets.all(16),
                       color: Colors.white,
@@ -382,12 +345,12 @@ class _HomePageState extends State<HomePage> {
                         );
                       },
                     )
-                  ], // ✅ FIX: Closing bracket added here
-                ) // ✅ FIX: Closing parenthesis added here
-              ) // ✅ FIX: Closing parenthesis added here
-            ) // ✅ FIX: Closing parenthesis added here
-    ); // ✅ FIX: Closing parenthesis added here
-  } // ✅ FIX: Closing brace added here
+                  ],
+                )
+              )
+            )
+    );
+  } 
 
   // (categoryItem and helperCard functions remain here)
   Widget categoryItem(String title, IconData icon) {
@@ -514,4 +477,45 @@ class _BookingScreenState extends State<BookingScreen> {
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
               child: Text("Service Duration", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
-            Card(margin: const EdgeInsets.symme
+            Card(margin: const EdgeInsets.symmetric(horizontal: 16), child: _buildTimeSlider()),
+            
+            const SizedBox(height: 20),
+
+            // Cost Summary
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+              child: Text("Cost Summary", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: _buildCostSummary(),
+            ),
+
+            const SizedBox(height: 30),
+
+            // Confirm Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: ElevatedButton(
+                onPressed: isCreatingBooking ? null : _createBooking,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                  backgroundColor: Colors.green.shade600,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 5,
+                ),
+                child: isCreatingBooking
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("CONFIRM & PROCEED TO PAYMENT", style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ------------------ 🟢 MOVED: HELPER DETAIL PAGE ------------------
+class HelperDetailPage extends S
