@@ -34,12 +34,13 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 2. ***NEW FIX***: gradle.properties se JVM arguments hatao (Jo ClassNotFoundException de rahe hain)
-      - name: Remove JVM Arguments from gradle.properties
+      # 2. ***ULTIMATE FIX***: gradlew script se DEFAULT_JVM_OPTS ko hatao
+      # Isko hataane se Java ko -Xmx64m argument nahi milega aur error solve ho jaayega.
+      - name: Modify gradlew Script to Fix JVM Error
         run: |
-          echo "Removing org.gradle.jvmargs line to fix JVM error..."
-          # Sed command org.gradle.jvmargs wali line ko hamesha ke liye hata dega (is run ke liye)
-          sed -i '/org.gradle.jvmargs/d' android/gradle.properties
+          echo "Removing DEFAULT_JVM_OPTS check from gradlew script..."
+          # Sed command gradlew file mein se DEFAULT_JVM_OPTS wali line ko remove kar dega.
+          sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
           
       # 3. SHA-1 Extraction. Ab yeh bina kisi JVM argument ke run hona chahiye.
       - name: Extract Debug SHA-1 Fingerprint (Check Logs)
