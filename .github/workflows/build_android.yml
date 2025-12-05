@@ -30,15 +30,15 @@ jobs:
           cache: false 
           
       # 2. 🟢 FINAL FIX: Force Clean Build Cache and Re-fetch Dependencies
-      # Dependency errors ko fix karne ke liye, pub cache ko force karke naye packages laate hain.
+      # Invalid flag "--no-suppress-stderr" hata diya hai.
       - name: Get Flutter dependencies (FORCE CLEAN & RE-GET)
         run: |
           # 1. Purane builds aur package references ko hatao
           flutter clean
-          # 2. Package list check karo
+          # 2. Package list check karo (optional, but good for logging)
           flutter pub outdated
-          # 3. CRITICAL: dependencies ko force re-fetch aur resolve karo
-          flutter pub get --no-suppress-stderr 
+          # 3. CRITICAL: dependencies ko re-fetch aur resolve karo (Valid command ab)
+          flutter pub get 
         
       # 3. Grant Execute Permission to gradlew
       - name: Grant Execute Permission to gradlew
@@ -51,10 +51,9 @@ jobs:
           
       # 5. FORCE KEYSTORE GENERATION
       - name: Force Generate Debug Keystore
-        # Is baar yeh step pass ho jana chahiye kyunki dependencies mil gayi hain
         run: flutter build apk --debug --no-tree-shake-icons
         
-      # 6. SHA-1 Extraction: DYNAMIC KEYTOOL USE (Optional, but keeping it)
+      # 6. SHA-1 Extraction: DYNAMIC KEYTOOL USE (Optional)
       - name: Extract Debug SHA-1 Fingerprint (Final Dynamic Check)
         run: |
           echo "--- DEBUG SHA-1 FINGERPRINT (KEYTOOL - DYNAMIC) ---"
@@ -65,7 +64,6 @@ jobs:
             -alias androiddebugkey -storepass android -keypass android
           else
             echo "Error: debug.keystore not found anywhere! Could not extract SHA-1."
-            # Exit 1 nahi kar rahe, taaki build aage badhe
           fi
           echo "---------------------------------------------------"
         
