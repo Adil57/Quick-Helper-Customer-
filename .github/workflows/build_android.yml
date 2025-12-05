@@ -34,29 +34,35 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 2. ULTIMATE FIX (JVM Error): gradlew script se DEFAULT_JVM_OPTS ko hatao
+      # 2. ULTIMATE FIX: gradlew script se DEFAULT_JVM_OPTS ko hatao
       - name: Modify gradlew Script to Fix JVM Error
         run: |
-          echo "Removing DEFAULT_JVM_OPTS check from gradlew script..."
           sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
           
-      # 3. ***FORCE KEYSTORE GENERATION***
-      # Is step se '/home/runner/.android/debug.keystore' file ban jaayegi.
+      # 3. FORCE KEYSTORE GENERATION
       - name: Force Generate Debug Keystore
         run: flutter build apk --debug --no-tree-shake-icons
         
-      # 4. FINAL FIX: DIRECT KEYTOOL USE
-      # Ab file maujood honi chahiye aur keytool use nikal lega.
-      - name: Extract Debug SHA-1 Fingerprint (Direct Keytool)
+      # 4. ***FINAL FIX: DYNAMIC KEYTOOL USE***
+      # File ko dhoondh kar key nikalenge, taaki location error na aaye.
+      - name: Extract Debug SHA-1 Fingerprint (Final Dynamic Check)
         run: |
-          echo "--- DEBUG SHA-1 FINGERPRINT (KEYTOOL) ---"
-          DEBUG_KEYSTORE_PATH="/home/runner/.android/debug.keystore"
+          echo "--- DEBUG SHA-1 FINGERPRINT (KEYTOOL - DYNAMIC) ---"
           
-          # keytool -list command run kiya.
-          /usr/bin/keytool -list -v -keystore "$DEBUG_KEYSTORE_PATH" \
-          -alias androiddebugkey -storepass android -keypass android
+          # find command se debug.keystore ka path dhundo
+          KEYSTORE_PATH=$(find /home/runner/ -name "debug.keystore" 2>/dev/null | head -n 1)
           
-          echo "-------------------------------------------"
+          # Agar path mila toh keytool chalao
+          if [ -f "$KEYSTORE_PATH" ]; then
+            echo "Keystore found at: $KEYSTORE_PATH"
+            /usr/bin/keytool -list -v -keystore "$KEYSTORE_PATH" \
+            -alias androiddebugkey -storepass android -keypass android
+          else
+            echo "Error: debug.keystore not found anywhere! Could not extract SHA-1."
+            exit 1
+          fi
+          
+          echo "---------------------------------------------------"
         
       - name: Build Android Release APK
         run: flutter build apk --release
