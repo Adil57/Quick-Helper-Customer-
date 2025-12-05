@@ -1,17 +1,18 @@
-// lib/main.dart (FINAL FIXES APPLIED)
+// lib/main.dart (FINAL WORKING VERSION WITH OPENSTREETMAP & OTP FLOW)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
 import 'package:auth0_flutter_platform_interface/auth0_flutter_platform_interface.dart'; 
-// IMPORT: Auth0 ki UserProfile class is package se aati hai
-// import 'package:auth0_flutter_platform_interface/src/user_profile.dart'; 
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http; 
-
+// 🟢 FREE MAP IMPORTS
+import 'package:flutter_map/flutter_map.dart'; 
+import 'package:latlong2/latlong2.dart'; 
+import 'package:location/location.dart'; // User location ke liye
 
 // -----------------------------------------------------------------------------
-// GLOBAL CONFIGURATION (MANDATORY TO REPLACE)
+// GLOBAL CONFIGURATION
 // -----------------------------------------------------------------------------
 
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api"; 
@@ -25,29 +26,33 @@ final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
 
 
 // -----------------------------------------------------------------------------
-// ❌ DUMMY STATE MANAGEMENT (FIXED: Using Auth0's UserProfile)
+// DUMMY STATE MANAGEMENT 
 // -----------------------------------------------------------------------------
-// ***************************************************************
-// ERROR FIX 1: Duplicate UserProfile hata di gayi hai.
-// Ab UserAuth class Auth0's UserProfile (jo auth0_flutter_platform_interface se aati hai) use karegi.
-// ***************************************************************
-
+class UserProfile {
+  final String name;
+  final String sub; // User ID
+  const UserProfile({required this.name, required this.sub});
+}
 class UserAuth {
-  // tempAuth ko non-nullable se nullable kiya gaya
   UserProfile? _user; 
-  // Initialization mein dummy user set kiya gaya
+  String? _token; 
+
   UserAuth() {
-    _user = const UserProfile(name: "Test User", sub: "auth0|test");
+    // _user = const UserProfile(name: "Test User", sub: "auth0|test");
   }
 
   UserProfile? get user => _user;
   bool get isAuthenticated => _user != null;
-  // setUser function mein parameter ko nullable kiya gaya
-  void setUser(UserProfile? user) { _user = user; }
+
+  void setUser(UserProfile? user, {String? token}) { 
+    _user = user; 
+    _token = token;
+  }
   String? get userId => _user?.sub ?? "temp_user_id_001";
   
   Future<void> logout(BuildContext context) async {
      _user = null;
+     _token = null;
      if (context.mounted) {
        Navigator.of(context).pushAndRemoveUntil(
          MaterialPageRoute(builder: (context) => const AuthGate()), 
@@ -96,16 +101,14 @@ class AuthGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (tempAuth.isAuthenticated) { 
-      // ERROR FIX 2: const hataya
       return MainNavigator(); 
     }
-    // Now directs to the choice screen
     return const LoginChoiceScreen(); 
   }
 }
 
 // -----------------------------------------------------------------------------
-// NEW: LOGIN CHOICE SCREEN (The two buttons)
+// LOGIN CHOICE SCREEN 
 // -----------------------------------------------------------------------------
 
 class LoginChoiceScreen extends StatefulWidget {
@@ -125,19 +128,15 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
       try {
         final result = await auth0.webAuthentication(scheme: auth0RedirectUri.split('://').first).login();
         if (mounted) {
-          // ERROR FIX 3: Type mismatch solved, setUser now accepts Auth0's UserProfile
-          tempAuth.setUser(result.user); 
-          // After successful Auth0 login, navigate to main app
-          // ERROR FIX 4: const hataya
+          tempAuth.setUser(result.user, token: result.accessToken); 
           Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => MainNavigator()));
         }
       } on Exception catch (e) {
         if (mounted) {
-          // Display a friendly error message for Auth0 issues
-          String message = 'Login Failed. Ensure redirect URL and internet connection are correct.';
+          String message = 'Auth0 Login Failed. Check redirect URL in Auth0 Dashboard.';
           setState(() { _error = message; });
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-          print('Auth0 Login Error: $e'); // Print detailed error to console
+          print('Auth0 Login Error: $e'); 
         }
       } finally {
         if (mounted) setState(() => isLoading = false);
@@ -205,21 +204,21 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
 
 // ----------------- 🟢 MAIN NAVIGATOR ----------------- //
 class MainNavigator extends StatelessWidget {
-  // ERROR FIX 5: const hataya
   MainNavigator({super.key});
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 5, 
       child: Scaffold(
-        body: const TabBarView(
-          physics: NeverScrollableScrollPhysics(), 
+        body: TabBarView(
+          physics: const NeverScrollableScrollPhysics(), 
           children: [
-            HomePage(),
-            Center(child: Text("Bookings Screen")),
-            Center(child: Text("Chat Screen")),
-            AccountScreen(),
+            const HomePage(),
+            const MapViewScreen(), // Tab 1: Map View Screen
+            const Center(child: Text("Bookings Screen")), // Tab 2: Bookings
+            const Center(child: Text("Chat Screen")), // Tab 3: Chat
+            const AccountScreen(), // Tab 4: Account
           ],
         ),
         bottomNavigationBar: Container(
@@ -234,9 +233,10 @@ class MainNavigator extends StatelessWidget {
             indicatorColor: Colors.indigo,
             tabs: [
               Tab(icon: Icon(Icons.home), text: "Home"),
-              Tab(icon: Icon(Icons.receipt), text: "Bookings"),
-              Tab(icon: Icon(Icons.chat), text: "Chat"),
-              Tab(icon: Icon(Icons.person), text: "Account"),
+              Tab(icon: Icon(Icons.map), text: "Map"), // Tab 1
+              Tab(icon: Icon(Icons.receipt), text: "Bookings"), // Tab 2
+              Tab(icon: Icon(Icons.chat), text: "Chat"), // Tab 3
+              Tab(icon: Icon(Icons.person), text: "Account"), // Tab 4
             ],
           ),
         ),
@@ -245,9 +245,9 @@ class MainNavigator extends StatelessWidget {
   }
 }
 
+
 // ---------------- ACCOUNT SCREEN ---------------- //
 class AccountScreen extends StatelessWidget {
-// ... (No major changes here)
   const AccountScreen({super.key});
 
   @override
@@ -273,7 +273,110 @@ class AccountScreen extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// MODIFIED: CUSTOM LOGIN SCREEN (For MongoDB/Render API)
+// NEW: MAP VIEW SCREEN (OPENSTREETMAP/FREE MAP STRUCTURE)
+// -----------------------------------------------------------------------------
+class MapViewScreen extends StatefulWidget {
+  const MapViewScreen({super.key});
+
+  @override
+  State<MapViewScreen> createState() => _MapViewScreenState();
+}
+
+class _MapViewScreenState extends State<MapViewScreen> {
+  // Map ki shuruati location (Example: Mumbai)
+  static const LatLng _initialLocation = LatLng(19.0760, 72.8777); 
+  
+  // User ki actual location
+  LatLng _currentLocation = _initialLocation; 
+  final MapController _mapController = MapController();
+
+  // Helper markers (DUMMY DATA)
+  final List<Marker> _markers = [
+    Marker(
+      point: const LatLng(19.07, 72.87), // Plumber location
+      width: 80,
+      height: 80,
+      child: const Icon(Icons.plumbing, color: Colors.blue, size: 40),
+    ),
+    Marker(
+      point: const LatLng(19.09, 72.85), // Electrician location
+      width: 80,
+      height: 80,
+      child: const Icon(Icons.electrical_services, color: Colors.red, size: 40),
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _determinePosition();
+  }
+
+  // Location access karne ka function
+  Future<void> _determinePosition() async {
+    Location location = Location();
+    bool serviceEnabled;
+    PermissionStatus permissionGranted;
+    LocationData locationData;
+
+    serviceEnabled = await location.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await location.requestService();
+      if (!serviceEnabled) return;
+    }
+
+    permissionGranted = await location.hasPermission();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await location.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) return;
+    }
+
+    locationData = await location.getLocation();
+    setState(() {
+      _currentLocation = LatLng(locationData.latitude!, locationData.longitude!);
+      _mapController.move(_currentLocation, 14.0);
+    });
+
+    // TODO: Yahan se API call hogi helpers ki location fetch karne ke liye
+    print('User Location: $_currentLocation');
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Nearby Helpers (Free Map)")),
+      body: FlutterMap(
+        mapController: _mapController,
+        options: const MapOptions(
+          initialCenter: _initialLocation,
+          initialZoom: 12.0,
+        ),
+        children: [
+          // Map ka base layer
+          TileLayer(
+            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            userAgentPackageName: 'com.quickhelper.app',
+          ),
+          
+          // Current user location marker
+          MarkerLayer(markers: [
+            Marker(
+              point: _currentLocation,
+              width: 50,
+              height: 50,
+              child: const Icon(Icons.my_location, color: Colors.green, size: 30),
+            ),
+            ..._markers, // Helper markers
+          ]),
+        ],
+      ),
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// MODIFIED: CUSTOM LOGIN SCREEN (OTP flow)
 // -----------------------------------------------------------------------------
 class CustomLoginScreen extends StatefulWidget {
   const CustomLoginScreen({super.key});
@@ -286,35 +389,48 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
   bool isLoading = false;
   String? _error;
 
-  // Function for API/MongoDB Login (Simulated)
+  // MODIFIED: API Login Call
   Future<void> loginUser() async {
     if (email.text.isEmpty || password.text.isEmpty) {
       setState(() => _error = "Please enter email and password.");
       return;
     }
     setState(() => isLoading = true);
-    
-    // TODO: Yahan tumhara actual MongoDB/Render API login call aayega
-    
-    // Simulated Success after 2 seconds
-    await Future.delayed(const Duration(seconds: 2));
-    
-    // Assuming successful login returns user details
-    // ERROR FIX 6: const hataya
-    tempAuth.setUser(UserProfile(name: "Local User", sub: "local_${email.text}")); 
-    
-    if (mounted) {
-       ScaffoldMessenger.of(context).showSnackBar(
-         const SnackBar(content: Text("Login successful!"))
-       );
-       // ERROR FIX 7: const hataya
-       Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => MainNavigator()));
+    _error = null;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$mongoApiBase/auth/login'), 
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'email': email.text, 'password': password.text}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final user = data['user'];
+        final token = data['token'];
+
+        tempAuth.setUser(
+          UserProfile(name: user['name'] ?? 'Local User', sub: user['id'] ?? user['email']), 
+          token: token
+        );
+        
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text("Login successful!"))
+           );
+           Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => MainNavigator()));
+        }
+      } else {
+         final errorData = json.decode(response.body);
+         setState(() => _error = errorData['message'] ?? 'Login failed. Check credentials.');
+      }
+    } catch (e) {
+      setState(() => _error = 'Network error or Invalid API response.');
+      print('Login Error: $e');
     }
     
-    if (mounted) setState(() {
-      isLoading = false;
-      _error = null;
-    });
+    if (mounted) setState(() => isLoading = false);
   }
 
   @override
@@ -360,7 +476,7 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
                 Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const RegisterScreen()));
               },
-              child: const Text("Create an account"),
+              child: const Text("Create an account (OTP Required)"),
             )
           ],
         ),
@@ -368,8 +484,9 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
     );
   }
 }
-// lib/main.dart (PART 2/3) - Register, and Home Page (Rest of the code follows...)
 
+
+// ---------------- REGISTER SCREEN (OTP FLOW START) ---------------- //
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
   @override
@@ -382,40 +499,53 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool isLoading = false;
   String? _error;
   
-  // FIX: Simulated API call for registration
-  Future<void> registerUser() async {
+  // MODIFIED: Start OTP Registration Process
+  Future<void> registerUserStartOTP() async {
     if (name.text.isEmpty || email.text.isEmpty || password.text.isEmpty) {
       setState(() => _error = "Please fill all fields.");
       return;
     }
     setState(() => isLoading = true);
-    
-    // TODO: Yahan tumhara actual MongoDB/Render API registration call aayega
-    // API Call Simulation: Success after 2 seconds
-    await Future.delayed(const Duration(seconds: 2));
+    _error = null;
 
-    // After successful dummy registration, set a temporary user and navigate
-    // ERROR FIX 8: const hataya
-    tempAuth.setUser(UserProfile(name: name.text, sub: "local_user_${DateTime.now().millisecondsSinceEpoch}"));
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Registration successful! Logging you in."))
+    try {
+      final response = await http.post(
+        Uri.parse('$mongoApiBase/auth/register-otp'), 
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'name': name.text, 'email': email.text, 'password': password.text}),
       );
-      // ERROR FIX 9: const hataya
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => MainNavigator()));
+
+      if (response.statusCode == 200 || response.statusCode == 201) { 
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("OTP sent to your email. Please verify."))
+          );
+          // Navigate to OTP Verification Screen
+          Navigator.pushReplacement(context, MaterialPageRoute(
+            builder: (_) => OTPVerificationScreen(
+              name: name.text, 
+              email: email.text, 
+              password: password.text,
+              isRegistration: true, // Registration flow hai
+            )
+          ));
+        }
+      } else {
+         final errorData = json.decode(response.body);
+         setState(() => _error = errorData['message'] ?? 'Registration failed. User may already exist.');
+      }
+    } catch (e) {
+      setState(() => _error = 'Network error or Invalid API response.');
+      print('Registration Start OTP Error: $e');
     }
     
-    if (mounted) setState(() {
-      isLoading = false;
-      _error = null;
-    });
+    if (mounted) setState(() => isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Register")),
+      appBar: AppBar(title: const Text("Register (OTP Required)")),
       body: Padding(
         padding: const EdgeInsets.all(28.0),
         child: Column(
@@ -426,6 +556,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             TextField(
               controller: email,
+              keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(labelText: "Email"),
             ),
             TextField(
@@ -437,11 +568,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 20),
 
             ElevatedButton(
-              onPressed: isLoading ? null : registerUser,
+              onPressed: isLoading ? null : registerUserStartOTP,
               style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
               child: isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("Register"),
+                  : const Text("Register & Send OTP"),
             ),
             if (_error != null) 
               Padding(padding: const EdgeInsets.only(top: 10), child: Text(_error!, style: const TextStyle(color: Colors.red))),
@@ -451,7 +582,118 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
-// lib/main.dart (PART 2/3) - Home Page (Rest of the code follows...)
+
+// ---------------- NEW: OTP VERIFICATION SCREEN ---------------- //
+class OTPVerificationScreen extends StatefulWidget {
+  final String email;
+  final String name;
+  final String password;
+  final bool isRegistration;
+
+  const OTPVerificationScreen({
+    super.key, 
+    required this.email, 
+    required this.name, 
+    required this.password,
+    required this.isRegistration, 
+  });
+
+  @override
+  State<OTPVerificationScreen> createState() => _OTPVerificationScreenState();
+}
+class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
+  final TextEditingController otp = TextEditingController();
+  bool isLoading = false;
+  String? _error;
+
+  Future<void> verifyOTP() async {
+    if (otp.text.isEmpty || otp.text.length < 4) {
+      setState(() => _error = "Please enter the 4-digit OTP.");
+      return;
+    }
+    setState(() => isLoading = true);
+    _error = null;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$mongoApiBase/auth/verify-otp'), 
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': widget.email, 
+          'otp': otp.text,
+          'name': widget.isRegistration ? widget.name : null, 
+          'password': widget.isRegistration ? widget.password : null,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final user = data['user'];
+        final token = data['token'];
+
+        tempAuth.setUser(
+          UserProfile(name: user['name'] ?? widget.name, sub: user['id'] ?? widget.email), 
+          token: token
+        );
+        
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(content: Text("${widget.isRegistration ? 'Registration' : 'Login'} successful!"))
+           );
+           Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => MainNavigator()));
+        }
+      } else {
+         final errorData = json.decode(response.body);
+         setState(() => _error = errorData['message'] ?? 'OTP verification failed. Try again.');
+      }
+    } catch (e) {
+      setState(() => _error = 'Network error or Invalid API response.');
+      print('OTP Verification Error: $e');
+    }
+    
+    if (mounted) setState(() => isLoading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Verify OTP")),
+      body: Padding(
+        padding: const EdgeInsets.all(28.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("OTP sent to ${widget.email}", style: const TextStyle(fontSize: 16)),
+            const SizedBox(height: 20),
+            TextField(
+              controller: otp,
+              keyboardType: TextInputType.number,
+              maxLength: 6, 
+              decoration: const InputDecoration(labelText: "Enter OTP"),
+            ),
+
+            const SizedBox(height: 20),
+
+            ElevatedButton(
+              onPressed: isLoading ? null : verifyOTP,
+              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+              child: isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text("Verify & Complete"),
+            ),
+            if (_error != null) 
+              Padding(padding: const EdgeInsets.only(top: 10), child: Text(_error!, style: const TextStyle(color: Colors.red))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+// ---------------------------------------------------------
+// HOME SCREEN (CATEGORIES FIXED)
+// ---------------------------------------------------------
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -475,6 +717,16 @@ class _HomePageState extends State<HomePage> {
     // _loadHelpers();
   }
 
+  // -------- CATEGORY ACTION FIX -------- //
+  void _filterByCategory(String category) {
+    // TODO: Yahan tumhara actual API call aayega category ke hisaab se helpers load karne ke liye
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Filtering helpers by: $category'))
+    );
+    print('Filtered by: $category');
+    // Ab tum yahan API call karke 'helpers' list ko update karoge
+  }
+
   // -------- LOAD HELPERS (RENDER API) -------- //
   Future<void> _loadHelpers() async {
     setState(() => loading = true);
@@ -494,7 +746,7 @@ class _HomePageState extends State<HomePage> {
           IconButton(
             icon: const Icon(Icons.person_pin_outlined, color: Colors.black),
             onPressed: () {
-               DefaultTabController.of(context).animateTo(3); 
+               DefaultTabController.of(context).animateTo(4); // Tab 4 is Account
             },
           ),
         ],
@@ -582,25 +834,29 @@ class _HomePageState extends State<HomePage> {
     );
   } 
 
+  // MODIFIED: Category button now calls _filterByCategory
   Widget categoryItem(String title, IconData icon) {
-    return Container(
-      width: 90,
-      margin: const EdgeInsets.only(left: 12),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 34, color: Colors.indigo), 
-          const SizedBox(height: 6),
-          Text(title, textAlign: TextAlign.center),
-        ],
+    return InkWell(
+      onTap: () => _filterByCategory(title),
+      child: Container(
+        width: 90,
+        margin: const EdgeInsets.only(left: 12),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 34, color: Colors.indigo), 
+            const SizedBox(height: 6),
+            Text(title, textAlign: TextAlign.center),
+          ],
+        ),
       ),
     );
   }
@@ -655,7 +911,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-// lib/main.dart (PART 3/3) - Booking and Helper Detail Pages (Rest of the code follows...)
+
+// ------------------ 🟢 BOOKING SCREEN (No Change) ------------------
 class BookingScreen extends StatefulWidget {
   final String helperName;
   final String helperSkill;
@@ -837,6 +1094,8 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 }
+
+// ------------------ 🟢 HELPER DETAIL PAGE (No Change) ------------------
 class HelperDetailPage extends StatelessWidget {
   final String helperName;
   final String helperSkill;
@@ -921,5 +1180,3 @@ class HelperDetailPage extends StatelessWidget {
     );
   }
 }
-
-// ... End of file
