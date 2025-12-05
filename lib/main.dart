@@ -175,12 +175,15 @@ class _LoginScreenState extends State<LoginScreen> {
         final result = await auth0.webAuthentication(scheme: auth0RedirectUri.split('://').first).login();
         if (mounted) {
           tempAuth.setUser(result.user); 
+          // After successful Auth0 login, navigate to main app
           Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => const MainNavigator()));
         }
       } on Exception catch (e) {
         if (mounted) {
-          setState(() { _error = 'Auth0 Login Failed: Check Redirect URL/Network.'; });
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_error!)));
+          // Display a friendly error message for Auth0 issues
+          String message = 'Login Failed. Ensure redirect URL and internet connection are correct.';
+          setState(() { _error = message; });
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
         }
       } finally {
         if (mounted) setState(() => isLoading = false);
@@ -188,8 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> registerUser() async {
-    setState(() => isLoading = true);
-    // [API call logic]
+    // This function logic is usually handled by the Auth0 flow or a separate API.
     if (mounted) setState(() => isLoading = false);
   }
 
@@ -254,10 +256,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController password = TextEditingController();
   bool isLoading = false;
   String? _error;
+  
+  // FIX: Simulated API call for registration
   Future<void> registerUser() async {
+    if (name.text.isEmpty || email.text.isEmpty || password.text.isEmpty) {
+      setState(() => _error = "Please fill all fields.");
+      return;
+    }
     setState(() => isLoading = true);
-    // [API call logic]
-    if (mounted) setState(() => isLoading = false);
+    
+    // API Call Simulation: Success after 2 seconds
+    await Future.delayed(const Duration(seconds: 2));
+
+    // After successful dummy registration, set a temporary user and navigate
+    tempAuth.setUser(UserProfile(name: name.text, sub: "local_user_${DateTime.now().millisecondsSinceEpoch}"));
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Registration successful! Logging you in."))
+      );
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigator()));
+    }
+    
+    if (mounted) setState(() {
+      isLoading = false;
+      _error = null;
+    });
   }
 
   @override
@@ -509,7 +533,7 @@ class _HomePageState extends State<HomePage> {
 }
 // lib/main.dart (PART 3/3) - Booking and Helper Detail Pages
 
-// ------------------ 🟢 BOOKING SCREEN (FIXED SYNTAX) ------------------
+// ------------------ 🟢 BOOKING SCREEN (FINAL FIX) ------------------
 class BookingScreen extends StatefulWidget {
   final String helperName;
   final String helperSkill;
