@@ -1,12 +1,11 @@
-// lib/main.dart (Final Fixed Code - Syntax Error Solved)
+// lib/main.dart (Final Fixed Code - Ready for Build)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http; 
-// Provider ki lines subah tum add karoge!
-// import 'package:provider/provider.dart'; 
+// import 'package:provider/provider.dart'; // Provider Subah add karna
 
 
 // -----------------------------------------------------------------------------
@@ -82,7 +81,6 @@ class AuthGate extends StatelessWidget {
 
 
 // ---------------- LOGIN / REGISTER SCREENS ---------------- //
-// [LoginScreen, RegisterScreen, MainNavigator remain here]
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
   @override
@@ -263,7 +261,6 @@ class _MainNavigatorState extends State<MainNavigator> {
     );
   }
 }
-
 
 // ------------------ 🟢 MOVED: BOOKING SCREEN ------------------
 class BookingScreen extends StatefulWidget {
@@ -480,7 +477,6 @@ class AccountScreen extends StatelessWidget {
   }
 
   Widget _buildPromoCard() {
-      // ✅ FIX: Missing parentheses fixed, syntax error solved
       return Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), 
         elevation: 2,
