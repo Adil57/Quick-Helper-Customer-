@@ -22,42 +22,35 @@ jobs:
           distribution: 'zulu'
           java-version: '17' 
 
+      # 1. 🟢 FIX: Set up Flutter with Cache Disabled
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          # CRUCIAL: cache option ko 'false' set kiya gaya hai
+          cache: false 
           
-      # 🟢 FIX 1: Pub Cache/Map Package Dependency Error Fix
-      # Yeh step ensures karta hai ki packages sahi se download ho aur read ho saken
-      - name: Cache Flutter dependencies
-        uses: actions/cache@v4
-        with:
-          # pub cache directory ko cache karte hain
-          path: /home/runner/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
-      - name: Get Flutter dependencies (Repair Pub Cache)
+      # 2. 🟢 FIX: Force Get Dependencies (Repair Pub Cache)
+      - name: Get Flutter dependencies (Force Download)
         run: |
-          # CRUCIAL: Yeh command cache aur package read errors ko theek karega
+          # Yeh command corrupted cache ko theek karega aur packages download karega
           flutter pub cache repair
           flutter pub get
         
-      # 2. Grant Execute Permission to gradlew
+      # 3. Grant Execute Permission to gradlew
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 3. FIX 2: ULTIMATE FIX: gradlew script se DEFAULT_JVM_OPTS ko hatao
+      # 4. ULTIMATE FIX: gradlew script se DEFAULT_JVM_OPTS ko hatao
       - name: Modify gradlew Script to Fix JVM Error
         run: |
           sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
           
-      # 4. FORCE KEYSTORE GENERATION (Taki SHA-1 nikal sake)
+      # 5. FORCE KEYSTORE GENERATION
       - name: Force Generate Debug Keystore
         run: flutter build apk --debug --no-tree-shake-icons
         
-      # 5. SHA-1 Extraction: DYNAMIC KEYTOOL USE
+      # 6. SHA-1 Extraction: DYNAMIC KEYTOOL USE
       - name: Extract Debug SHA-1 Fingerprint (Final Dynamic Check)
         run: |
           echo "--- DEBUG SHA-1 FINGERPRINT (KEYTOOL - DYNAMIC) ---"
