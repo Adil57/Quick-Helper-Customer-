@@ -13,7 +13,7 @@ import 'package:http/http.dart' as http;
 // GLOBAL CONFIGURATION (MANDATORY TO REPLACE)
 // -----------------------------------------------------------------------------
 
-const String mongoApiBase = "https://YOUR_LIVE_RENDER_URL/api"; 
+const String mongoApiBase = "https://quick-helper-backend.onrender.com/api"; 
 const String auth0Domain = "adil888.us.auth0.com"; 
 const String auth0ClientId = "OdsfeU9MvAcYGxK0Vd8TAlta9XAprMxx"; 
 const String auth0RedirectUri = "com.quickhelper.app://login-callback"; 
