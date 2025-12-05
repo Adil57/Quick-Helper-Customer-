@@ -1,4 +1,4 @@
-name: Flutter Android Build (APK)
+Name: Flutter Android Build (APK)
 
 on:
   push:
@@ -27,15 +27,15 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
         
-      # 🟢 FINAL ZAROORI STEP: Extract Debug SHA-1 Fingerprint (Ab yeh chalega!)
+      # 🟢 FINAL FIX: Extract Debug SHA-1 Fingerprint (JVM Error Solved)
       - name: Extract Debug SHA-1 Fingerprint
         run: |
           # 1. gradlew ko execute permission do
           chmod +x ./gradlew
           
-          # 2. signingReport run karo. Yeh output logs mein SHA1 dega.
-          # Output mein "Variant: debug" ke neeche SHA1: value copy karni hai.
-          ./gradlew signingReport
+          # 2. DEFAULT_JVM_OPTS ko clear karke signingReport run karo.
+          # Yeh "ClassNotFoundException: -Xmx64m" error fix karega.
+          DEFAULT_JVM_OPTS="" ./gradlew signingReport
           
       - name: Build Android Release APK
         run: flutter build apk --release
