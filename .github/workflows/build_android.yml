@@ -34,15 +34,19 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 2. FINAL FIX: SHA-1 Extraction ke liye env: block use karo.
-      # Ismein DEFAULT_JVM_OPTS ko empty set kiya gaya hai JVM error solve karne ke liye.
+      # 2. ***NEW FIX***: gradle.properties se JVM arguments hatao (Jo ClassNotFoundException de rahe hain)
+      - name: Remove JVM Arguments from gradle.properties
+        run: |
+          echo "Removing org.gradle.jvmargs line to fix JVM error..."
+          # Sed command org.gradle.jvmargs wali line ko hamesha ke liye hata dega (is run ke liye)
+          sed -i '/org.gradle.jvmargs/d' android/gradle.properties
+          
+      # 3. SHA-1 Extraction. Ab yeh bina kisi JVM argument ke run hona chahiye.
       - name: Extract Debug SHA-1 Fingerprint (Check Logs)
         run: |
           echo "--- DEBUG SHA-1 FINGERPRINT LOGS ---"
           ./gradlew signingReport
           echo "------------------------------------"
-        env:
-          DEFAULT_JVM_OPTS: ""
         
       - name: Build Android Release APK
         run: flutter build apk --release
