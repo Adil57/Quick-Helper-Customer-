@@ -34,21 +34,25 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 2. ULTIMATE FIX: gradlew script se DEFAULT_JVM_OPTS ko hatao
+      # 2. ULTIMATE FIX (JVM Error): gradlew script se DEFAULT_JVM_OPTS ko hatao
       - name: Modify gradlew Script to Fix JVM Error
         run: |
+          echo "Removing DEFAULT_JVM_OPTS check from gradlew script..."
           sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
           
-      # 2.5. ***NEW STEP: FORCE KEYSTORE GENERATION***
+      # 3. ***FORCE KEYSTORE GENERATION***
+      # Is step se '/home/runner/.android/debug.keystore' file ban jaayegi.
       - name: Force Generate Debug Keystore
         run: flutter build apk --debug --no-tree-shake-icons
         
-      # 3. FINAL FIX: DIRECT KEYTOOL USE (File ab maujood honi chahiye)
+      # 4. FINAL FIX: DIRECT KEYTOOL USE
+      # Ab file maujood honi chahiye aur keytool use nikal lega.
       - name: Extract Debug SHA-1 Fingerprint (Direct Keytool)
         run: |
           echo "--- DEBUG SHA-1 FINGERPRINT (KEYTOOL) ---"
           DEBUG_KEYSTORE_PATH="/home/runner/.android/debug.keystore"
           
+          # keytool -list command run kiya.
           /usr/bin/keytool -list -v -keystore "$DEBUG_KEYSTORE_PATH" \
           -alias androiddebugkey -storepass android -keypass android
           
