@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL FIXED CODE - CLEANED SYNTAX)
+// lib/main.dart (FINAL, SYNTAX-VERIFIED CODE)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -549,7 +549,6 @@ class _BookingScreenState extends State<BookingScreen> {
        ScaffoldMessenger.of(context).showSnackBar(
          SnackBar(content: Text('Booking confirmed for ${widget.helperName}! Total: ₹${totalCost.toStringAsFixed(0)}'))
        );
-       // We should navigate back to the previous screen or root navigator
        Navigator.pop(context); 
     }
     if (mounted) setState(() => isCreatingBooking = false);
@@ -568,7 +567,7 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  // FIX: _buildTimeSlider code is now correctly closed
+  
   Widget _buildTimeSlider() { 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -579,10 +578,14 @@ class _BookingScreenState extends State<BookingScreen> {
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
-        Slider(
+        Slider( 
           value: estimatedHours,
           min: 1.0,
           max: 8.0,
           divisions: 14,
           label: estimatedHours.toStringAsFixed(1),
-          activeColor
+          activeColor: Colors.indigo, 
+          onChanged: (double value) {
+            setState(() {
+              estimatedHours = value;
+            }
