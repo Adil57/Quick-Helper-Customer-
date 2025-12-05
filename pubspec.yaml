@@ -11,14 +11,13 @@ dependencies:
   flutter:
     sdk: flutter
   
-  # 🟢 AUTHENTICATION
+  # 🟢 AUTH & API
   auth0_flutter: ^1.14.0 
-  
-  # 🟢 API CALLS
   http: ^1.2.1 
   
-  # 🟢 MAP SYSTEM (Live Location & Markers)
-  google_maps_flutter: ^2.5.0 # Live Map widget
+  # 🟢 FREE MAP SYSTEM (OpenStreetMap)
+  flutter_map: ^6.1.0        # OpenStreetMap Widget
+  latlong2: ^0.9.1           # LatLng coordinates handling
   location: ^5.0.3           # User ki current location access karne ke liye
   
   # UI/Icons
@@ -32,5 +31,4 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
   
