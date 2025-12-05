@@ -29,16 +29,16 @@ jobs:
           channel: 'stable'
           cache: false 
           
-      # 2. 🟢 FINAL FIX: Force Clean Build Cache and Re-fetch Dependencies
-      # Invalid flag "--no-suppress-stderr" hata diya hai.
-      - name: Get Flutter dependencies (FORCE CLEAN & RE-GET)
+      # 2. 🟢 CRITICAL FIX: Delete Pub Cache, Clean, and Get Dependencies
+      - name: Force Clean Dependencies and Pub Cache
         run: |
-          # 1. Purane builds aur package references ko hatao
+          echo "Deleting corrupted Pub Cache directory..."
+          # CRITICAL: Pub cache ko puri tarah se uda do
+          rm -rf ~/.pub-cache/
+          
+          # Clean aur naye packages fetch karo
           flutter clean
-          # 2. Package list check karo (optional, but good for logging)
-          flutter pub outdated
-          # 3. CRITICAL: dependencies ko re-fetch aur resolve karo (Valid command ab)
-          flutter pub get 
+          flutter pub get
         
       # 3. Grant Execute Permission to gradlew
       - name: Grant Execute Permission to gradlew
@@ -49,7 +49,7 @@ jobs:
         run: |
           sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
           
-      # 5. FORCE KEYSTORE GENERATION
+      # 5. FORCE KEYSTORE GENERATION (Jahan pehle fail ho raha tha)
       - name: Force Generate Debug Keystore
         run: flutter build apk --debug --no-tree-shake-icons
         
