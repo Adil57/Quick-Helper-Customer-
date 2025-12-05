@@ -20,7 +20,6 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          # Firebase aur Android SDK ke liye Java 17 recommended hai
           java-version: '17' 
 
       - name: Set up Flutter
@@ -31,18 +30,17 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
         
-      # 🔑 Step 1: Extract Debug SHA-1 Fingerprint 
-      # Yeh step tumhari zarurat ki SHA-1 key nikalega.
-      # DEFAULT_JVM_OPTS="" se ClassNotFoundException fix ho jaata hai.
+      # 🔑 FIXED STEP: Extract Debug SHA-1 Fingerprint
+      # DEFAULT_JVM_OPTS="" wala trick use kiya gaya hai error fix karne ke liye.
       - name: Extract Debug SHA-1 Fingerprint (Check Logs)
         run: |
           # gradlew ko execute permission do
           chmod +x ./gradlew
           
-          # signingReport run karke Debug SHA-1 key nikalte hain
-          echo "--- DEBUG SHA-1 FINGERPRINT ---"
+          # signingReport run karo. DEFAULT_JVM_OPTS ko clear rakho.
+          echo "--- DEBUG SHA-1 FINGERPRINT LOGS ---"
           DEFAULT_JVM_OPTS="" ./gradlew signingReport
-          echo "-------------------------------"
+          echo "------------------------------------"
           
       - name: Build Android Release APK
         run: flutter build apk --release
