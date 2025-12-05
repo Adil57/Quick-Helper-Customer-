@@ -34,14 +34,15 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 2. FINAL FIX: SHA-1 Extraction ko export command se karna.
+      # 2. FINAL FIX: SHA-1 Extraction ke liye env: block use karo.
+      # Ismein DEFAULT_JVM_OPTS ko empty set kiya gaya hai JVM error solve karne ke liye.
       - name: Extract Debug SHA-1 Fingerprint (Check Logs)
         run: |
           echo "--- DEBUG SHA-1 FINGERPRINT LOGS ---"
-          # DEFAULT_JVM_OPTS ko export karke clear karein takki JVM error na aaye.
-          export DEFAULT_JVM_OPTS=""
           ./gradlew signingReport
           echo "------------------------------------"
+        env:
+          DEFAULT_JVM_OPTS: ""
         
       - name: Build Android Release APK
         run: flutter build apk --release
