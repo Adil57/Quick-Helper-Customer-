@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL, SYNTAX-VERIFIED CODE)
+// lib/main.dart (PART 1/3) - Imports, Config, and AuthGate
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -155,7 +155,7 @@ class AccountScreen extends StatelessWidget {
     );
   }
 }
-
+// lib/main.dart (PART 2/3) - Login, Register, and Home Page
 
 // ---------------- LOGIN / REGISTER SCREENS ---------------- //
 class LoginScreen extends StatefulWidget {
@@ -507,7 +507,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-
+// lib/main.dart (PART 3/3) - Booking and Helper Detail Pages
 
 // ------------------ 🟢 BOOKING SCREEN (FIXED SYNTAX) ------------------
 class BookingScreen extends StatefulWidget {
@@ -568,7 +568,7 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   
-    Widget _buildTimeSlider() { 
+  Widget _buildTimeSlider() { 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -586,11 +586,194 @@ class _BookingScreenState extends State<BookingScreen> {
           label: estimatedHours.toStringAsFixed(1),
           activeColor: Colors.indigo, 
           onChanged: (double value) {
-            setState(() { // <--- Yehi block galat close ho raha tha
+            setState(() {
               estimatedHours = value;
-            }); // setState closing brace
-          }, // onChanged closing brace
+            });
+          },
         ),
       ],
     );
   }
+
+
+  Widget _buildCostSummary() { 
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.indigo.shade50,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          _costRow("Helper Rate (${widget.price}/hr)", "₹${(estimatedHours * widget.price).toStringAsFixed(0)}"),
+          _costRow("Service Fee (20%)", "₹${(totalCost - (estimatedHours * widget.price)).toStringAsFixed(0)}"),
+          const Divider(),
+          _costRow("TOTAL COST", "₹${totalCost.toStringAsFixed(0)}", isTotal: true),
+        ],
+      ),
+    );
+  }
+  
+  
+  Widget _costRow(String title, String amount, {bool isTotal = false}) { 
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: TextStyle(fontWeight: isTotal ? FontWeight.bold : FontWeight.w500, fontSize: isTotal ? 16 : 14)),
+          Text(amount, style: TextStyle(fontWeight: isTotal ? FontWeight.bold : FontWeight.w600, fontSize: isTotal ? 16 : 14, color: isTotal ? Colors.indigo : Colors.black)),
+        ],
+      ),
+    );
+  }
+
+  @override 
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Confirm Booking")),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Helper Info Header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              color: Colors.indigo,
+              child: Text("Booking ${widget.helperName} (${widget.helperSkill})", style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+            
+            // Date Picker 
+            Card(margin: const EdgeInsets.all(16), child: _buildDatePicker()),
+            
+            // Time Slider
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+              child: Text("Service Duration", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+            Card(margin: const EdgeInsets.symmetric(horizontal: 16), child: _buildTimeSlider()),
+            
+            const SizedBox(height: 20),
+
+            // Cost Summary
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+              child: Text("Cost Summary", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: _buildCostSummary(),
+            ),
+
+            const SizedBox(height: 30),
+
+            // Confirm Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: ElevatedButton(
+                onPressed: isCreatingBooking ? null : _createBooking,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                  backgroundColor: Colors.green.shade600,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 5,
+                ),
+                child: isCreatingBooking
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("CONFIRM & PROCEED TO PAYMENT", style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ------------------ 🟢 HELPER DETAIL PAGE ------------------
+class HelperDetailPage extends StatelessWidget {
+  final String helperName;
+  final String helperSkill;
+  final int price;
+  final String imgUrl;
+
+  const HelperDetailPage({
+    super.key,
+    required this.helperName,
+    required this.helperSkill,
+    required this.price,
+    required this.imgUrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(helperName)),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Helper Image (Placeholder)
+            imgUrl.isEmpty
+                ? Container(
+                    height: 200,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(12)),
+                    child: const Center(child: Icon(Icons.person, size: 50, color: Colors.grey)),
+                  )
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(imgUrl, height: 200, width: double.infinity, fit: BoxFit.cover),
+                  ),
+            
+            const SizedBox(height: 16),
+
+            // Details
+            Text(helperName, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(helperSkill, style: const TextStyle(fontSize: 18, color: Colors.indigo)),
+            const SizedBox(height: 8),
+            Text("Rate: ₹$price / hour", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+            
+            const SizedBox(height: 20),
+            const Divider(),
+            
+            // Description Placeholder
+            const Text("About the Helper", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            const Text(
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Rating, location, and review details will be loaded here.",
+                style: TextStyle(fontSize: 14, height: 1.5)),
+            
+            const SizedBox(height: 40),
+
+            // Book Now Button
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => BookingScreen(
+                              helperName: helperName,
+                              helperSkill: helperSkill,
+                              price: price,
+                            )));
+              },
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+                backgroundColor: Colors.indigo,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text("BOOK THIS HELPER", style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
