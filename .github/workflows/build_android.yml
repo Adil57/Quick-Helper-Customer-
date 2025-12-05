@@ -34,19 +34,21 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 2. ***ULTIMATE FIX***: gradlew script se DEFAULT_JVM_OPTS ko hatao
-      # Isko hataane se Java ko -Xmx64m argument nahi milega aur error solve ho jaayega.
+      # 2. ULTIMATE FIX: gradlew script se DEFAULT_JVM_OPTS ko hatao (Yeh toh kaam kar gaya)
       - name: Modify gradlew Script to Fix JVM Error
         run: |
           echo "Removing DEFAULT_JVM_OPTS check from gradlew script..."
-          # Sed command gradlew file mein se DEFAULT_JVM_OPTS wali line ko remove kar dega.
           sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
           
-      # 3. SHA-1 Extraction. Ab yeh bina kisi JVM argument ke run hona chahiye.
+      # 3. ***FINAL FIX: Output Redirection***
+      # signingReport chalao aur uska output force kar do logs mein print hone ke liye.
       - name: Extract Debug SHA-1 Fingerprint (Check Logs)
         run: |
           echo "--- DEBUG SHA-1 FINGERPRINT LOGS ---"
-          ./gradlew signingReport
+          # tee se output ko logs mein aur file mein bhejo
+          ./gradlew signingReport | tee signing_report_output.txt
+          # File ka content print karo, jismein SHA-1 hoga
+          cat signing_report_output.txt
           echo "------------------------------------"
         
       - name: Build Android Release APK
