@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
@@ -17,7 +20,8 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          # Firebase aur Android SDK ke liye Java 17 recommended hai
+          java-version: '17' 
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -27,15 +31,18 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
         
-      # 🟢 FINAL FIX: Extract Debug SHA-1 Fingerprint (JVM Error Solved)
-      # Yeh step "ClassNotFoundException: -Xmx64m" ko theek karega.
-      - name: Extract Debug SHA-1 Fingerprint
+      # 🔑 Step 1: Extract Debug SHA-1 Fingerprint 
+      # Yeh step tumhari zarurat ki SHA-1 key nikalega.
+      # DEFAULT_JVM_OPTS="" se ClassNotFoundException fix ho jaata hai.
+      - name: Extract Debug SHA-1 Fingerprint (Check Logs)
         run: |
-          # 1. gradlew ko execute permission do
+          # gradlew ko execute permission do
           chmod +x ./gradlew
           
-          # 2. DEFAULT_JVM_OPTS ko clear karke signingReport run karo.
+          # signingReport run karke Debug SHA-1 key nikalte hain
+          echo "--- DEBUG SHA-1 FINGERPRINT ---"
           DEFAULT_JVM_OPTS="" ./gradlew signingReport
+          echo "-------------------------------"
           
       - name: Build Android Release APK
         run: flutter build apk --release
