@@ -40,12 +40,25 @@ jobs:
           echo "Removing DEFAULT_JVM_OPTS check from gradlew script..."
           sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
           
-      # 3. ***THE FINAL FIX: Output Redirection***
-      # Stderr ko stdout mein redirect kiya (2>&1) taaki tee command SHA-1 key ko capture kar sake.
+      # 3. ***THE LAST FIX: Verbose Output (SHA-1 Dikhni Chahiye)***
       - name: Extract Debug SHA-1 Fingerprint (Check Logs)
         run: |
-          echo "--- DEBUG SHA-1 FINGERPRINT LOGS (Final Attempt) ---"
-          ./gradlew signingReport 2>&1 | tee signing_report_output.txt
+          echo "--- DEBUG SHA-1 FINGERPRINT LOGS (The Last Attempt with Debug Flag) ---"
+          # --debug flag se har cheez log hogi, SHA-1 key ab zaroor milni chahiye.
+          ./gradlew signingReport --debug 2>&1 | tee signing_report_output.txt
           cat signing_report_output.txt
-          echo "--------------------------------------------------"
-          
+          echo "------------------------------------------------------------------------"
+        
+      - name: Build Android Release APK
+        run: flutter build apk --release
+        
+      - name: Upload Artifact (APK)
+        uses: actions/upload-artifact@v4 
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Notify on Success
+        if: success()
+        run: echo "APK build successful! Check Artifacts tab."
+        
