@@ -568,7 +568,7 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   
-  Widget _buildTimeSlider() { 
+    Widget _buildTimeSlider() { 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -586,6 +586,11 @@ class _BookingScreenState extends State<BookingScreen> {
           label: estimatedHours.toStringAsFixed(1),
           activeColor: Colors.indigo, 
           onChanged: (double value) {
-            setState(() {
+            setState(() { // <--- Yehi block galat close ho raha tha
               estimatedHours = value;
-            }
+            }); // setState closing brace
+          }, // onChanged closing brace
+        ),
+      ],
+    );
+  }
