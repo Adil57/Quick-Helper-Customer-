@@ -2,14 +2,16 @@ name: Flutter Android Build (APK)
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -18,30 +20,60 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '17' 
 
+      # 1. Set up Flutter
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-
-      - name: Flutter pub get
-        run: flutter pub get
-
-      - name: Ensure gradlew Exists
-        run: |
-          cd android
-          if [ ! -f "./gradlew" ]; then
-            gradle wrapper
-          fi
-          chmod +x gradlew
-
-      - name: Build Debug APK
-        run: flutter build apk --debug --no-tree-shake-icons
-
-      - name: Upload Artifact (APK)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          cache: false 
           
+      # 2. Clean and Get Dependencies
+      - name: Clean and Get Dependencies
+        run: |
+          flutter clean
+          flutter pub get
+        
+      # 3. Grant Execute Permission to gradlew
+      - name: Grant Execute Permission to gradlew
+        run: chmod +x ./gradlew
+        
+      # 4. NOTE: Removed the 'sed' step to avoid corrupting gradlew script.
+          
+      # 5. FORCE KEYSTORE GENERATION (Debug Build)
+      - name: Build Debug APK
+        # CRITICAL FIX: GRADLE_OPTS set kar rahe hain taaki JVM memory error na aaye
+        env:
+          GRADLE_OPTS: "-Xmx2048m -Dorg.gradle.daemon=false"
+        run: flutter build apk --debug --no-tree-shake-icons
+        
+      # 6. SHA-1 Extraction: DYNAMIC KEYTOOL USE (Optional)
+      - name: Extract Debug SHA-1 Fingerprint (Final Dynamic Check)
+        run: |
+          echo "--- DEBUG SHA-1 FINGERPRINT (KEYTOOL - DYNAMIC) ---"
+          KEYSTORE_PATH=$(find /home/runner/ -name "debug.keystore" 2>/dev/null | head -n 1)
+          if [ -f "$KEYSTORE_PATH" ]; then
+            echo "Keystore found at: $KEYSTORE_PATH"
+            /usr/bin/keytool -list -v -keystore "$KEYSTORE_PATH" \
+            -alias androiddebugkey -storepass android -keypass android
+          else
+            echo "Error: debug.keystore not found anywhere! Could not extract SHA-1."
+          fi
+          echo "---------------------------------------------------"
+        
+      - name: Build Android Release APK
+        # GRADLE_OPTS ko release build mein bhi set karna zaroori hai
+        env:
+          GRADLE_OPTS: "-Xmx2048m -Dorg.gradle.daemon=false"
+        run: flutter build apk --release
+        
+      - name: Upload Artifact (APK)
+        uses: actions/upload-artifact@v4 
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Notify on Success
+        if: success()
+        run: echo "APK build successful! Check Artifacts tab."
