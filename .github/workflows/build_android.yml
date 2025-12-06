@@ -27,7 +27,7 @@ jobs:
         with:
           channel: 'stable'
           
-      # 🌟 CRITICAL FIX: Pub Cache Caching (Yeh step file access issue fix karega)
+      # 1. CRITICAL FIX: Pub Cache Caching (Runner stability ke liye)
       - name: Cache pub-cache for dependencies
         uses: actions/cache@v3
         with:
@@ -36,15 +36,25 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      - name: Clean and Get Dependencies
+      # 2. AGGRESSIVE FIX: Clean, Repair, and Get (File access error bypass)
+      - name: Clean, Repair, and Get Dependencies
         run: |
+          echo "Starting aggressive dependency repair for latlong2 access issue..."
           flutter clean
+          
+          # 🚨 Yeh command corrupted cache files (jaise latlong2.dart) ko theek karta hai
+          flutter pub cache repair
+          
+          # Final dependency fetch
           flutter pub get
+          echo "Dependency steps complete."
         
+      # 3. Build Android Release APK
       - name: Build Android Release APK
         env:
           GRADLE_OPTS: "-Xmx3072m" 
         run: |
+          # SDK 36 ki requirement ab build.gradle.kts mein puri ho chuki hogi
           flutter build apk --release 
         
       - name: Upload Artifact (APK)
