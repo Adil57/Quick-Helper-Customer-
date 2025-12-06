@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest # 🚨 FINAL FIX: Windows Runner (Most stable platform for this bug)
+    runs-on: windows-latest
     
     steps:
       - name: Checkout Code
@@ -27,19 +27,29 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          cache: false 
+          # cache: false line ko remove ya comment kar diya
           
+      # 🌟 Naya aur Zaruri Step: Pub Cache Setup (This is the fix!)
+      - name: Cache pub-cache for dependencies
+        uses: actions/cache@v3
+        with:
+          # PUB_CACHE environment variable ko target karta hai
+          path: ${{ env.PUB_CACHE }}
+          # pubspec.lock ke content ke hisaab se cache key banegi
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
       # 2. Clean and Get Dependencies
       - name: Clean and Get Dependencies
         run: |
-          # Dependency fix: Clean aur fresh pub get
+          # Pehle cache restore hoga, phir clean, aur phir pub get chalega.
           flutter clean
           flutter pub get
         
       # 3. Build Android Release APK (Final Stable Command)
       - name: Build Android Release APK
         env:
-          # GRADLE_OPTS se -Xmx64m ko override kiya jaa raha hai (Windows par yeh kaam karta hai)
           GRADLE_OPTS: "-Xmx3072m" 
         run: |
           flutter build apk --release 
