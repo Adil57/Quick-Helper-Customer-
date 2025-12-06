@@ -52,8 +52,14 @@ jobs:
         env:
           GRADLE_OPTS: ""
         run: |
-          # Output directory provide karna zaroori hai
-          flutter assemble -d android --output=build/app/intermediates/flutter_assets
+          # 1. flutter assemble ko zaroori defines aur output directory de rahe hain.
+          flutter assemble \
+            --output=build/app/intermediates/flutter_assets \
+            --define=TargetPlatform=android-arm64 \
+            --define=BuildMode=release \
+            --define=TargetFile=lib/main.dart 
+          
+          # 2. Phir direct Gradle chalaate hain
           ./gradlew assembleRelease
         
       # 6. Upload Artifact (APK)
