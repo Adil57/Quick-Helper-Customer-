@@ -35,46 +35,39 @@ jobs:
           flutter clean
           flutter pub get
           
-      # 3. Grant Execute Permission to gradlew
+      # 3. Grant Execute Permission to gradlew (Skip)
       - name: Grant Execute Permission to gradlew
-        run: chmod +x ./gradlew
+        run: echo "Skipping chmod as we bypass gradlew"
         
-      # 4. Modify gradlew Script (To remove default JVM opts) - Yeh step abhi bhi zaroori hai.
+      # 4. Modify gradlew Script (Skip)
       - name: Modify gradlew Script
-        run: |
-          # Remove existing DEFAULT_JVM_OPTS (if any)
-          awk '/DEFAULT_JVM_OPTS/ {next} {print}' ./gradlew > gradlew.tmp
-          mv gradlew.tmp ./gradlew
-          chmod +x ./gradlew 
-          echo "DEFAULT_JVM_OPTS line removed successfully."
+        run: echo "Skipping gradlew modification."
         
-      # 5. ✅ FINAL FIX: Runner Level Script Override
-      - name: Build Android Release APK (The Ultimate Override)
-        env:
-          GRADLE_OPTS: "-Xmx3072m" # JVM memory set kar rahe hain
-          JAVA_OPTS: ""
+      # 5. ✅ FINAL FIX: Direct Java Call (The Ultimate JVM Bypass)
+      - name: Build Android Release APK (Direct Java)
         run: |
-          # 1. gradlew script ko rename karo
-          mv ./gradlew ./gradlew.real
+          # 1. Directory setup
+          mkdir -p .gradle/wrapper/dists/gradle-8.1.4-bin/
           
-          # 2. 🔥 CRITICAL FIX: gradlew naam ka naya script banao jo unset karega
-          echo '#!/bin/bash' > ./gradlew
-          echo 'unset JAVA_TOOL_OPTIONS' >> ./gradlew
-          echo './gradlew.real "$@"' >> ./gradlew # Original gradlew ko call karega
+          # 2. 🔥 CRITICAL FIX: gradlew.jar file ko download karo aur unzip karo
+          GRADLE_VERSION="8.1.4"
+          GRADLE_ZIP="gradle-${GRADLE_VERSION}-bin.zip"
           
-          # 3. Permission guarantee
-          chmod +x ./gradlew
-          chmod +x ./gradlew.real
+          curl -L "https://services.gradle.org/distributions/${GRADLE_ZIP}" -o gradle.zip
+          unzip gradle.zip
           
-          # Final build command
-          flutter build apk --release
+          # 3. Directly call the Gradle wrapper JAR file with safe JVM arguments
+          export JAVA_OPTS="-Xmx3072m"
+          
+          # Call the main class inside the downloaded JAR
+          java $JAVA_OPTS -classpath "gradle-${GRADLE_VERSION}/lib/gradle-launcher-${GRADLE_VERSION}.jar" org.gradle.launcher.GradleMain assembleRelease -Pflutter.buildMode=release -Pflutter.target=lib/main.dart
         
       # 6. ✅ PATH FIX: Standard Artifact Path
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
           
       - name: Notify on Success
         if: success()
