@@ -47,23 +47,23 @@ jobs:
           chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ THE ULTIMATE FIX: Direct Gradle Execution
+      # 5. ✅ FINAL FIX: Direct Gradle Execution
       - name: Build Android Release APK (Direct Gradle)
-        # CRITICAL FIX: Teenon JVM-related ENV variables ko empty set karo
         env:
           GRADLE_OPTS: "" 
           JAVA_OPTS: ""
           JAVA_TOOL_OPTIONS: "" 
         run: |
-          # Direct Gradle command use kar rahe hain, Flutter build ko bypass karte hue.
+          # Direct Gradle command use kar rahe hain.
           ./gradlew assembleRelease -Pflutter.buildMode=release -Pflutter.target=lib/main.dart
         
-      # 6. Upload Artifact (APK)
+      # 6. ✅ PATH FIX: Upload Artifact (APK)
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          # 🔥 Corrected path for direct gradlew assembleRelease
+          path: build/app/outputs/apk/release/app-release.apk
           
       - name: Notify on Success
         if: success()
