@@ -8,8 +8,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http; 
 // 🟢 MAP IMPORTS
-import 'package:flutter_map/flutter_map.dart'; // From pubspec
-import 'package:latlong2/latlong2.dart';      // From pubspec (LatLng type)
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong2.dart' hide LatLng;
+      // From pubspec (LatLng type)
 // location package agar use karna hai toh yahan import hoga:
 // import 'package:location/location.dart'; 
 
