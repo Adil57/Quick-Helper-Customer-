@@ -39,15 +39,15 @@ jobs:
       - name: Grant Execute Permission to gradlew (Initial)
         run: chmod +x ./gradlew
         
-      # 4. Modify gradlew Script (Robust Rewrite) - Permissions might reset after this step
+      # 4. Modify gradlew Script (Robust Rewrite)
       - name: Modify gradlew Script (Robust Rewrite)
         run: |
           awk '/DEFAULT_JVM_OPTS/ {next} {print}' ./gradlew > gradlew.tmp
           mv gradlew.tmp ./gradlew
-          chmod +x ./gradlew # Permission restore after move
+          chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ THE ABSOLUTE LAST FIX: Direct Gradle Execution (Directory & Memory Guarantee)
+      # 5. ✅ FINAL FIX: Direct Gradle Execution (Memory Guarantee)
       - name: Build Android Release APK (Direct Gradle)
         env:
           GRADLE_OPTS: "" 
@@ -57,26 +57,25 @@ jobs:
           # Permission guarantee
           chmod +x ./gradlew 
           
-          # 🔥 FIX: Build directories ko manually create karo taaki Gradle aur find command fail na ho.
+          # Directory guarantee
           mkdir -p android/app/build/outputs/apk/release
           
           echo "Starting direct Gradle build..."
           # Memory argument direct command line se pass kiya gaya hai.
           ./gradlew assembleRelease -Dorg.gradle.jvmargs="-Xmx3072m" -Pflutter.buildMode=release -Pflutter.target=lib/main.dart --stacktrace
           
-          # CRITICAL PATH FINDER: APK file ko poore project mein dhoondho.
+          # CRITICAL PATH FINDER: APK file ko poore project mein dhoondho (for log confirmation)
           echo "--- Searching for APK File Path ---"
-          # Find command ab poore project (dot) se search kar raha hai
           find . -name "*.apk" | xargs -r -I {} echo "Found APK at: {}"
           echo "-----------------------------------"
         
-      # 6. ✅ PATH FIX: Upload Artifact (APK) using the module-relative path
+      # 6. ✅ PATH FIX: Upload Artifact (APK) using the unsigned file name
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          # Path ko Android module directory ke andar set kiya gaya hai.
-          path: android/app/build/outputs/apk/release/app-release.apk
+          # 🔥 Path ko Android module directory ke andar aur file ko UN-SIGNED naam se set kiya gaya hai.
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
           
       - name: Notify on Success
         if: success()
