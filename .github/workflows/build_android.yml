@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest # Windows Runner is necessary to bypass the -Xmx64m issue
+    runs-on: windows-latest # Windows Runner is necessary
     
     steps:
       - name: Checkout Code
@@ -27,16 +27,13 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          cache: false # Disable cache to avoid dependency issues
+          cache: false # Cache disabled
           
-      # 2. 🔥 CRITICAL FIX: Clean Pub Cache using guaranteed CMD shell
-      - name: Clean Pub Cache (CMD Shell)
-        shell: cmd # Force use of CMD for file operations
+      # 2. 🔥 CRITICAL FIX: Clean Pub Cache using PowerShell command
+      - name: Delete Pub Cache (Guaranteed)
         run: |
-          echo "Deleting PUB_CACHE..."
-          rem Check if directory exists and delete it
-          if exist "%PUB_CACHE%" rmdir /s /q "%PUB_CACHE%"
-          echo "PUB_CACHE deleted if it existed."
+          # PowerShell command to forcefully remove the cache directory
+          Remove-Item -Path $env:PUB_CACHE -Recurse -Force -ErrorAction SilentlyContinue
           
       # 3. Clean and Get Dependencies
       - name: Get Dependencies
@@ -53,6 +50,7 @@ jobs:
         env:
           # JVM arguments ko ENV mein set kar rahe hain
           GRADLE_OPTS: "-Xmx3072m" 
+          JAVA_OPTS: ""
         run: |
           flutter build apk --release 
         
@@ -61,7 +59,7 @@ jobs:
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          # Standard Flutter output path (Windows convention)
+          # Standard Flutter output path
           path: build\app\outputs\flutter-apk\app-release.apk
           
       - name: Notify on Success
