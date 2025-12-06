@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # 🟢 CRITICAL FIX: GRADLE_OPTS ko job level par set kar rahe hain.
+    # 🟢 CRITICAL FIX 1: GRADLE_OPTS ko job level par set kar rahe hain (2GB RAM).
     env:
       GRADLE_OPTS: "-Xmx2048m -Dorg.gradle.daemon=false"
     
@@ -42,9 +42,10 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. 🟢 FIX: Conflicting line (DEFAULT_JVM_OPTS) ko script se hata denge.
+      # 4. 🟢 CRITICAL FIX 2: gradlew script se conflicting line ko hata denge.
       - name: Modify gradlew Script (Remove Conflicting Line)
         run: |
+          # Yeh line conflicting DEFAULT_JVM_OPTS ko hamesha ke liye hata degi.
           sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
           
       # 5. FORCE KEYSTORE GENERATION (Debug Build)
