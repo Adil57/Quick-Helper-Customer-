@@ -29,17 +29,16 @@ jobs:
           channel: 'stable'
           cache: false 
           
-      # 2. 🟢 FINAL ATTEMPT: Flutter Pub Cache Repair
-      # Yeh command corrupt aur missing dependencies ko force fully fix karega.
-      - name: Repair Dependencies and Clean Build
+      # 2. 🟢 FINAL FIX: Deep Project Cache Wipe (.dart_tool removal)
+      - name: Deep Clean Project and Re-fetch Dependencies
         run: |
-          echo "Running aggressive cache repair..."
+          echo "Performing deep project cache wipe (removing .dart_tool)..."
           
-          # 1. Pub cache ko repair karo (sabse powerful command)
-          flutter pub cache repair
-          
-          # 2. Local build directories ko clean karo
+          # 1. Local build directories aur pub cache directories clean karo
           flutter clean
+          
+          # 2. CRITICAL: Corrupt dependency metadata store ko delete karo
+          rm -rf .dart_tool/
           
           # 3. Dependencies ko fresh resolve karo
           flutter pub get
@@ -53,7 +52,7 @@ jobs:
         run: |
           sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
           
-      # 5. FORCE KEYSTORE GENERATION (Jahan pehle fail ho raha tha)
+      # 5. FORCE KEYSTORE GENERATION
       - name: Force Generate Debug Keystore
         run: flutter build apk --debug --no-tree-shake-icons
         
