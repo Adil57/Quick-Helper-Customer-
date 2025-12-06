@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # CRITICAL FIX 1: GRADLE_OPTS ko job level par set rakhenge (Extra safety)
+    # CRITICAL FIX: GRADLE_OPTS ko job level par set rakhenge
     env:
       GRADLE_OPTS: "-Xmx3072m -Dorg.gradle.daemon=false" 
     
@@ -42,11 +42,9 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. 🟢 CRITICAL FIX: Single Atomic Step Execution
+      # 4. CRITICAL FIX: Build Debug APK (Atomic Cleanup & Run)
       - name: Build Debug APK (Atomic Cleanup & Run)
         run: |
-          # Yeh command 'sed' aur './gradlew' ko ek hi shell mein chalaega.
-          # Agar 'sed' successful hua, tabhi './gradlew' chalaega.
           sh -c "sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew && ./gradlew assembleDebug"
         
       # 5. SHA-1 Extraction (Optional)
@@ -66,14 +64,20 @@ jobs:
       # 6. Build Android Release APK (Single Atomic Step Execution)
       - name: Build Android Release APK
         run: |
-          # Release build ke liye bhi same atomic fix
           sh -c "sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew && ./gradlew assembleRelease"
         
+      # 7. DIAGNOSTIC: Search for the final APK file
+      - name: Find the Release APK Path
+        run: |
+          find . -name "*app-release.apk*"
+          
+      # 8. Upload Artifact (APK)
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          path: build/app/outputs/apk/release/app-release.apk
+          # CRITICAL FIX: Path updated to the standard Gradle location
+          path: android/app/build/outputs/apk/release/app-release.apk
           
       - name: Notify on Success
         if: success()
