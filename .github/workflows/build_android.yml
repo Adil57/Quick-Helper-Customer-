@@ -22,10 +22,6 @@ jobs:
           distribution: 'zulu'
           java-version: '17' 
           
-      # 🚨 JAVA_TOOL_OPTIONS ko Nullify (Humne yeh pehle try kiya, but isse rehne denge)
-      # - name: Nullify JAVA_TOOL_OPTIONS
-      #   run: unset JAVA_TOOL_OPTIONS 
-
       # 1. Set up Flutter
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -43,25 +39,28 @@ jobs:
       - name: Grant Execute Permission to gradlew (Initial)
         run: chmod +x ./gradlew
         
-      # 4. Modify gradlew Script (Robust Rewrite) - To remove default JVM opts
-      - name: Modify gradlew Script (Robust Rewrite)
+      # 4. 🔥 CRITICAL FIX: gradlew Script ko Modify aur JAVA_TOOL_OPTIONS ko Nullify karo
+      - name: Modify gradlew Script & Nullify JTO
         run: |
+          # 1. Remove DEFAULT_JVM_OPTS line (using awk)
           awk '/DEFAULT_JVM_OPTS/ {next} {print}' ./gradlew > gradlew.tmp
           mv gradlew.tmp ./gradlew
           chmod +x ./gradlew 
-          echo "DEFAULT_JVM_OPTS line removed successfully."
-        
-      # 5. ✅ THE ABSOLUTE LAST FIX: Official Command + Manual ENV Override
-      - name: Build Android Release APK (Final Overrides)
+          
+          # 2. Add 'unset JAVA_TOOL_OPTIONS' at the top of gradlew script (using sed)
+          # Isse script chalu hone se pehle hi variable clear ho jaayega
+          sed -i '2i\unset JAVA_TOOL_OPTIONS' ./gradlew
+          chmod +x ./gradlew 
+          echo "JAVA_TOOL_OPTIONS unset command added to gradlew script."
+
+      # 5. ✅ FINAL FIX: Official Command (ab JTO clear ho chuka hai)
+      - name: Build Android Release APK (Final Working Command)
+        # Environment variables ko clean rakhenge
         env:
           GRADLE_OPTS: "" 
           JAVA_OPTS: ""
-          JAVA_TOOL_OPTIONS: "" # YAML clean
         run: |
-          # 🔥 CRITICAL FIX: JAVA_TOOL_OPTIONS ko command line par hi override karke null kar do
-          export JAVA_TOOL_OPTIONS=""
-          
-          echo "Starting build with forced memory override..."
+          # JTO ab script level par null ho chuka hai, ab memory override hoga.
           flutter build apk --release \
             --dart-define="flutter.gradle.configure-android-build=true" \
             --dart-define="org.gradle.jvmargs=-Xmx3072m"
