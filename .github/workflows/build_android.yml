@@ -45,17 +45,16 @@ jobs:
       # 4. CRITICAL FIX: Build Debug/Release (Atomic Cleanup & Run)
       - name: Build Android Release APK (Atomic Cleanup & Run)
         run: |
-          # Conflicting line ko delete karo aur immediately build chalao
           sh -c "sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew && ./gradlew assembleRelease"
         
-      # 5. DYNAMIC PATH FINDER
+      # 5. DYNAMIC PATH FINDER (ROOT LEVEL SEARCH)
       - name: Find and Set APK Path
         id: find_apk
-        # find command se APK ki exact location dhoondhenge
+        # CRITICAL FIX: Search root directory '.' se shuru karo
         run: |
-          echo "Searching for app-release.apk..."
+          echo "Searching for app-release.apk from root directory..."
           # APK_PATH variable mein exact file path store karo
-          APK_PATH=$(find android/app/build/outputs -name "app-release.apk" | head -n 1)
+          APK_PATH=$(find . -name "app-release.apk" | head -n 1)
           
           # CRITICAL: Output variable set karo jise upload step use karega
           echo "release_path=$APK_PATH" >> $GITHUB_OUTPUT
@@ -67,7 +66,7 @@ jobs:
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          # CRITICAL FIX: Output variable use kar rahe hain jo exact path rakhta hai
+          # Output variable use kar rahe hain jo exact path rakhta hai
           path: ${{ steps.find_apk.outputs.release_path }}
           
       - name: Notify on Success
