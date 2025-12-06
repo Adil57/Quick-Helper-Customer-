@@ -39,7 +39,7 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. Modify gradlew Script (Robust Rewrite)
+      # 4. Modify gradlew Script (Robust Rewrite) - To remove default JVM opts
       - name: Modify gradlew Script (Robust Rewrite)
         run: |
           awk '/DEFAULT_JVM_OPTS/ {next} {print}' ./gradlew > gradlew.tmp
@@ -47,20 +47,13 @@ jobs:
           chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ FINAL FIX: Direct Gradle Build (Working Version)
-      - name: Build Android Release APK (Direct Gradle)
+      # 5. ✅ FINAL FIX: Use simple 'flutter build' but clear the problematic ENV variable
+      - name: Build Android Release APK (Simpler Command)
+        # CRITICAL FIX: GRADLE_OPTS ko empty set karo taaki woh '-Xmx64m' wala error resolve ho
         env:
-          GRADLE_OPTS: ""
+          GRADLE_OPTS: "" 
         run: |
-          # 1. flutter assemble ko zaroori defines aur output directory de rahe hain.
-          flutter assemble \
-            --output=build/app/intermediates/flutter_assets \
-            --define=TargetPlatform=android-arm64 \
-            --define=BuildMode=release \
-            --define=TargetFile=lib/main.dart 
-          
-          # 2. Phir direct Gradle chalaate hain
-          ./gradlew assembleRelease
+          flutter build apk --release 
         
       # 6. Upload Artifact (APK)
       - name: Upload Artifact (APK)
