@@ -21,6 +21,10 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17' 
+          
+      # 🚨 FINAL FIX: JAVA_TOOL_OPTIONS ko Nullify karna
+      - name: Nullify JAVA_TOOL_OPTIONS
+        run: unset JAVA_TOOL_OPTIONS # Isse koi bhi existing value clear ho jaayegi.
 
       # 1. Set up Flutter
       - name: Set up Flutter
@@ -47,15 +51,15 @@ jobs:
           chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ THE ABSOLUTE LAST FIX: Official Command + Forced Memory Setting
+      # 5. ✅ FINAL FIX: Official Command + Forced Memory Setting
       - name: Build Android Release APK (Forced Memory)
-        # CRITICAL: Clearing all problematic ENV variables.
+        # Humne env ko clear kar diya hai, lekin phir bhi yahaan clean rakhenge.
         env:
           GRADLE_OPTS: "" 
           JAVA_OPTS: ""
-          JAVA_TOOL_OPTIONS: "" 
+          JAVA_TOOL_OPTIONS: "" # Redundant, but for safety
         run: |
-          # 🔥 FIX: org.gradle.jvmargs ko flutter build ke through pass karo.
+          # The unset command above should prevent this from failing.
           flutter build apk --release \
             --dart-define="flutter.gradle.configure-android-build=true" \
             --dart-define="org.gradle.jvmargs=-Xmx3072m"
