@@ -11,6 +11,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # 🟢 CRITICAL FIX: GRADLE_OPTS ko job level par set kar rahe hain
+    env:
+      GRADLE_OPTS: "-Xmx3072m -Dorg.gradle.daemon=false" # 3GB RAM diya, taaki koi memory issue na aaye
     
     steps:
       - name: Checkout Code
@@ -35,22 +38,18 @@ jobs:
           flutter clean
           flutter pub get
         
-      # 3. Grant Execute Permission to gradlew (Required for flutter command to find gradlew)
+      # 3. Grant Execute Permission to gradlew
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. NOTE: All conflicting JVM fixes removed.
-          
-      # 5. 🟢 CRITICAL FIX: Direct Build Command with No Daemon
-      # Is command mein hum 'gradlew' ke arguments ko seedhe 'flutter build' ke through pass kar rahe hain.
-      - name: Build Debug APK (Direct Arguments)
+      # 4. CRITICAL FIX: Direct call to Gradle for Debug Build
+      - name: Build Debug APK (Direct Gradle Call)
         run: |
-          # Yeh command JVM conflict ko bypass karne ke liye '--no-daemon' aur memory settings ko force karta hai.
-          flutter build apk --debug --no-tree-shake-icons \
-            --extra-gen-code-options=build-name=1.0.0 --no-daemon \
-            --verbose --stacktrace
+          echo "Bypassing flutter build command..."
+          # Flutter ko skip karke seedhe gradlew script chala rahe hain
+          ./gradlew assembleDebug
         
-      # 6. SHA-1 Extraction (Optional)
+      # 5. SHA-1 Extraction: DYNAMIC KEYTOOL USE (Optional)
       - name: Extract Debug SHA-1 Fingerprint (Final Dynamic Check)
         run: |
           echo "--- DEBUG SHA-1 FINGERPRINT (KEYTOOL - DYNAMIC) ---"
@@ -64,19 +63,20 @@ jobs:
           fi
           echo "---------------------------------------------------"
         
-      - name: Build Android Release APK (Direct Arguments)
+      # 6. Build Android Release APK (Direct Gradle Call)
+      - name: Build Android Release APK
         run: |
-          # Release build mein bhi same bypass use karenge.
-          flutter build apk --release \
-            --extra-gen-code-options=build-name=1.0.0 --no-daemon \
-            --verbose --stacktrace
+          echo "Bypassing flutter build command for release..."
+          # Flutter ko skip karke seedhe gradlew script chala rahe hain
+          ./gradlew assembleRelease
         
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-
+          path: build/app/outputs/apk/release/app-release.apk
+          # NOTE: Path change kiya hai kyunki direct gradlew call se path thoda badalta hai
+          
       - name: Notify on Success
         if: success()
         run: echo "APK build successful! Check Artifacts tab."
