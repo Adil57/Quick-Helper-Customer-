@@ -29,7 +29,7 @@ jobs:
           channel: 'stable'
           cache: false
           
-      # 2. Clean and Get Dependencies (macOS par dependency issue nahi aayega)
+      # 2. Clean and Get Dependencies
       - name: Clean and Get Dependencies
         run: |
           flutter clean
@@ -47,23 +47,22 @@ jobs:
           chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ FINAL FIX: Direct Gradle Execution on macOS
-      - name: Build Android Release APK (Direct Gradle)
-        env:
-          # macOS par JAVA_OPTS ko backup ke liye set kiya gaya hai
-          JAVA_OPTS: "-Xmx3072m" 
+      # 5. ✅ FINAL FIX: Direct Java Call (The Ultimate JVM Bypass)
+      - name: Build Android Release APK (Direct Java)
         run: |
-          chmod +x ./gradlew 
+          echo "Bypassing gradlew script to avoid environment variable errors..."
           
-          # 🔥 CRITICAL FIX: gradlew ko hi force karo ki woh '-Xmx3072m' use kare.
-          ./gradlew assembleRelease -Dorg.gradle.jvmargs='-Xmx3072m' -Pflutter.buildMode=release -Pflutter.target=lib/main.dart
+          # 1. Define safe Java options in the current shell
+          export JAVA_OPTS="-Xmx3072m -Dorg.gradle.daemon=false"
+          
+          # 2. Directly call the Gradle wrapper JAR file with safe JVM arguments
+          java $JAVA_OPTS -jar ./android/gradle/wrapper/gradle-wrapper.jar assembleRelease -Pflutter.buildMode=release -Pflutter.target=lib/main.dart
         
       # 6. ✅ PATH FIX: Standard Artifact Path
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          # Path ko direct Gradle output path mein set kiya gaya hai (Linux/macOS convention)
           path: android/app/build/outputs/apk/release/app-release-unsigned.apk
           
       - name: Notify on Success
