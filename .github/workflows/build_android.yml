@@ -39,31 +39,25 @@ jobs:
       - name: Grant Execute Permission to gradlew (Initial)
         run: chmod +x ./gradlew
         
-      # 4. 🔥 CRITICAL FIX: gradlew Script ko Modify aur JAVA_TOOL_OPTIONS ko Nullify karo
-      - name: Modify gradlew Script & Nullify JTO
+      # 4. Modify gradlew Script (Robust Rewrite) - To remove default JVM opts
+      - name: Modify gradlew Script (Robust Rewrite)
         run: |
-          # 1. Remove DEFAULT_JVM_OPTS line (using awk)
           awk '/DEFAULT_JVM_OPTS/ {next} {print}' ./gradlew > gradlew.tmp
           mv gradlew.tmp ./gradlew
           chmod +x ./gradlew 
-          
-          # 2. Add 'unset JAVA_TOOL_OPTIONS' at the top of gradlew script (using sed)
-          # Isse script chalu hone se pehle hi variable clear ho jaayega
-          sed -i '2i\unset JAVA_TOOL_OPTIONS' ./gradlew
-          chmod +x ./gradlew 
-          echo "JAVA_TOOL_OPTIONS unset command added to gradlew script."
-
-      # 5. ✅ FINAL FIX: Official Command (ab JTO clear ho chuka hai)
+          echo "DEFAULT_JVM_OPTS line removed successfully."
+        
+      # 5. ✅ THE ABSOLUTE LAST FIX: Bash Command Level Override
       - name: Build Android Release APK (Final Working Command)
-        # Environment variables ko clean rakhenge
         env:
           GRADLE_OPTS: "" 
           JAVA_OPTS: ""
+          JAVA_TOOL_OPTIONS: "" # Redundant, but for safety
         run: |
-          # JTO ab script level par null ho chuka hai, ab memory override hoga.
-          flutter build apk --release \
-            --dart-define="flutter.gradle.configure-android-build=true" \
-            --dart-define="org.gradle.jvmargs=-Xmx3072m"
+          # 🔥 CRITICAL FIX: Bash -c ke andar unset karke isolated command chalao.
+          bash -c "unset JAVA_TOOL_OPTIONS && flutter build apk --release \
+            --dart-define='flutter.gradle.configure-android-build=true' \
+            --dart-define='org.gradle.jvmargs=-Xmx3072m'"
         
       # 6. ✅ PATH REVERSION: Standard Flutter output path
       - name: Upload Artifact (APK)
