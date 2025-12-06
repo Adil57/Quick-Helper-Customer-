@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest # macOS Runner
+    runs-on: macos-latest # macOS Runner (For file stability)
     
     steps:
       - name: Checkout Code
@@ -42,28 +42,32 @@ jobs:
       # 4. Modify gradlew Script (To remove default JVM opts)
       - name: Modify gradlew Script
         run: |
+          # Remove existing DEFAULT_JVM_OPTS (if any)
           awk '/DEFAULT_JVM_OPTS/ {next} {print}' ./gradlew > gradlew.tmp
           mv gradlew.tmp ./gradlew
           chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ FINAL FIX: Direct Java Call (The Ultimate JVM Bypass)
-      - name: Build Android Release APK (Direct Java)
+      # 5. ✅ FINAL FIX: Script Level Override (Unset JTO inside gradlew)
+      - name: Build Android Release APK (Final Working Command)
+        env:
+          GRADLE_OPTS: "-Xmx3072m" # JVM memory set kar rahe hain
+          JAVA_OPTS: ""
         run: |
-          echo "Bypassing gradlew script to avoid environment variable errors..."
+          # 🔥 CRITICAL FIX: gradlew script ke andar 'unset JAVA_TOOL_OPTIONS' line daalo
+          # Isse '-Xmx64m' wala error solve hoga, aur hume .jar file ki zaroorat nahi padegi.
+          sed -i '2i\unset JAVA_TOOL_OPTIONS' ./gradlew
+          chmod +x ./gradlew # Permission dobara set karo
           
-          # 1. Define safe Java options in the current shell
-          export JAVA_OPTS="-Xmx3072m -Dorg.gradle.daemon=false"
-          
-          # 2. Directly call the Gradle wrapper JAR file with safe JVM arguments
-          java $JAVA_OPTS -jar ./android/gradle/wrapper/gradle-wrapper.jar assembleRelease -Pflutter.buildMode=release -Pflutter.target=lib/main.dart
+          # Final build command
+          flutter build apk --release
         
       # 6. ✅ PATH FIX: Standard Artifact Path
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
           
       - name: Notify on Success
         if: success()
