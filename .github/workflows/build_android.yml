@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest # macOS Runner (Final attempt for Linux-based fix)
+    runs-on: windows-latest # Windows Runner (For stability against -Xmx64m)
     
     steps:
       - name: Checkout Code
@@ -33,46 +33,24 @@ jobs:
       - name: Clean and Get Dependencies
         run: |
           flutter clean
-          flutter pub get
-          
-      # 3. Grant Execute Permission to gradlew
-      - name: Grant Execute Permission to gradlew
-        run: chmod +x ./gradlew
+          # 🔥 CRITICAL FIX: --no-cache flag will force fresh dependency download
+          flutter pub get --no-cache 
         
-      # 4. Modify gradlew Script (Skipping complex sed/awk)
-      - name: Modify gradlew Script
-        run: |
-          awk '/DEFAULT_JVM_OPTS/ {next} {print}' ./gradlew > gradlew.tmp
-          mv gradlew.tmp ./gradlew
-          chmod +x ./gradlew 
-        
-      # 5. ✅ THE ULTIMATE FIX: Script Replacement
-      - name: Build Android Release APK (The Ultimate Override)
+      # 3. Build Android Release APK (Final Stable Command)
+      - name: Build Android Release APK
         env:
-          GRADLE_OPTS: "-Xmx3072m"
+          # GRADLE_OPTS ko set karke -Xmx64m ko override kiya jaa raha hai
+          GRADLE_OPTS: "-Xmx3072m" 
         run: |
-          # 1. gradlew script ko rename karo
-          mv ./gradlew ./gradlew.bak
-          
-          # 2. 🔥 CRITICAL FIX: gradlew script ko naye content se override karo,
-          #    jismein JAVA_TOOL_OPTIONS ko IGNORE kiya gaya hai.
-          echo '#!/usr/bin/env bash' > ./gradlew
-          echo 'export JAVA_TOOL_OPTIONS=""' >> ./gradlew # JTO ko null set karo
-          echo 'exec "$(dirname "$0")/gradlew.bak" "$@"' >> ./gradlew # Original script ko call karo
-          
-          # 3. Permission guarantee
-          chmod +x ./gradlew
-          chmod +x ./gradlew.bak
-          
-          # 4. Final build command
-          flutter build apk --release
+          # If dependencies are fixed, this command will create the build/outputs path
+          flutter build apk --release 
         
-      # 6. ✅ PATH FIX: Standard Artifact Path
+      # 4. PATH FIX: Standard Flutter output path
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build\app\outputs\flutter-apk\app-release.apk
           
       - name: Notify on Success
         if: success()
