@@ -1,86 +1,51 @@
-name: Flutter Android Build (APK)
+name: Flutter APK Build
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
   pull_request:
-    branches:
-      - main
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      # Setup Flutter
-      - name: Set up Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
-          cache: false
+          flutter-version: '3.24.0'
 
-      # Clean & Fresh Dependencies
-      - name: Force Clean Dependencies and Re-fetch
-        env:
-          PUB_CACHE: /tmp/pub_cache
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      # -----------------------------------------
+      # FIX: Generate gradlew if missing
+      # -----------------------------------------
+      - name: Ensure gradlew exists
         run: |
-          echo "Using fresh PUB_CACHE: $PUB_CACHE"
-          rm -rf ~/.pub-cache/
-          flutter clean
-          flutter pub get
+          cd android
+          if [ ! -f "./gradlew" ]; then
+            echo "gradlew missing — generating..."
+            gradle wrapper
+          fi
+          chmod +x gradlew
 
-      # Fix gradlew Permission
-      - name: Grant Execute Permission to gradlew
-        run: chmod +x android/gradlew
-
-      # Fix JVM Error by removing DEFAULT_JVM_OPTS
-      - name: Modify gradlew Script to Fix JVM Error
-        run: sed -i '/DEFAULT_JVM_OPTS/d' android/gradlew
-
-      # Force Generate Debug Keystore (Flutter auto does it)
-      - name: Generate Debug APK (to ensure keystore exists)
-        env:
-          PUB_CACHE: /tmp/pub_cache
+      # -----------------------------------------
+      # Build APK (Debug)
+      # -----------------------------------------
+      - name: Build Debug APK
         run: flutter build apk --debug --no-tree-shake-icons
 
-      # Print SHA-1 Fingerprint
-      - name: Extract Debug SHA-1 Fingerprint
-        run: |
-          echo "--- DEBUG SHA-1 FINGERPRINT ---"
-          KEYSTORE_PATH=$(find ~ -name "debug.keystore" 2>/dev/null | head -n 1)
-          if [ -f "$KEYSTORE_PATH" ]; then
-            echo "Keystore found at: $KEYSTORE_PATH"
-            keytool -list -v -keystore "$KEYSTORE_PATH" \
-            -alias androiddebugkey -storepass android -keypass android
-          else
-            echo "Debug keystore not found!"
-          fi
-          echo "--------------------------------"
-
-      # Build Release Version
-      - name: Build Android Release APK
-        env:
-          PUB_CACHE: /tmp/pub_cache
-        run: flutter build apk --release
-
-      # Upload Artifact
-      - name: Upload Artifact (APK)
-        uses: actions/upload-artifact@v4
+      # -----------------------------------------
+      # Upload APK
+      # -----------------------------------------
+      - name: Upload Built APK
+        uses: actions/upload-artifact@v3
         with:
-          name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-
-      - name: Notify on Success
-        if: success()
-        run: echo "🎉 APK build successful! Check Artifacts tab."
-        
+          name: app-debug
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          
