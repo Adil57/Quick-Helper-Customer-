@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest # macOS Runner
+    runs-on: macos-latest # macOS Runner (For file stability)
     
     steps:
       - name: Checkout Code
@@ -39,7 +39,7 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. Modify gradlew Script (To remove default JVM opts)
+      # 4. Modify gradlew Script (To remove default JVM opts) - Yeh step abhi bhi zaroori hai.
       - name: Modify gradlew Script
         run: |
           # Remove existing DEFAULT_JVM_OPTS (if any)
@@ -48,18 +48,23 @@ jobs:
           chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ FINAL FIX: Script Level Override (Guaranteed awk Injection)
-      - name: Build Android Release APK (Final Working Command)
+      # 5. ✅ FINAL FIX: Runner Level Script Override
+      - name: Build Android Release APK (The Ultimate Override)
         env:
           GRADLE_OPTS: "-Xmx3072m" # JVM memory set kar rahe hain
           JAVA_OPTS: ""
         run: |
-          chmod +x ./gradlew 
+          # 1. gradlew script ko rename karo
+          mv ./gradlew ./gradlew.real
           
-          # 🔥 CRITICAL FIX: awk se 'unset JAVA_TOOL_OPTIONS' line inject karo (pehle line ke baad)
-          awk 'NR==1 {print; print "unset JAVA_TOOL_OPTIONS"; next} {print}' ./gradlew > gradlew.tmp
-          mv gradlew.tmp ./gradlew
-          chmod +x ./gradlew # Permission dobara set karo
+          # 2. 🔥 CRITICAL FIX: gradlew naam ka naya script banao jo unset karega
+          echo '#!/bin/bash' > ./gradlew
+          echo 'unset JAVA_TOOL_OPTIONS' >> ./gradlew
+          echo './gradlew.real "$@"' >> ./gradlew # Original gradlew ko call karega
+          
+          # 3. Permission guarantee
+          chmod +x ./gradlew
+          chmod +x ./gradlew.real
           
           # Final build command
           flutter build apk --release
