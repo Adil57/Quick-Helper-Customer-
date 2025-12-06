@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest # macOS Runner (For file stability)
+    runs-on: macos-latest # macOS Runner
     
     steps:
       - name: Checkout Code
@@ -48,15 +48,16 @@ jobs:
           chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ FINAL FIX: Script Level Override (Unset JTO inside gradlew)
+      # 5. ✅ FINAL FIX: Script Level Override (Guaranteed macOS sed)
       - name: Build Android Release APK (Final Working Command)
         env:
           GRADLE_OPTS: "-Xmx3072m" # JVM memory set kar rahe hain
           JAVA_OPTS: ""
         run: |
-          # 🔥 CRITICAL FIX: gradlew script ke andar 'unset JAVA_TOOL_OPTIONS' line daalo
-          # Isse '-Xmx64m' wala error solve hoga, aur hume .jar file ki zaroorat nahi padegi.
-          sed -i '2i\unset JAVA_TOOL_OPTIONS' ./gradlew
+          chmod +x ./gradlew 
+          
+          # 🔥 CRITICAL FIX: macOS friendly sed syntax use karo (Note: -i '' is key on macOS)
+          sed -i '' '2i\unset JAVA_TOOL_OPTIONS' ./gradlew
           chmod +x ./gradlew # Permission dobara set karo
           
           # Final build command
