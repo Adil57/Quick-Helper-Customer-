@@ -47,23 +47,24 @@ jobs:
           chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ FINAL REVERSION: Standard Flutter Build (Now that JVM is CLEAN)
-      - name: Build Android Release APK (Reverting to Simple Command)
-        # CRITICAL FIX: Clearing all problematic ENV variables.
+      # 5. ✅ THE ABSOLUTE LAST FIX: Official Command + Forced Memory Setting
+      - name: Build Android Release APK (Forced Memory)
+        # CRITICAL: Clearing all problematic ENV variables.
         env:
           GRADLE_OPTS: "" 
           JAVA_OPTS: ""
           JAVA_TOOL_OPTIONS: "" 
         run: |
-          # The standard command should now work without the '-Xmx64m' error
-          flutter build apk --release 
+          # 🔥 FIX: org.gradle.jvmargs ko flutter build ke through pass karo.
+          flutter build apk --release \
+            --dart-define="flutter.gradle.configure-android-build=true" \
+            --dart-define="org.gradle.jvmargs=-Xmx3072m"
         
       # 6. ✅ PATH REVERSION: Standard Flutter output path
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          # Reverting to the standard Flutter path
           path: build/app/outputs/flutter-apk/app-release.apk
           
       - name: Notify on Success
