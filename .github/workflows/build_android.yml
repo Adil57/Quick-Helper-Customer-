@@ -56,17 +56,21 @@ jobs:
           # Permission guarantee
           chmod +x ./gradlew 
           
+          # Directory guarantee
+          mkdir -p android/app/build/outputs/apk/release
+          
           # 🔥 CRITICAL FIX: Direct Gradle command chalao, JTO override karo, aur memory set karo.
           bash -c "export JAVA_TOOL_OPTIONS='-Xmx256m' && ./gradlew assembleRelease \
             -Dorg.gradle.jvmargs='-Xmx3072m' \
-            -Pflutter.buildMode=release -Pflutter.target=lib/main.dart"
+            -Pflutter.buildMode=release -Pflutter.target=lib/main.dart --stacktrace"
         
-      # 6. ✅ PATH FIX: Upload Artifact (APK) using the module-relative path and unsigned file name
+      # 6. ✅ ULTIMATE PATH FIX: Upload Artifact (APK) using recursive wildcard search
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          # Path ko Android module ke build folder mein kahin bhi .apk file dhoondhne ke liye set kiya gaya hai
+          path: android/app/build/**/*.apk 
           
       - name: Notify on Success
         if: success()
