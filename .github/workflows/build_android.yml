@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -20,72 +20,67 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17' 
-          
-      # 1. Set up Flutter
+          java-version: '17'
+
+      # Setup Flutter
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          # Cache ko band hi rakhte hain taaki fresh environment mile
-          cache: false 
-          
-      # 2. 🟢 CRITICAL FIX: Set PUB_CACHE to /tmp and force fresh download
+          cache: false
+
+      # Clean & Fresh Dependencies
       - name: Force Clean Dependencies and Re-fetch
-        # Set PUB_CACHE environment variable for this step (and subsequent steps)
         env:
           PUB_CACHE: /tmp/pub_cache
         run: |
-          echo "Overriding PUB_CACHE to $PUB_CACHE for fresh download."
-          # Old cache location ko delete karte hain just in case
+          echo "Using fresh PUB_CACHE: $PUB_CACHE"
           rm -rf ~/.pub-cache/
-          # Local build files clean karo
           flutter clean
-          # Dependencies ko fresh download karo NAYE location par
           flutter pub get
-        
-      # 3. Grant Execute Permission to gradlew
+
+      # Fix gradlew Permission
       - name: Grant Execute Permission to gradlew
-        run: chmod +x ./gradlew
-        
-      # 4. ULTIMATE FIX: gradlew script se DEFAULT_JVM_OPTS ko hatao
+        run: chmod +x android/gradlew
+
+      # Fix JVM Error by removing DEFAULT_JVM_OPTS
       - name: Modify gradlew Script to Fix JVM Error
-        run: |
-          sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
-          
-      # 5. FORCE KEYSTORE GENERATION
-      - name: Force Generate Debug Keystore
-        # CRITICAL: Yahan bhi PUB_CACHE set karna hoga taaki build command packages ko naye location se dhoonde
+        run: sed -i '/DEFAULT_JVM_OPTS/d' android/gradlew
+
+      # Force Generate Debug Keystore (Flutter auto does it)
+      - name: Generate Debug APK (to ensure keystore exists)
         env:
           PUB_CACHE: /tmp/pub_cache
         run: flutter build apk --debug --no-tree-shake-icons
-        
-      # 6. SHA-1 Extraction: DYNAMIC KEYTOOL USE (Optional)
-      - name: Extract Debug SHA-1 Fingerprint (Final Dynamic Check)
+
+      # Print SHA-1 Fingerprint
+      - name: Extract Debug SHA-1 Fingerprint
         run: |
-          echo "--- DEBUG SHA-1 FINGERPRINT (KEYTOOL - DYNAMIC) ---"
-          KEYSTORE_PATH=$(find /home/runner/ -name "debug.keystore" 2>/dev/null | head -n 1)
+          echo "--- DEBUG SHA-1 FINGERPRINT ---"
+          KEYSTORE_PATH=$(find ~ -name "debug.keystore" 2>/dev/null | head -n 1)
           if [ -f "$KEYSTORE_PATH" ]; then
             echo "Keystore found at: $KEYSTORE_PATH"
-            /usr/bin/keytool -list -v -keystore "$KEYSTORE_PATH" \
+            keytool -list -v -keystore "$KEYSTORE_PATH" \
             -alias androiddebugkey -storepass android -keypass android
           else
-            echo "Error: debug.keystore not found anywhere! Could not extract SHA-1."
+            echo "Debug keystore not found!"
           fi
-          echo "---------------------------------------------------"
-        
+          echo "--------------------------------"
+
+      # Build Release Version
       - name: Build Android Release APK
-        # Release build mein bhi PUB_CACHE use karna hoga
         env:
           PUB_CACHE: /tmp/pub_cache
         run: flutter build apk --release
-        
+
+      # Upload Artifact
       - name: Upload Artifact (APK)
-        uses: actions/upload-artifact@v4 
+        uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
 
       - name: Notify on Success
         if: success()
-        run: echo "APK build successful! Check Artifacts tab."
+        run: echo "🎉 APK build successful! Check Artifacts tab."
+        
