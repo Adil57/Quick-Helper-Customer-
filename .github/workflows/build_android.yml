@@ -47,23 +47,26 @@ jobs:
           chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ THE ABSOLUTE LAST FIX: Bash Command Level Override (Force Replace)
+      # 5. ✅ THE ABSOLUTE LAST FIX: Direct Gradle with Full Override
       - name: Build Android Release APK (Final Working Command)
         env:
           GRADLE_OPTS: "" 
           JAVA_OPTS: ""
         run: |
-          # 🔥 CRITICAL FIX: JAVA_TOOL_OPTIONS ko command line par hi override karke replace karo
-          bash -c "export JAVA_TOOL_OPTIONS='-Xmx256m' && flutter build apk --release \
-            --dart-define='flutter.gradle.configure-android-build=true' \
-            --dart-define='org.gradle.jvmargs=-Xmx3072m'"
+          # Permission guarantee
+          chmod +x ./gradlew 
+          
+          # 🔥 CRITICAL FIX: Direct Gradle command chalao, JTO override karo, aur memory set karo.
+          bash -c "export JAVA_TOOL_OPTIONS='-Xmx256m' && ./gradlew assembleRelease \
+            -Dorg.gradle.jvmargs='-Xmx3072m' \
+            -Pflutter.buildMode=release -Pflutter.target=lib/main.dart"
         
-      # 6. ✅ PATH REVERSION: Standard Flutter output path
+      # 6. ✅ PATH FIX: Upload Artifact (APK) using the module-relative path and unsigned file name
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
           
       - name: Notify on Success
         if: success()
