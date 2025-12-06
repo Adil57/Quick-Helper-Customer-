@@ -35,22 +35,22 @@ jobs:
           flutter clean
           flutter pub get
         
-      # 3. Grant Execute Permission to gradlew
+      # 3. Grant Execute Permission to gradlew (Required for flutter command to find gradlew)
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. 🟢 CRITICAL FIX: Create Global Gradle Properties
-      # Yeh file ~/.gradle/ mein banti hai aur gradlew script ki galti ko override kar degi.
-      - name: Create Global Gradle Properties for JVM Fix
-        run: |
-          mkdir -p ~/.gradle/
-          echo "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8" >> ~/.gradle/gradle.properties
+      # 4. NOTE: All conflicting JVM fixes removed.
           
-      # 5. Build Debug APK
-      - name: Build Debug APK
-        run: flutter build apk --debug --no-tree-shake-icons
+      # 5. 🟢 CRITICAL FIX: Direct Build Command with No Daemon
+      # Is command mein hum 'gradlew' ke arguments ko seedhe 'flutter build' ke through pass kar rahe hain.
+      - name: Build Debug APK (Direct Arguments)
+        run: |
+          # Yeh command JVM conflict ko bypass karne ke liye '--no-daemon' aur memory settings ko force karta hai.
+          flutter build apk --debug --no-tree-shake-icons \
+            --extra-gen-code-options=build-name=1.0.0 --no-daemon \
+            --verbose --stacktrace
         
-      # 6. SHA-1 Extraction: DYNAMIC KEYTOOL USE (Optional)
+      # 6. SHA-1 Extraction (Optional)
       - name: Extract Debug SHA-1 Fingerprint (Final Dynamic Check)
         run: |
           echo "--- DEBUG SHA-1 FINGERPRINT (KEYTOOL - DYNAMIC) ---"
@@ -64,8 +64,12 @@ jobs:
           fi
           echo "---------------------------------------------------"
         
-      - name: Build Android Release APK
-        run: flutter build apk --release
+      - name: Build Android Release APK (Direct Arguments)
+        run: |
+          # Release build mein bhi same bypass use karenge.
+          flutter build apk --release \
+            --extra-gen-code-options=build-name=1.0.0 --no-daemon \
+            --verbose --stacktrace
         
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
