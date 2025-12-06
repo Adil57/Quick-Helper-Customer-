@@ -10,8 +10,8 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    
+    runs-on: windows-latest # 🚨 FINAL FIX: Runner changed!
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -31,31 +31,28 @@ jobs:
           
       # 2. Clean and Get Dependencies
       - name: Clean and Get Dependencies
+        # Windows mein PowerShell use hota hai, commands same rahenge
         run: |
           flutter clean
           flutter pub get
         
-      # 3. Grant Execute Permission to gradlew (Initial)
-      - name: Grant Execute Permission to gradlew (Initial)
+      # 3. Grant Execute Permission to gradlew (Windows mein zaroori nahi, par rakhte hain)
+      - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. Modify gradlew Script (Robust Rewrite) - To remove default JVM opts
-      - name: Modify gradlew Script (Robust Rewrite)
+      # 4. Modify gradlew Script (Robust Rewrite) - Yeh step Windows par ignore ho jaana chahiye.
+      - name: Modify gradlew Script
         run: |
-          awk '/DEFAULT_JVM_OPTS/ {next} {print}' ./gradlew > gradlew.tmp
-          mv gradlew.tmp ./gradlew
-          chmod +x ./gradlew 
-          echo "DEFAULT_JVM_OPTS line removed successfully."
+          # Is step ko windows par skip karna better hai, but agar run hua toh koi error nahi dega.
+          echo "Skipping Linux gradlew script modification on Windows runner."
         
-      # 5. ✅ THE ABSOLUTE LAST FIX: Standard Flutter Build with Clean ENV
-      - name: Build Android Release APK (Final Working Command)
-        # CRITICAL FIX: Direct ENV overrides yahan set kar rahe hain.
+      # 5. ✅ FINAL FIX: Standard Flutter Build with CLEAN ENV
+      - name: Build Android Release APK
+        # Windows mein JAVA_TOOL_OPTIONS clean rahega
         env:
           GRADLE_OPTS: "-Xmx3072m" # JVM memory set kar rahe hain
           JAVA_OPTS: ""
-          JAVA_TOOL_OPTIONS: "-Xmx256m" # System override to clear '-Xmx64m'
         run: |
-          # Simple Flutter build command
           flutter build apk --release 
         
       # 6. ✅ PATH FIX: Standard Flutter output path
@@ -63,7 +60,8 @@ jobs:
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          # Windows mein bhi output path similar hota hai
+          path: build\app\outputs\flutter-apk\app-release.apk
           
       - name: Notify on Success
         if: success()
