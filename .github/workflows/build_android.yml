@@ -32,12 +32,10 @@ jobs:
       # 2. Clean and Get Dependencies
       - name: Clean and Get Dependencies
         run: |
-          # 🔥 FIX 1: Pub Cache ko official tarike se repair karo
-          flutter pub cache repair
-          
-          # FIX 2: Agar repair fail ho, toh manually delete karo (Most stable PowerShell command)
+          # 🔥 CRITICAL FIX: Pub Cache ki dono locations ko forcefully delete karo
+          Remove-Item -Path $HOME/.pub-cache -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item -Path $env:PUB_CACHE -Recurse -Force -ErrorAction SilentlyContinue
-          
+
           flutter clean
           flutter pub get
         
