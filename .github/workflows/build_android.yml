@@ -47,15 +47,14 @@ jobs:
           chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ THE ABSOLUTE LAST FIX: Bash Command Level Override
+      # 5. ✅ THE ABSOLUTE LAST FIX: Bash Command Level Override (Force Replace)
       - name: Build Android Release APK (Final Working Command)
         env:
           GRADLE_OPTS: "" 
           JAVA_OPTS: ""
-          JAVA_TOOL_OPTIONS: "" # Redundant, but for safety
         run: |
-          # 🔥 CRITICAL FIX: Bash -c ke andar unset karke isolated command chalao.
-          bash -c "unset JAVA_TOOL_OPTIONS && flutter build apk --release \
+          # 🔥 CRITICAL FIX: JAVA_TOOL_OPTIONS ko command line par hi override karke replace karo
+          bash -c "export JAVA_TOOL_OPTIONS='-Xmx256m' && flutter build apk --release \
             --dart-define='flutter.gradle.configure-android-build=true' \
             --dart-define='org.gradle.jvmargs=-Xmx3072m'"
         
