@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Linux Runner (File System Stability)
+    runs-on: windows-latest # 🚨 FINAL FIX: Windows Runner (Most stable platform for this bug)
     
     steps:
       - name: Checkout Code
@@ -29,41 +29,27 @@ jobs:
           channel: 'stable'
           cache: false 
           
-      # 2. Clean and Get Dependencies (Dependency Fix)
+      # 2. Clean and Get Dependencies
       - name: Clean and Get Dependencies
         run: |
+          # Dependency fix: Clean aur fresh pub get
           flutter clean
           flutter pub get
         
-      # 3. Grant Execute Permission to gradlew
-      - name: Grant Execute Permission to gradlew
-        run: chmod +x ./gradlew
-        
-      # 4. Modify gradlew Script - To remove default JVM opts (Zaroori)
-      - name: Modify gradlew Script
-        run: |
-          awk '/DEFAULT_JVM_OPTS/ {next} {print}' ./gradlew > gradlew.tmp
-          mv gradlew.tmp ./gradlew
-          chmod +x ./gradlew 
-          echo "DEFAULT_JVM_OPTS line removed successfully."
-        
-      # 5. ✅ FINAL FIX: Bash Command Level Override (The Ultimate Fix for -Xmx64m)
-      - name: Build Android Release APK (Final Working Command)
+      # 3. Build Android Release APK (Final Stable Command)
+      - name: Build Android Release APK
         env:
-          GRADLE_OPTS: "" 
-          JAVA_OPTS: ""
+          # GRADLE_OPTS se -Xmx64m ko override kiya jaa raha hai (Windows par yeh kaam karta hai)
+          GRADLE_OPTS: "-Xmx3072m" 
         run: |
-          # 🔥 CRITICAL FIX: Bash -c ke andar export karke isolated command chalao, taaki -Xmx64m ignore ho.
-          bash -c "export JAVA_TOOL_OPTIONS='-Xmx256m' && flutter build apk --release \
-            --dart-define='flutter.gradle.configure-android-build=true' \
-            --dart-define='org.gradle.jvmargs=-Xmx3072m'"
+          flutter build apk --release 
         
-      # 6. ✅ PATH FIX: Standard Flutter output path
+      # 4. PATH FIX: Standard Flutter output path
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build\app\outputs\flutter-apk\app-release.apk
           
       - name: Notify on Success
         if: success()
