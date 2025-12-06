@@ -39,11 +39,15 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. NOTE: Removed the 'sed' step to avoid corrupting gradlew script.
+      # 4. 🟢 CRITICAL FIX RE-INTRODUCED: gradlew script se DEFAULT_JVM_OPTS ko hatao
+      # Yeh fix JVM runtime error ko root se hata dega.
+      - name: Modify gradlew Script to Fix JVM Error (Re-introduced)
+        run: |
+          sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
           
       # 5. FORCE KEYSTORE GENERATION (Debug Build)
       - name: Build Debug APK
-        # CRITICAL FIX: GRADLE_OPTS set kar rahe hain taaki JVM memory error na aaye
+        # CRITICAL FIX: GRADLE_OPTS set kar rahe hain taaki memory mile aur -Xmx64m ki zarurat na pade
         env:
           GRADLE_OPTS: "-Xmx2048m -Dorg.gradle.daemon=false"
         run: flutter build apk --debug --no-tree-shake-icons
