@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest # macOS Runner
+    runs-on: macos-latest # macOS Runner (Final attempt for Linux-based fix)
     
     steps:
       - name: Checkout Code
@@ -39,22 +39,32 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. Modify gradlew Script (To remove default JVM opts)
+      # 4. Modify gradlew Script (Skipping complex sed/awk)
       - name: Modify gradlew Script
         run: |
-          # Remove existing DEFAULT_JVM_OPTS (if any)
           awk '/DEFAULT_JVM_OPTS/ {next} {print}' ./gradlew > gradlew.tmp
           mv gradlew.tmp ./gradlew
           chmod +x ./gradlew 
-          echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ FINAL FIX: Standard Flutter Build with Stable JVM Args
-      - name: Build Android Release APK (Final Working Command)
+      # 5. ✅ THE ULTIMATE FIX: Script Replacement
+      - name: Build Android Release APK (The Ultimate Override)
         env:
-          # JVM arguments macOS par aaraam se set ho jaate hain
-          GRADLE_OPTS: "-Xmx3072m" 
+          GRADLE_OPTS: "-Xmx3072m"
         run: |
-          # Simple and reliable build command. Flutter khud hi gradle download karega.
+          # 1. gradlew script ko rename karo
+          mv ./gradlew ./gradlew.bak
+          
+          # 2. 🔥 CRITICAL FIX: gradlew script ko naye content se override karo,
+          #    jismein JAVA_TOOL_OPTIONS ko IGNORE kiya gaya hai.
+          echo '#!/usr/bin/env bash' > ./gradlew
+          echo 'export JAVA_TOOL_OPTIONS=""' >> ./gradlew # JTO ko null set karo
+          echo 'exec "$(dirname "$0")/gradlew.bak" "$@"' >> ./gradlew # Original script ko call karo
+          
+          # 3. Permission guarantee
+          chmod +x ./gradlew
+          chmod +x ./gradlew.bak
+          
+          # 4. Final build command
           flutter build apk --release
         
       # 6. ✅ PATH FIX: Standard Artifact Path
