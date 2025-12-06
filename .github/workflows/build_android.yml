@@ -35,15 +35,11 @@ jobs:
           flutter clean
           flutter pub get
           
-      # 3. Grant Execute Permission to gradlew (Skip)
-      - name: Grant Execute Permission to gradlew
-        run: echo "Skipping chmod as we bypass gradlew"
+      # 3. Skip gradlew setup steps
+      - name: Skip gradlew setup
+        run: echo "Skipping gradlew setup as we are using direct JAR execution."
         
-      # 4. Modify gradlew Script (Skip)
-      - name: Modify gradlew Script
-        run: echo "Skipping gradlew modification."
-        
-      # 5. ✅ FINAL FIX: Direct Java Call (The Ultimate JVM Bypass)
+      # 4. ✅ FINAL FIX: Direct Java Call (The Ultimate JVM Bypass)
       - name: Build Android Release APK (Direct Java)
         run: |
           # 1. Directory setup
@@ -52,15 +48,19 @@ jobs:
           # 2. 🔥 CRITICAL FIX: gradlew.jar file ko download karo aur unzip karo
           GRADLE_VERSION="8.1.4"
           GRADLE_ZIP="gradle-${GRADLE_VERSION}-bin.zip"
+          GRADLE_UNZIPPED_FOLDER="gradle-${GRADLE_VERSION}"
           
-          curl -L "https://services.gradle.org/distributions/${GRADLE_ZIP}" -o gradle.zip
+          # Use curl -fL (Fail fast, Follow redirects) to guarantee full download
+          curl -fL "https://services.gradle.org/distributions/${GRADLE_ZIP}" -o gradle.zip
+          
+          # Unzip the file
           unzip gradle.zip
           
           # 3. Directly call the Gradle wrapper JAR file with safe JVM arguments
           export JAVA_OPTS="-Xmx3072m"
           
           # Call the main class inside the downloaded JAR
-          java $JAVA_OPTS -classpath "gradle-${GRADLE_VERSION}/lib/gradle-launcher-${GRADLE_VERSION}.jar" org.gradle.launcher.GradleMain assembleRelease -Pflutter.buildMode=release -Pflutter.target=lib/main.dart
+          java $JAVA_OPTS -classpath "${GRADLE_UNZIPPED_FOLDER}/lib/gradle-launcher-${GRADLE_VERSION}.jar" org.gradle.launcher.GradleMain assembleRelease -Pflutter.buildMode=release -Pflutter.target=lib/main.dart
         
       # 6. ✅ PATH FIX: Standard Artifact Path
       - name: Upload Artifact (APK)
