@@ -29,21 +29,23 @@ jobs:
           channel: 'stable'
           cache: false # Cache disabled
           
-      # 2. 🔥 CRITICAL FIX: Clean Pub Cache using PowerShell command
-      - name: Delete Pub Cache (Guaranteed)
+      # 2. Clean and Get Dependencies
+      - name: Clean and Get Dependencies
         run: |
-          # PowerShell command to forcefully remove the cache directory
-          Remove-Item -Path $env:PUB_CACHE -Recurse -Force -ErrorAction SilentlyContinue
+          # 🔥 CRITICAL FIX: Pub Cache ki sabhi files ko forcefully delete karo (Most stable PowerShell command)
+          Remove-Item -Path $env:PUB_CACHE\* -Recurse -Force -ErrorAction SilentlyContinue
           
-      # 3. Clean and Get Dependencies
-      - name: Get Dependencies
-        run: |
           flutter clean
           flutter pub get
         
+      # 3. Grant Execute Permission to gradlew (Windows par ignore ho jaayega)
+      - name: Grant Execute Permission to gradlew
+        run: chmod +x ./gradlew
+        
       # 4. Modify gradlew Script - Skip on Windows
-      - name: Skip gradlew Script Modification
-        run: echo "Skipping Linux gradlew script modification."
+      - name: Modify gradlew Script
+        run: |
+          echo "Skipping Linux gradlew script modification on Windows runner."
         
       # 5. ✅ Build Android Release APK (Final Stable Command)
       - name: Build Android Release APK
