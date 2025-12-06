@@ -11,17 +11,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # 🟢 CRITICAL FIX 1: GRADLE_OPTS ko job level par set kar rahe hain (2GB RAM).
+    env:
+      GRADLE_OPTS: "-Xmx2048m -Dorg.gradle.daemon=false"
     
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Java (Downgrade to Java 11 for Stability)
+      - name: Set up Java (Reverting to 17, with robust fix)
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          # CRITICAL FIX 1: Java 17 se 11 par shift kar rahe hain
-          java-version: '11' 
+          # Java 17 wapas set kiya, kyunki error Java 11 se bhi fix nahi hua.
+          java-version: '17' 
 
       # 1. Set up Flutter
       - name: Set up Flutter
@@ -40,12 +43,11 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. 🟢 CRITICAL FIX 2: Create Global Gradle Properties
-      - name: Create Global Gradle Properties for JVM Fix
+      # 4. 🟢 CRITICAL FIX 2: gradlew script se conflicting line ko hata denge.
+      - name: Modify gradlew Script (Remove Conflicting Line)
         run: |
-          # Yeh file (~/.gradle/) mein banti hai aur sabse zyada priority rakhti hai.
-          mkdir -p ~/.gradle/
-          echo "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8" >> ~/.gradle/gradle.properties
+          # Yeh line DEFAULT_JVM_OPTS ko permanently hata degi, JVM error ka source khatam.
+          sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
           
       # 5. Build Debug APK
       - name: Build Debug APK
