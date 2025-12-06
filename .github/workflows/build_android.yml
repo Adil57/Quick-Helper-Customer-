@@ -27,13 +27,12 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          cache: true # Cache enable karo
+          # 🔥 FIX: Cache ko disable karo taaki fresh dependencies download hon
+          cache: false 
           
       # 2. Clean and Get Dependencies
       - name: Clean and Get Dependencies
         run: |
-          # 🔥 FIX: Cache repair karke files ko accessable banao
-          flutter pub cache repair
           flutter clean
           flutter pub get
         
