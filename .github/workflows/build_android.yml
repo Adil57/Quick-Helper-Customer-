@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest # Windows Runner
+    runs-on: windows-latest # Windows Runner is necessary to bypass the -Xmx64m issue
     
     steps:
       - name: Checkout Code
@@ -27,31 +27,32 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          cache: false # Cache disabled
+          cache: false # Disable cache to avoid dependency issues
           
-      # 2. Clean and Get Dependencies
-      - name: Clean and Get Dependencies
+      # 2. 🔥 CRITICAL FIX: Clean Pub Cache using guaranteed CMD shell
+      - name: Clean Pub Cache (CMD Shell)
+        shell: cmd # Force use of CMD for file operations
         run: |
-          # 🔥 CRITICAL FIX: Windows mein PUB_CACHE ko forcefully delete karo (PowerShell syntax)
-          if (Test-Path -Path $env:PUB_CACHE) { Remove-Item -Path $env:PUB_CACHE -Recurse -Force }
+          echo "Deleting PUB_CACHE..."
+          rem Check if directory exists and delete it
+          if exist "%PUB_CACHE%" rmdir /s /q "%PUB_CACHE%"
+          echo "PUB_CACHE deleted if it existed."
+          
+      # 3. Clean and Get Dependencies
+      - name: Get Dependencies
+        run: |
           flutter clean
           flutter pub get
         
-      # 3. Grant Execute Permission to gradlew (Windows par ignore ho jaayega)
-      - name: Grant Execute Permission to gradlew
-        run: chmod +x ./gradlew
+      # 4. Modify gradlew Script - Skip on Windows
+      - name: Skip gradlew Script Modification
+        run: echo "Skipping Linux gradlew script modification."
         
-      # 4. Modify gradlew Script - Yeh step Windows par ignore ho jaayega.
-      - name: Modify gradlew Script
-        run: |
-          echo "Skipping Linux gradlew script modification on Windows runner."
-        
-      # 5. ✅ Build Android Release APK (Final Working Command)
+      # 5. ✅ Build Android Release APK (Final Stable Command)
       - name: Build Android Release APK
         env:
           # JVM arguments ko ENV mein set kar rahe hain
           GRADLE_OPTS: "-Xmx3072m" 
-          JAVA_OPTS: ""
         run: |
           flutter build apk --release 
         
@@ -60,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          # Windows path convention
+          # Standard Flutter output path (Windows convention)
           path: build\app\outputs\flutter-apk\app-release.apk
           
       - name: Notify on Success
