@@ -47,17 +47,19 @@ jobs:
           chmod +x ./gradlew # Permission restore after move
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ FINAL FIX: Direct Gradle Execution (Guaranteed Permission)
+      # 5. ✅ THE ABSOLUTE LAST FIX: Direct Gradle Execution (Detailed Trace)
       - name: Build Android Release APK (Direct Gradle)
         env:
           GRADLE_OPTS: "" 
           JAVA_OPTS: ""
           JAVA_TOOL_OPTIONS: "" 
         run: |
-          # 🔥 Permission guarantee just before running gradlew
+          # Permission guarantee
           chmod +x ./gradlew 
           echo "Starting direct Gradle build..."
-          ./gradlew assembleRelease -Pflutter.buildMode=release -Pflutter.target=lib/main.dart
+          
+          # 🔥 CRITICAL FIX: --stacktrace se poora error reason log mein aayega.
+          ./gradlew assembleRelease -Dorg.gradle.jvmargs="-Xmx3072m" -Pflutter.buildMode=release -Pflutter.target=lib/main.dart --stacktrace
           
           # CRITICAL PATH FINDER: APK file ko dhoondho aur uska exact path print karo.
           echo "--- Searching for APK File Path ---"
