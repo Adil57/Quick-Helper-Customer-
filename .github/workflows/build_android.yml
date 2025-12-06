@@ -47,15 +47,13 @@ jobs:
           chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ FINAL FIX: Direct Gradle Build
+      # 5. ✅ FINAL FIX: Direct Gradle Build (Working Version)
       - name: Build Android Release APK (Direct Gradle)
-        # GRADLE_OPTS ko empty set karo taaki koi hidden global setting interfere na kare
         env:
           GRADLE_OPTS: ""
         run: |
-          # 1. flutter assemble se sirf assets/resources prepare honge (Bina '--release' flag ke)
-          flutter assemble -d android 
-          # 2. Phir direct Gradle chalaate hain, jo 'release' configuration ko pick karega
+          # Output directory provide karna zaroori hai
+          flutter assemble -d android --output=build/app/intermediates/flutter_assets
           ./gradlew assembleRelease
         
       # 6. Upload Artifact (APK)
