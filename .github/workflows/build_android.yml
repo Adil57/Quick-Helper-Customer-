@@ -66,20 +66,13 @@ jobs:
         run: |
           sh -c "sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew && ./gradlew assembleRelease"
         
-      # 7. DIAGNOSTIC: Search for the final APK file
-      # Yeh step abhi bhi zaroori hai agar path galat nikla to.
-      - name: Find the Release APK Path
-        run: |
-          echo "Searching for the final APK file..."
-          find . -name "*app-release.apk*"
-          
-      # 8. Upload Artifact (APK)
+      # 7. Upload Artifact (APK)
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          # CRITICAL FIX: Path updated to the standard Flutter location (usually works even with direct gradlew call)
-          path: build/app/outputs/flutter-apk/app-release.apk
+          # CRITICAL FIX: Wildcard search. Yeh 'release' folder mein app-release.apk ko dhoondh lega.
+          path: android/app/build/outputs/apk/**/*app-release.apk
           
       - name: Notify on Success
         if: success()
