@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest # Windows Runner (For stability against -Xmx64m)
+    runs-on: windows-latest # Windows Runner (JVM Fix)
     
     steps:
       - name: Checkout Code
@@ -34,12 +34,11 @@ jobs:
         run: |
           # 🚨 FIX: pubspec.lock ab delete ho chuka hai, toh yeh command ek naya, sahi lock file banaega.
           flutter clean
-          flutter pub get
+          flutter pub get # This will now create a fresh, correct pubspec.lock
         
       # 3. Build Android Release APK (Final Stable Command)
       - name: Build Android Release APK
         env:
-          # GRADLE_OPTS ko set karke -Xmx64m ko override kiya jaa raha hai
           GRADLE_OPTS: "-Xmx3072m" 
         run: |
           # Dependencies aur JVM fix ho chuke hain, ab build successful hona chahiye.
