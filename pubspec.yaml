@@ -5,7 +5,7 @@ description: Customer App for booking helper services.
 version: 1.0.0
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.0.0 <4.0.0' 
 
 dependencies:
   flutter:
@@ -15,10 +15,11 @@ dependencies:
   auth0_flutter: ^1.14.0 
   http: ^1.2.1 
   
-  # 🟢 FREE MAP SYSTEM (OpenStreetMap)
-  flutter_map: ^6.1.0        # OpenStreetMap Widget
-  latlong2: ^0.9.1           # LatLng coordinates handling
-  location: ^5.0.3           # User ki current location access karne ke liye
+  # 🟢 FREE MAP SYSTEM (OpenStreetMap) - LATEST STABLE
+  # Yeh latest versions hain (December 2025 tak ke hisaab se)
+  flutter_map: ^8.2.2        # Latest stable version
+  latlong2: ^0.9.1           # Iski version yahi latest hai
+  location: ^8.0.0           # Latest stable version
   
   # UI/Icons
   cupertino_icons: ^1.0.2
