@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest # Windows Runner (JVM Fix)
+    runs-on: ubuntu-latest # 🚨 FINAL FIX: Linux Runner (File System Stability)
     
     steps:
       - name: Checkout Code
@@ -27,29 +27,43 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          cache: false
+          cache: false 
           
-      # 2. Clean and Get Dependencies
+      # 2. Clean and Get Dependencies (Linux par file system stable hai)
       - name: Clean and Get Dependencies
         run: |
-          # 🚨 FIX: pubspec.lock ab delete ho chuka hai, toh yeh command ek naya, sahi lock file banaega.
           flutter clean
-          flutter pub get # This will now create a fresh, correct pubspec.lock
+          flutter pub get
         
-      # 3. Build Android Release APK (Final Stable Command)
-      - name: Build Android Release APK
-        env:
-          GRADLE_OPTS: "-Xmx3072m" 
+      # 3. Grant Execute Permission to gradlew
+      - name: Grant Execute Permission to gradlew
+        run: chmod +x ./gradlew
+        
+      # 4. Modify gradlew Script - To remove default JVM opts (Zaroori)
+      - name: Modify gradlew Script
         run: |
-          # Dependencies aur JVM fix ho chuke hain, ab build successful hona chahiye.
-          flutter build apk --release 
+          awk '/DEFAULT_JVM_OPTS/ {next} {print}' ./gradlew > gradlew.tmp
+          mv gradlew.tmp ./gradlew
+          chmod +x ./gradlew 
+          echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 4. PATH FIX: Standard Flutter output path
+      # 5. ✅ FINAL FIX: Bash Command Level Override (The Ultimate Fix for -Xmx64m)
+      - name: Build Android Release APK (Final Working Command)
+        env:
+          GRADLE_OPTS: "" 
+          JAVA_OPTS: ""
+        run: |
+          # 🔥 CRITICAL FIX: Bash -c ke andar export karke isolated command chalao, taaki -Xmx64m ignore ho.
+          bash -c "export JAVA_TOOL_OPTIONS='-Xmx256m' && flutter build apk --release \
+            --dart-define='flutter.gradle.configure-android-build=true' \
+            --dart-define='org.gradle.jvmargs=-Xmx3072m'"
+        
+      # 6. ✅ PATH FIX: Standard Flutter output path
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          path: build\app\outputs\flutter-apk\app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
           
       - name: Notify on Success
         if: success()
