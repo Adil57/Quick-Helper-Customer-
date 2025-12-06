@@ -42,37 +42,33 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. CRITICAL FIX: Build Debug APK (Atomic Cleanup & Run)
-      - name: Build Debug APK (Atomic Cleanup & Run)
+      # 4. CRITICAL FIX: Build Debug/Release (Atomic Cleanup & Run)
+      - name: Build Android Release APK (Atomic Cleanup & Run)
         run: |
-          sh -c "sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew && ./gradlew assembleDebug"
-        
-      # 5. SHA-1 Extraction (Optional)
-      - name: Extract Debug SHA-1 Fingerprint (Final Dynamic Check)
-        run: |
-          echo "--- DEBUG SHA-1 FINGERPRINT (KEYTOOL - DYNAMIC) ---"
-          KEYSTORE_PATH=$(find /home/runner/ -name "debug.keystore" 2>/dev/null | head -n 1)
-          if [ -f "$KEYSTORE_PATH" ]; then
-            echo "Keystore found at: $KEYSTORE_PATH"
-            /usr/bin/keytool -list -v -keystore "$KEYSTORE_PATH" \
-            -alias androiddebugkey -storepass android -keypass android
-          else
-            echo "Error: debug.keystore not found anywhere! Could not extract SHA-1."
-          fi
-          echo "---------------------------------------------------"
-        
-      # 6. Build Android Release APK (Single Atomic Step Execution)
-      - name: Build Android Release APK
-        run: |
+          # Conflicting line ko delete karo aur immediately build chalao
           sh -c "sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew && ./gradlew assembleRelease"
         
-      # 7. Upload Artifact (APK)
+      # 5. DYNAMIC PATH FINDER
+      - name: Find and Set APK Path
+        id: find_apk
+        # find command se APK ki exact location dhoondhenge
+        run: |
+          echo "Searching for app-release.apk..."
+          # APK_PATH variable mein exact file path store karo
+          APK_PATH=$(find android/app/build/outputs -name "app-release.apk" | head -n 1)
+          
+          # CRITICAL: Output variable set karo jise upload step use karega
+          echo "release_path=$APK_PATH" >> $GITHUB_OUTPUT
+          
+          echo "Found APK at: $APK_PATH"
+      
+      # 6. Upload Artifact (APK)
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          # CRITICAL FIX: Wildcard search. Yeh 'release' folder mein app-release.apk ko dhoondh lega.
-          path: android/app/build/outputs/apk/**/*app-release.apk
+          # CRITICAL FIX: Output variable use kar rahe hain jo exact path rakhta hai
+          path: ${{ steps.find_apk.outputs.release_path }}
           
       - name: Notify on Success
         if: success()
