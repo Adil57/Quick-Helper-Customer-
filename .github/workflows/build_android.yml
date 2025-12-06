@@ -29,19 +29,19 @@ jobs:
           channel: 'stable'
           cache: false 
           
-      # 2. 🟢 FINAL FIX: Deep Project Cache Wipe (.dart_tool removal)
-      - name: Deep Clean Project and Re-fetch Dependencies
+      # 2. 🟢 FINAL ATTEMPT: Aggressive Upgrade and Get (Forcing Resolution)
+      - name: Force Upgrade Dependencies and Get
         run: |
-          echo "Performing deep project cache wipe (removing .dart_tool)..."
+          echo "Running aggressive dependency upgrade..."
           
-          # 1. Local build directories aur pub cache directories clean karo
+          # 1. Purane builds ko clean karo
           flutter clean
           
-          # 2. CRITICAL: Corrupt dependency metadata store ko delete karo
-          rm -rf .dart_tool/
+          # 2. CRITICAL: Packages ko force fully upgrade karo
+          flutter pub upgrade
           
-          # 3. Dependencies ko fresh resolve karo
-          flutter pub get
+          # 3. Dependencies ko resolve karo (with verbose logging)
+          flutter pub get --verbose
         
       # 3. Grant Execute Permission to gradlew
       - name: Grant Execute Permission to gradlew
