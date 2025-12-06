@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.quick_helper_customer"
     // Compile SDK ko 34 set kar dete hain, jo latest stable version hai.
-    compileSdk = 34 
+    compileSdk = 36 
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
