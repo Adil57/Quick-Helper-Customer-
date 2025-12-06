@@ -50,20 +50,20 @@ jobs:
       # 5. DYNAMIC PATH FINDER (CLEANED OUTPUT)
       - name: Find and Set APK Path (Clean Output)
         id: find_apk
-        # CRITICAL FIX: find command ka output clean kar rahe hain
+        # CRITICAL FIX: Search sirf 'android/app' folder mein karenge.
         run: |
-          echo "Searching for the final release APK file..."
-          
-          # Sabse pehle, output directory ko list karte hain diagnostics ke liye
-          ls -R android/app/build/outputs/
+          echo "Searching for the final release APK file within android/app/..."
           
           # Find file from 'android/app' folder and remove all whitespace
+          # Yeh command APK file ka exact path dhoondh lega.
           APK_PATH=$(find android/app -name "app-release.apk" | head -n 1 | tr -d '[:space:]')
           
           # CRITICAL: Output variable set karo, agar path empty hai toh 'false' set karo
           if [ -z "$APK_PATH" ]; then
             echo "release_path=false" >> $GITHUB_OUTPUT
-            echo "Error: Final APK path not found. Check 'ls -R' output."
+            echo "Error: Final APK path not found."
+            # Diagnostic: Agar file nahi mili, toh 'build' directory ke andar sab kuch list karo
+            ls -R android/app/build/ || echo "Build directory not found."
           else
             echo "release_path=$APK_PATH" >> $GITHUB_OUTPUT
             echo "Found APK at: $APK_PATH"
