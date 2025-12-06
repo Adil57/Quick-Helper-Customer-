@@ -11,8 +11,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # 🔥 FIX: GRADLE_OPTS ko hata diya gaya hai taaki "main class -Xmx64m" error na aaye.
-    # Ab memory settings sirf android/gradle.properties se manage hongi.
+    # GRADLE_OPTS ko hata diya gaya hai taaki "main class -Xmx64m" error na aaye.
     
     steps:
       - name: Checkout Code
@@ -42,24 +41,30 @@ jobs:
         run: chmod +x ./gradlew
         
       # 4. Modify gradlew Script (Robust Rewrite)
-      # Yeh step default JVM args ko remove karta hai, jo ki sahi hai.
       - name: Modify gradlew Script (Robust Rewrite)
         run: |
           awk '/DEFAULT_JVM_OPTS/ {next} {print}' ./gradlew > gradlew.tmp
           mv gradlew.tmp ./gradlew
-          chmod +x ./gradlew # Permission dobara set karo
+          chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. Build Android Release APK
-      - name: Build Android Release APK
-        # Flutter command hi use kar rahe hain, kyunki yeh saare paths manage karta hai.
-        run: flutter build apk --release
+      # 5. 🔥 CRITICAL FIX: Direct Gradle Build with Environment Clear
+      - name: Build Android Release APK (Direct Gradle)
+        # GRADLE_OPTS ko empty set karo taaki koi hidden global setting interfere na kare
+        env:
+          GRADLE_OPTS: ""
+        run: |
+          # Pehle Flutter se assets/dependencies prepare karwate hain
+          flutter assemble -d android --release
+          # Phir direct Gradle chalaate hain
+          ./gradlew assembleRelease
         
       # 6. Upload Artifact (APK)
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
+          # Standard Gradle/Flutter output path
           path: build/app/outputs/flutter-apk/app-release.apk
           
       - name: Notify on Success
