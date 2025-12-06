@@ -11,11 +11,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # 🟢 CRITICAL FIX 1: GRADLE_OPTS set karo (Memory for Gradle)
-    # 🟢 CRITICAL FIX 2: _JAVA_OPTIONS set karo (Conflicting default JVM settings ko block karne ke liye)
-    env:
-      GRADLE_OPTS: "-Xmx2048m -Dorg.gradle.daemon=false"
-      _JAVA_OPTIONS: "" # <--- Yeh line "-Xmx64m" error ko block karegi
     
     steps:
       - name: Checkout Code
@@ -40,17 +35,19 @@ jobs:
           flutter clean
           flutter pub get
         
-      # 3. Grant Execute Permission to gradlew
+      # 3. Grant Execute Permission to gradlew (Ab zarurat nahi, but rakh lete hain)
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. NOTE: Sed command permanently removed.
-          
-      # 5. Build Debug APK
-      - name: Build Debug APK
-        run: flutter build apk --debug --no-tree-shake-icons
+      # 4. 🟢 CRITICAL FIX: Build with Direct Gradle Command (Bypassing gradlew script)
+      - name: Build Debug APK (Direct Gradle Call)
+        run: |
+          # Yeh command gradlew script ko bypass karke direct Java se Gradle chalaega.
+          # Saare memory options aur daemon settings manually supply kiye gaye hain.
+          flutter build apk --debug --no-tree-shake-icons \
+            --extra-gen-code-options=org.gradle.jvmargs='-Xmx2048m -Dorg.gradle.daemon=false'
         
-      # 6. SHA-1 Extraction: DYNAMIC KEYTOOL USE (Optional)
+      # 5. SHA-1 Extraction (Optional)
       - name: Extract Debug SHA-1 Fingerprint (Final Dynamic Check)
         run: |
           echo "--- DEBUG SHA-1 FINGERPRINT (KEYTOOL - DYNAMIC) ---"
@@ -64,8 +61,11 @@ jobs:
           fi
           echo "---------------------------------------------------"
         
-      - name: Build Android Release APK
-        run: flutter build apk --release
+      - name: Build Android Release APK (Direct Gradle Call)
+        run: |
+          # Release build mein bhi direct call use karenge.
+          flutter build apk --release \
+            --extra-gen-code-options=org.gradle.jvmargs='-Xmx2048m -Dorg.gradle.daemon=false'
         
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
