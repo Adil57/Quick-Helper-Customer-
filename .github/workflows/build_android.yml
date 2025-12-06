@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest # Windows Runner, jahan -Xmx64m fix ho chuka hai
+    runs-on: windows-latest # Windows Runner
     
     steps:
       - name: Checkout Code
@@ -32,8 +32,8 @@ jobs:
       # 2. Clean and Get Dependencies
       - name: Clean and Get Dependencies
         run: |
-          # 🔥 CRITICAL FIX: Windows mein PUB_CACHE ko forcefully delete karo
-          if exist "%PUB_CACHE%" rmdir /s /q "%PUB_CACHE%"
+          # 🔥 CRITICAL FIX: Windows mein PUB_CACHE ko forcefully delete karo (PowerShell syntax)
+          if (Test-Path -Path $env:PUB_CACHE) { Remove-Item -Path $env:PUB_CACHE -Recurse -Force }
           flutter clean
           flutter pub get
         
@@ -49,7 +49,7 @@ jobs:
       # 5. ✅ Build Android Release APK (Final Working Command)
       - name: Build Android Release APK
         env:
-          # JVM arguments ko ENV mein set kar rahe hain, Windows par yeh safely pick honge
+          # JVM arguments ko ENV mein set kar rahe hain
           GRADLE_OPTS: "-Xmx3072m" 
           JAVA_OPTS: ""
         run: |
@@ -60,7 +60,7 @@ jobs:
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          # Windows path convention use kar rahe hain
+          # Windows path convention
           path: build\app\outputs\flutter-apk\app-release.apk
           
       - name: Notify on Success
