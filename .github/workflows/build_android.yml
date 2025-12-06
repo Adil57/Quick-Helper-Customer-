@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # CRITICAL FIX 1: GRADLE_OPTS ko job level par set rakhenge
+    # CRITICAL FIX 1: GRADLE_OPTS ko job level par set rakhenge (Extra safety)
     env:
       GRADLE_OPTS: "-Xmx3072m -Dorg.gradle.daemon=false" 
     
@@ -42,16 +42,12 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. 🟢 CRITICAL FIX: Final Single-Step Execution (The Guaranteed Fix)
-      - name: Build Debug APK (Single Step Clean & Run)
+      # 4. 🟢 CRITICAL FIX: Single Atomic Step Execution
+      - name: Build Debug APK (Atomic Cleanup & Run)
         run: |
-          echo "Applying final script cleanup and starting direct execution..."
-          
-          # 1. CRITICAL: Conflicting line ko delete karo
-          sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
-          
-          # 2. **IMMEDIATELY** build chalao usi shell session mein
-          ./gradlew assembleDebug
+          # Yeh command 'sed' aur './gradlew' ko ek hi shell mein chalaega.
+          # Agar 'sed' successful hua, tabhi './gradlew' chalaega.
+          sh -c "sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew && ./gradlew assembleDebug"
         
       # 5. SHA-1 Extraction (Optional)
       - name: Extract Debug SHA-1 Fingerprint (Final Dynamic Check)
@@ -67,14 +63,11 @@ jobs:
           fi
           echo "---------------------------------------------------"
         
-      # 6. Build Android Release APK (Single Step Clean & Run)
+      # 6. Build Android Release APK (Single Atomic Step Execution)
       - name: Build Android Release APK
         run: |
-          # Conflicting line ko delete karo
-          sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
-          
-          # IMMEDIATELY build chalao usi shell session mein
-          ./gradlew assembleRelease
+          # Release build ke liye bhi same atomic fix
+          sh -c "sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew && ./gradlew assembleRelease"
         
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
@@ -85,6 +78,3 @@ jobs:
       - name: Notify on Success
         if: success()
         run: echo "APK build successful! Check Artifacts tab."
-```eof
-
-Bhai, aap yeh **latest YAML** use karo. **`sed` aur `./gradlew` ko combine** karna hi is **shell execution timing bug** ka aakhri ilaaj hai. Aapki mehnat zaroor rang laayegi! Please try karo!
