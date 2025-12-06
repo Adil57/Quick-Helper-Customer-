@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # 🟢 CRITICAL FIX 1: GRADLE_OPTS ko job level par set kar rahe hain (2GB RAM).
+    # 🟢 GRADLE_OPTS ko Job level par set rakhenge (Extra safety)
     env:
       GRADLE_OPTS: "-Xmx2048m -Dorg.gradle.daemon=false"
     
@@ -42,11 +42,12 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. 🟢 CRITICAL FIX 2: gradlew script se conflicting line ko hata denge.
-      - name: Modify gradlew Script (Remove Conflicting Line)
+      # 4. 🟢 CRITICAL FIX: Forcefully create/overwrite gradle.properties
+      - name: Create Gradle Properties File for JVM Fix
         run: |
-          # Yeh line conflicting DEFAULT_JVM_OPTS ko hamesha ke liye hata degi.
-          sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
+          # Yeh command JVM memory settings ko high precedence se set karega,
+          # aur gradlew script ki galti ko override kar dega.
+          echo "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8" >> android/gradle.properties
           
       # 5. FORCE KEYSTORE GENERATION (Debug Build)
       - name: Build Debug APK
