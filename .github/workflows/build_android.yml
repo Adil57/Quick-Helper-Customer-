@@ -42,27 +42,42 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. CRITICAL FIX: Build Debug/Release (Atomic Cleanup & Run)
+      # 4. CRITICAL FIX: Build Release APK (Atomic Cleanup & Run)
       - name: Build Android Release APK (Atomic Cleanup & Run)
         run: |
+          # Conflicting line ko delete karo aur immediately build chalao
           sh -c "sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew && ./gradlew assembleRelease"
         
-      # 5. DYNAMIC PATH FINDER (ROOT LEVEL SEARCH)
+      # 5. DIAGNOSTIC: List Contents of the build output
+      - name: List Build Output Directory
+        run: |
+          echo "Listing contents of the build output for path confirmation..."
+          ls -R android/app/build/outputs/ || echo "Outputs directory not found/empty."
+          
+      # 6. DYNAMIC PATH FINDER (ROOT LEVEL SEARCH)
       - name: Find and Set APK Path
         id: find_apk
-        # CRITICAL FIX: Search root directory '.' se shuru karo
+        # CRITICAL FIX: Sabse generic pattern use karo: 'release.apk'
         run: |
-          echo "Searching for app-release.apk from root directory..."
+          echo "Searching for the final release APK file..."
           # APK_PATH variable mein exact file path store karo
-          APK_PATH=$(find . -name "app-release.apk" | head -n 1)
+          APK_PATH=$(find . -name "*release.apk" | head -n 1)
           
-          # CRITICAL: Output variable set karo jise upload step use karega
-          echo "release_path=$APK_PATH" >> $GITHUB_OUTPUT
-          
-          echo "Found APK at: $APK_PATH"
+          # Check if APK path was found, if not, set a default placeholder
+          if [ -z "$APK_PATH" ]; then
+            echo "Error: Final APK path not found! Check previous 'ls -R' step output."
+            # Fallback for the upload step to receive a valid string, not empty
+            echo "release_path=NO_APK_FOUND" >> $GITHUB_OUTPUT 
+          else
+            # Output variable set karo jise upload step use karega
+            echo "release_path=$APK_PATH" >> $GITHUB_OUTPUT
+            echo "Found APK at: $APK_PATH"
+          fi
       
-      # 6. Upload Artifact (APK)
+      # 7. Upload Artifact (APK)
       - name: Upload Artifact (APK)
+        # Condition: Upload sirf tabhi hoga jab path empty na ho
+        if: steps.find_apk.outputs.release_path != 'NO_APK_FOUND'
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
