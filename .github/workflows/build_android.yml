@@ -11,9 +11,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # CRITICAL FIX 1: GRADLE_OPTS ko job level par set rakhenge
-    env:
-      GRADLE_OPTS: "-Xmx3072m -Dorg.gradle.daemon=false" 
+    # 🔥 FIX: GRADLE_OPTS ko hata diya gaya hai taaki "main class -Xmx64m" error na aaye.
+    # Ab memory settings sirf android/gradle.properties se manage hongi.
     
     steps:
       - name: Checkout Code
@@ -42,17 +41,18 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. 🟢 CRITICAL FIX: gradlew script ko robust tarike se rewrite karo
+      # 4. Modify gradlew Script (Robust Rewrite)
+      # Yeh step default JVM args ko remove karta hai, jo ki sahi hai.
       - name: Modify gradlew Script (Robust Rewrite)
-        # Yeh command 'sed' se zyada robust hai aur line ko pakka delete karega
         run: |
           awk '/DEFAULT_JVM_OPTS/ {next} {print}' ./gradlew > gradlew.tmp
           mv gradlew.tmp ./gradlew
           chmod +x ./gradlew # Permission dobara set karo
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. Build Android Release APK (Using Flutter command for correct path)
-      - name: Build Android Release APK (Correct Path Generation)
+      # 5. Build Android Release APK
+      - name: Build Android Release APK
+        # Flutter command hi use kar rahe hain, kyunki yeh saare paths manage karta hai.
         run: flutter build apk --release
         
       # 6. Upload Artifact (APK)
@@ -60,9 +60,9 @@ jobs:
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          # Standard Flutter output path use karenge
           path: build/app/outputs/flutter-apk/app-release.apk
           
       - name: Notify on Success
         if: success()
         run: echo "APK build successful! Check Artifacts tab."
+        
