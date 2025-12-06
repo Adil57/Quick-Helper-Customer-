@@ -32,9 +32,9 @@ jobs:
       # 2. Clean and Get Dependencies
       - name: Clean and Get Dependencies
         run: |
+          # 🚨 FIX: pubspec.lock ab delete ho chuka hai, toh yeh command ek naya, sahi lock file banaega.
           flutter clean
-          # 🔥 CRITICAL FIX: --no-cache flag will force fresh dependency download
-          flutter pub get --no-cache 
+          flutter pub get
         
       # 3. Build Android Release APK (Final Stable Command)
       - name: Build Android Release APK
@@ -42,7 +42,7 @@ jobs:
           # GRADLE_OPTS ko set karke -Xmx64m ko override kiya jaa raha hai
           GRADLE_OPTS: "-Xmx3072m" 
         run: |
-          # If dependencies are fixed, this command will create the build/outputs path
+          # Dependencies aur JVM fix ho chuke hain, ab build successful hona chahiye.
           flutter build apk --release 
         
       # 4. PATH FIX: Standard Flutter output path
