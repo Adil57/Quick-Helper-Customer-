@@ -42,47 +42,23 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. CRITICAL FIX: Build Release APK (Atomic Cleanup & Run)
-      - name: Build Android Release APK (Atomic Cleanup & Run)
-        run: |
-          # JVM Fix aur assembleRelease ek hi step mein chalao
-          sh -c "sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew && ./gradlew assembleRelease"
+      # 4. 🟢 CRITICAL FIX: gradlew script se conflicting line ko hata denge.
+      - name: Modify gradlew Script (Remove Conflicting Line)
+        # Is step se JVM error ka root cause hamesha ke liye hat jaayega.
+        run: sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
         
-      # 5. DIAGNOSTIC: List the final output folder contents
-      - name: List Final Output Directory (Diagnostic)
-        run: |
-          echo "Listing contents of the entire build/ directory for path confirmation..."
-          # Yeh step confirm karega ki file kahan bani hai
-          ls -R build/ || echo "Build directory not found/empty."
-          
-      # 6. DYNAMIC PATH FINDER (CLEANED OUTPUT)
-      - name: Find and Set APK Path (Clean Output)
-        id: find_apk
-        # CRITICAL FIX: Build directory se root level search.
-        run: |
-          echo "Searching for the final release APK file..."
-          
-          # Find file from 'build/' folder and remove all whitespace
-          APK_PATH=$(find build/ -name "app-release.apk" | head -n 1 | tr -d '[:space:]')
-          
-          # CRITICAL: Output variable set karo, agar path empty hai toh 'false' set karo
-          if [ -z "$APK_PATH" ]; then
-            echo "release_path=false" >> $GITHUB_OUTPUT
-            echo "Error: Final APK path not found."
-          else
-            echo "release_path=$APK_PATH" >> $GITHUB_OUTPUT
-            echo "Found APK at: $APK_PATH"
-          fi
-      
-      # 7. Upload Artifact (APK)
+      # 5. Build Android Release APK (Using Flutter command for correct path)
+      - name: Build Android Release APK (Correct Path Generation)
+        # Ab yeh command clean script use karega aur file ko standard location par banaega
+        run: flutter build apk --release
+        
+      # 6. Upload Artifact (APK)
       - name: Upload Artifact (APK)
-        # Condition: Upload sirf tabhi hoga jab path 'false' na ho
-        if: steps.find_apk.outputs.release_path != 'false'
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          # Output variable use kar rahe hain jo exact path rakhta hai
-          path: ${{ steps.find_apk.outputs.release_path }}
+          # CRITICAL FIX: Standard Flutter output path use karenge
+          path: build/app/outputs/flutter-apk/app-release.apk
           
       - name: Notify on Success
         if: success()
