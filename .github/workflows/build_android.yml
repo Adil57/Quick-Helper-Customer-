@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # CRITICAL FIX 1: GRADLE_OPTS ko job level par set rakhenge
+    # CRITICAL FIX: GRADLE_OPTS ko job level par set rakhenge
     env:
       GRADLE_OPTS: "-Xmx3072m -Dorg.gradle.daemon=false" 
     
@@ -45,39 +45,24 @@ jobs:
       # 4. CRITICAL FIX: Build Release APK (Atomic Cleanup & Run)
       - name: Build Android Release APK (Atomic Cleanup & Run)
         run: |
+          # JVM Fix aur assembleRelease ek hi step mein chalao
           sh -c "sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew && ./gradlew assembleRelease"
         
-      # 5. DYNAMIC PATH FINDER (CLEANED OUTPUT)
-      - name: Find and Set APK Path (Clean Output)
-        id: find_apk
-        # CRITICAL FIX: Search sirf 'android/app' folder mein karenge.
+      # 5. DIAGNOSTIC: List the final output folder contents
+      - name: List Final Output Directory (Diagnostic)
         run: |
-          echo "Searching for the final release APK file within android/app/..."
+          echo "Listing contents of the build output..."
+          # Yeh step confirm karega ki file kahan bani hai
+          ls -R android/app/build/outputs/ || echo "android/app/build/outputs/ not found."
           
-          # Find file from 'android/app' folder and remove all whitespace
-          # Yeh command APK file ka exact path dhoondh lega.
-          APK_PATH=$(find android/app -name "app-release.apk" | head -n 1 | tr -d '[:space:]')
-          
-          # CRITICAL: Output variable set karo, agar path empty hai toh 'false' set karo
-          if [ -z "$APK_PATH" ]; then
-            echo "release_path=false" >> $GITHUB_OUTPUT
-            echo "Error: Final APK path not found."
-            # Diagnostic: Agar file nahi mili, toh 'build' directory ke andar sab kuch list karo
-            ls -R android/app/build/ || echo "Build directory not found."
-          else
-            echo "release_path=$APK_PATH" >> $GITHUB_OUTPUT
-            echo "Found APK at: $APK_PATH"
-          fi
-      
       # 6. Upload Artifact (APK)
       - name: Upload Artifact (APK)
-        # Condition: Upload sirf tabhi hoga jab path 'false' na ho
-        if: steps.find_apk.outputs.release_path != 'false'
         uses: actions/upload-artifact@v4 
         with:
-          name: app-release-apk
-          # Output variable use kar rahe hain jo exact path rakhta hai
-          path: ${{ steps.find_apk.outputs.release_path }}
+          name: app-release-apks
+          # CRITICAL FIX: Direct output folder upload kar rahe hain
+          # Agar file 'apk' ke andar bhi nahi mili, toh woh 'outputs' ke andar zaroor hogi.
+          path: android/app/build/outputs/
           
       - name: Notify on Success
         if: success()
