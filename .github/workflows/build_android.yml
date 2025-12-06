@@ -11,6 +11,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # 🟢 CRITICAL FIX: GRADLE_OPTS ko job level par set kar rahe hain.
+    env:
+      GRADLE_OPTS: "-Xmx2048m -Dorg.gradle.daemon=false"
     
     steps:
       - name: Checkout Code
@@ -39,17 +42,13 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. 🟢 CRITICAL FIX RE-INTRODUCED: gradlew script se DEFAULT_JVM_OPTS ko hatao
-      # Yeh fix JVM runtime error ko root se hata dega.
-      - name: Modify gradlew Script to Fix JVM Error (Re-introduced)
+      # 4. 🟢 FIX: Conflicting line (DEFAULT_JVM_OPTS) ko script se hata denge.
+      - name: Modify gradlew Script (Remove Conflicting Line)
         run: |
           sed -i '/DEFAULT_JVM_OPTS/d' ./gradlew
           
       # 5. FORCE KEYSTORE GENERATION (Debug Build)
       - name: Build Debug APK
-        # CRITICAL FIX: GRADLE_OPTS set kar rahe hain taaki memory mile aur -Xmx64m ki zarurat na pade
-        env:
-          GRADLE_OPTS: "-Xmx2048m -Dorg.gradle.daemon=false"
         run: flutter build apk --debug --no-tree-shake-icons
         
       # 6. SHA-1 Extraction: DYNAMIC KEYTOOL USE (Optional)
@@ -67,9 +66,6 @@ jobs:
           echo "---------------------------------------------------"
         
       - name: Build Android Release APK
-        # GRADLE_OPTS ko release build mein bhi set karna zaroori hai
-        env:
-          GRADLE_OPTS: "-Xmx2048m -Dorg.gradle.daemon=false"
         run: flutter build apk --release
         
       - name: Upload Artifact (APK)
