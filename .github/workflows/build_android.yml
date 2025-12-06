@@ -47,15 +47,16 @@ jobs:
           chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ THE ULTIMATE FIX: Clearing ALL JVM Environment Variables
-      - name: Build Android Release APK (Final Command)
+      # 5. ✅ THE ULTIMATE FIX: Direct Gradle Execution
+      - name: Build Android Release APK (Direct Gradle)
         # CRITICAL FIX: Teenon JVM-related ENV variables ko empty set karo
         env:
           GRADLE_OPTS: "" 
           JAVA_OPTS: ""
-          JAVA_TOOL_OPTIONS: "" # <-- Hopefully the source of the persistent error
+          JAVA_TOOL_OPTIONS: "" 
         run: |
-          flutter build apk --release 
+          # Direct Gradle command use kar rahe hain, Flutter build ko bypass karte hue.
+          ./gradlew assembleRelease -Pflutter.buildMode=release -Pflutter.target=lib/main.dart
         
       # 6. Upload Artifact (APK)
       - name: Upload Artifact (APK)
