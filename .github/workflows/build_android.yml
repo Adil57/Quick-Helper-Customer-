@@ -45,9 +45,9 @@ jobs:
           # 1. Directory setup
           mkdir -p .gradle/wrapper/dists/gradle-8.1.4-bin/
           
-          # 2. 🔥 CRITICAL FIX: gradlew.jar file ko download karo aur unzip karo
+          # 2. 🔥 CRITICAL FIX: Correctly download the -all.zip file
           GRADLE_VERSION="8.1.4"
-          GRADLE_ZIP="gradle-${GRADLE_VERSION}-bin.zip"
+          GRADLE_ZIP="gradle-${GRADLE_VERSION}-all.zip" # <--- FIXED URL NAMING
           GRADLE_UNZIPPED_FOLDER="gradle-${GRADLE_VERSION}"
           
           # Use curl -fL (Fail fast, Follow redirects) to guarantee full download
@@ -62,12 +62,12 @@ jobs:
           # Call the main class inside the downloaded JAR
           java $JAVA_OPTS -classpath "${GRADLE_UNZIPPED_FOLDER}/lib/gradle-launcher-${GRADLE_VERSION}.jar" org.gradle.launcher.GradleMain assembleRelease -Pflutter.buildMode=release -Pflutter.target=lib/main.dart
         
-      # 6. ✅ PATH FIX: Standard Artifact Path
+      # 5. ✅ PATH FIX: Standard Artifact Path
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk"
           
       - name: Notify on Success
         if: success()
