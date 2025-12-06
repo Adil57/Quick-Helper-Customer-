@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest # macOS Runner (For file stability)
+    runs-on: macos-latest # macOS Runner
     
     steps:
       - name: Checkout Code
@@ -35,39 +35,34 @@ jobs:
           flutter clean
           flutter pub get
           
-      # 3. Skip gradlew setup steps
-      - name: Skip gradlew setup
-        run: echo "Skipping gradlew setup as we are using direct JAR execution."
+      # 3. Grant Execute Permission to gradlew
+      - name: Grant Execute Permission to gradlew
+        run: chmod +x ./gradlew
         
-      # 4. ✅ FINAL FIX: Direct Java Call (The Ultimate JVM Bypass)
-      - name: Build Android Release APK (Direct Java)
+      # 4. Modify gradlew Script (To remove default JVM opts)
+      - name: Modify gradlew Script
         run: |
-          # 1. Directory setup
-          mkdir -p .gradle/wrapper/dists/gradle-8.1.4-bin/
-          
-          # 2. 🔥 CRITICAL FIX: Correctly download the -all.zip file
-          GRADLE_VERSION="8.1.4"
-          GRADLE_ZIP="gradle-${GRADLE_VERSION}-all.zip" # <--- FIXED URL NAMING
-          GRADLE_UNZIPPED_FOLDER="gradle-${GRADLE_VERSION}"
-          
-          # Use curl -fL (Fail fast, Follow redirects) to guarantee full download
-          curl -fL "https://services.gradle.org/distributions/${GRADLE_ZIP}" -o gradle.zip
-          
-          # Unzip the file
-          unzip gradle.zip
-          
-          # 3. Directly call the Gradle wrapper JAR file with safe JVM arguments
-          export JAVA_OPTS="-Xmx3072m"
-          
-          # Call the main class inside the downloaded JAR
-          java $JAVA_OPTS -classpath "${GRADLE_UNZIPPED_FOLDER}/lib/gradle-launcher-${GRADLE_VERSION}.jar" org.gradle.launcher.GradleMain assembleRelease -Pflutter.buildMode=release -Pflutter.target=lib/main.dart
+          # Remove existing DEFAULT_JVM_OPTS (if any)
+          awk '/DEFAULT_JVM_OPTS/ {next} {print}' ./gradlew > gradlew.tmp
+          mv gradlew.tmp ./gradlew
+          chmod +x ./gradlew 
+          echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ PATH FIX: Standard Artifact Path
+      # 5. ✅ FINAL FIX: Standard Flutter Build with Stable JVM Args
+      - name: Build Android Release APK (Final Working Command)
+        env:
+          # JVM arguments macOS par aaraam se set ho jaate hain
+          GRADLE_OPTS: "-Xmx3072m" 
+        run: |
+          # Simple and reliable build command. Flutter khud hi gradle download karega.
+          flutter build apk --release
+        
+      # 6. ✅ PATH FIX: Standard Artifact Path
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          path: android/app/build/outputs/apk/release/app-release-unsigned.apk"
+          path: build/app/outputs/flutter-apk/app-release.apk
           
       - name: Notify on Success
         if: success()
