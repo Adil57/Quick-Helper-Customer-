@@ -10,8 +10,8 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest # 🚨 FINAL FIX: Runner changed!
-
+    runs-on: windows-latest # Windows Runner, jahan -Xmx64m fix ho chuka hai
+    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -27,30 +27,30 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          cache: false 
+          cache: true # Cache enable karo
           
       # 2. Clean and Get Dependencies
       - name: Clean and Get Dependencies
-        # Windows mein PowerShell use hota hai, commands same rahenge
         run: |
+          # 🔥 FIX: Cache repair karke files ko accessable banao
+          flutter pub cache repair
           flutter clean
           flutter pub get
         
-      # 3. Grant Execute Permission to gradlew (Windows mein zaroori nahi, par rakhte hain)
+      # 3. Grant Execute Permission to gradlew (Windows par ignore ho jaayega)
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. Modify gradlew Script (Robust Rewrite) - Yeh step Windows par ignore ho jaana chahiye.
+      # 4. Modify gradlew Script - Yeh step Windows par ignore ho jaayega.
       - name: Modify gradlew Script
         run: |
-          # Is step ko windows par skip karna better hai, but agar run hua toh koi error nahi dega.
           echo "Skipping Linux gradlew script modification on Windows runner."
         
-      # 5. ✅ FINAL FIX: Standard Flutter Build with CLEAN ENV
+      # 5. ✅ Build Android Release APK (Final Working Command)
       - name: Build Android Release APK
-        # Windows mein JAVA_TOOL_OPTIONS clean rahega
         env:
-          GRADLE_OPTS: "-Xmx3072m" # JVM memory set kar rahe hain
+          # JVM arguments ko ENV mein set kar rahe hain, Windows par yeh safely pick honge
+          GRADLE_OPTS: "-Xmx3072m" 
           JAVA_OPTS: ""
         run: |
           flutter build apk --release 
@@ -60,7 +60,7 @@ jobs:
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          # Windows mein bhi output path similar hota hai
+          # Windows path convention use kar rahe hain
           path: build\app\outputs\flutter-apk\app-release.apk
           
       - name: Notify on Success
