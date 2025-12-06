@@ -47,30 +47,23 @@ jobs:
           chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ THE ABSOLUTE LAST FIX: Direct Gradle with Full Override
+      # 5. ✅ THE ABSOLUTE LAST FIX: Standard Flutter Build with Clean ENV
       - name: Build Android Release APK (Final Working Command)
+        # CRITICAL FIX: Direct ENV overrides yahan set kar rahe hain.
         env:
-          GRADLE_OPTS: "" 
+          GRADLE_OPTS: "-Xmx3072m" # JVM memory set kar rahe hain
           JAVA_OPTS: ""
+          JAVA_TOOL_OPTIONS: "-Xmx256m" # System override to clear '-Xmx64m'
         run: |
-          # Permission guarantee
-          chmod +x ./gradlew 
-          
-          # Directory guarantee
-          mkdir -p android/app/build/outputs/apk/release
-          
-          # 🔥 CRITICAL FIX: Direct Gradle command chalao, JTO override karo, aur memory set karo.
-          bash -c "export JAVA_TOOL_OPTIONS='-Xmx256m' && ./gradlew assembleRelease \
-            -Dorg.gradle.jvmargs='-Xmx3072m' \
-            -Pflutter.buildMode=release -Pflutter.target=lib/main.dart --stacktrace"
+          # Simple Flutter build command
+          flutter build apk --release 
         
-      # 6. ✅ ULTIMATE PATH FIX: Upload Artifact (APK) using recursive wildcard search
+      # 6. ✅ PATH FIX: Standard Flutter output path
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          # Path ko Android module ke build folder mein kahin bhi .apk file dhoondhne ke liye set kiya gaya hai
-          path: android/app/build/**/*.apk 
+          path: build/app/outputs/flutter-apk/app-release.apk
           
       - name: Notify on Success
         if: success()
