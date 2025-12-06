@@ -27,12 +27,13 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          # 🔥 FIX: Cache ko disable karo taaki fresh dependencies download hon
-          cache: false 
+          cache: false # Cache disabled
           
       # 2. Clean and Get Dependencies
       - name: Clean and Get Dependencies
         run: |
+          # 🔥 CRITICAL FIX: Windows mein PUB_CACHE ko forcefully delete karo
+          if exist "%PUB_CACHE%" rmdir /s /q "%PUB_CACHE%"
           flutter clean
           flutter pub get
         
