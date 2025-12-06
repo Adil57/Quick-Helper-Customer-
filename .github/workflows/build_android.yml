@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -22,9 +22,7 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-      # -----------------------------------------
-      # FIX: Generate gradlew if missing
-      # -----------------------------------------
+      # Ensure gradlew exists
       - name: Ensure gradlew exists
         run: |
           cd android
@@ -34,17 +32,12 @@ jobs:
           fi
           chmod +x gradlew
 
-      # -----------------------------------------
-      # Build APK (Debug)
-      # -----------------------------------------
       - name: Build Debug APK
         run: flutter build apk --debug --no-tree-shake-icons
 
-      # -----------------------------------------
-      # Upload APK
-      # -----------------------------------------
+      # FIX: upload-artifact v3 × (deprecated) → v4 ✔
       - name: Upload Built APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: app-debug
           path: build/app/outputs/flutter-apk/app-debug.apk
