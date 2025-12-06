@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # 🚨 FINAL FIX: Linux Runner (File System Stability)
+    runs-on: ubuntu-latest # Linux Runner (File System Stability)
     
     steps:
       - name: Checkout Code
@@ -29,7 +29,7 @@ jobs:
           channel: 'stable'
           cache: false 
           
-      # 2. Clean and Get Dependencies (Linux par file system stable hai)
+      # 2. Clean and Get Dependencies (Dependency Fix)
       - name: Clean and Get Dependencies
         run: |
           flutter clean
