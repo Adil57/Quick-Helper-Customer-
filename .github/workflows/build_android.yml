@@ -11,7 +11,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # GRADLE_OPTS ko hata diya gaya hai taaki "main class -Xmx64m" error na aaye.
     
     steps:
       - name: Checkout Code
@@ -48,15 +47,15 @@ jobs:
           chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. 🔥 CRITICAL FIX: Direct Gradle Build with Environment Clear
+      # 5. ✅ FINAL FIX: Direct Gradle Build
       - name: Build Android Release APK (Direct Gradle)
         # GRADLE_OPTS ko empty set karo taaki koi hidden global setting interfere na kare
         env:
           GRADLE_OPTS: ""
         run: |
-          # Pehle Flutter se assets/dependencies prepare karwate hain
-          flutter assemble -d android --release
-          # Phir direct Gradle chalaate hain
+          # 1. flutter assemble se sirf assets/resources prepare honge (Bina '--release' flag ke)
+          flutter assemble -d android 
+          # 2. Phir direct Gradle chalaate hain, jo 'release' configuration ko pick karega
           ./gradlew assembleRelease
         
       # 6. Upload Artifact (APK)
@@ -64,7 +63,6 @@ jobs:
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          # Standard Gradle/Flutter output path
           path: build/app/outputs/flutter-apk/app-release.apk
           
       - name: Notify on Success
