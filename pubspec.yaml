@@ -17,7 +17,7 @@ dependencies:
   
   # 🟢 FREE MAP SYSTEM (OpenStreetMap)
   flutter_map: ^6.1.0        # OpenStreetMap Widget
-  latlong2: ^7.0.0           # LatLng coordinates handling
+  latlong2: ^0.9.1           # LatLng coordinates handling
   location: ^5.0.3           # User ki current location access karne ke liye
   
   # UI/Icons
