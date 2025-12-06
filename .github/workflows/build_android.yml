@@ -1,4 +1,4 @@
-name: Flutter APK Build
+name: Flutter Android Build (APK)
 
 on:
   push:
@@ -11,23 +11,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Flutter
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          channel: 'stable'
 
-      - name: Flutter Pub Get
+      - name: Flutter pub get
         run: flutter pub get
 
-      # Ensure gradlew exists
-      - name: Ensure gradlew exists
+      - name: Ensure gradlew Exists
         run: |
           cd android
           if [ ! -f "./gradlew" ]; then
-            echo "gradlew missing — generating..."
             gradle wrapper
           fi
           chmod +x gradlew
@@ -35,8 +39,7 @@ jobs:
       - name: Build Debug APK
         run: flutter build apk --debug --no-tree-shake-icons
 
-      # FIX: upload-artifact v3 × (deprecated) → v4 ✔
-      - name: Upload Built APK
+      - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
