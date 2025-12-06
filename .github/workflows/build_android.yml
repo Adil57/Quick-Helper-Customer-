@@ -48,7 +48,7 @@ jobs:
           chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ FINAL FIX: Script Level Override (Guaranteed macOS sed)
+      # 5. ✅ FINAL FIX: Script Level Override (Guaranteed awk Injection)
       - name: Build Android Release APK (Final Working Command)
         env:
           GRADLE_OPTS: "-Xmx3072m" # JVM memory set kar rahe hain
@@ -56,8 +56,9 @@ jobs:
         run: |
           chmod +x ./gradlew 
           
-          # 🔥 CRITICAL FIX: macOS friendly sed syntax use karo (Note: -i '' is key on macOS)
-          sed -i '' '2i\unset JAVA_TOOL_OPTIONS' ./gradlew
+          # 🔥 CRITICAL FIX: awk se 'unset JAVA_TOOL_OPTIONS' line inject karo (pehle line ke baad)
+          awk 'NR==1 {print; print "unset JAVA_TOOL_OPTIONS"; next} {print}' ./gradlew > gradlew.tmp
+          mv gradlew.tmp ./gradlew
           chmod +x ./gradlew # Permission dobara set karo
           
           # Final build command
