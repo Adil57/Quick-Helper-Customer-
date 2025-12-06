@@ -57,25 +57,26 @@ jobs:
           # Permission guarantee
           chmod +x ./gradlew 
           
-          # 🔥 FIX: Build directories ko manually create karo taaki find command aur Gradle fail na ho.
-          mkdir -p build/app/outputs/apk/release
+          # 🔥 FIX: Build directories ko manually create karo taaki Gradle aur find command fail na ho.
+          mkdir -p android/app/build/outputs/apk/release
           
           echo "Starting direct Gradle build..."
           # Memory argument direct command line se pass kiya gaya hai.
           ./gradlew assembleRelease -Dorg.gradle.jvmargs="-Xmx3072m" -Pflutter.buildMode=release -Pflutter.target=lib/main.dart --stacktrace
           
-          # CRITICAL PATH FINDER: APK file ko dhoondho aur uska exact path print karo.
+          # CRITICAL PATH FINDER: APK file ko poore project mein dhoondho.
           echo "--- Searching for APK File Path ---"
-          find build/app/outputs/ -name "*.apk" | xargs -r -I {} echo "Found APK at: {}"
+          # Find command ab poore project (dot) se search kar raha hai
+          find . -name "*.apk" | xargs -r -I {} echo "Found APK at: {}"
           echo "-----------------------------------"
         
-      # 6. ✅ PATH FIX: Upload Artifact (APK) using Wildcard Search
+      # 6. ✅ PATH FIX: Upload Artifact (APK) using the module-relative path
       - name: Upload Artifact (APK)
         uses: actions/upload-artifact@v4 
         with:
           name: app-release-apk
-          # Wildcard search for any generated APK file
-          path: build/app/outputs/**/*.apk
+          # Path ko Android module directory ke andar set kiya gaya hai.
+          path: android/app/build/outputs/apk/release/app-release.apk
           
       - name: Notify on Success
         if: success()
