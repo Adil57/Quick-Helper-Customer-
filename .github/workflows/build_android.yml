@@ -11,19 +11,17 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # 🟢 GRADLE_OPTS ko Job level par set rakhenge (Extra safety)
-    env:
-      GRADLE_OPTS: "-Xmx2048m -Dorg.gradle.daemon=false"
     
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Set up Java (Downgrade to Java 11 for Stability)
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17' 
+          # CRITICAL FIX 1: Java 17 se 11 par shift kar rahe hain
+          java-version: '11' 
 
       # 1. Set up Flutter
       - name: Set up Flutter
@@ -42,14 +40,14 @@ jobs:
       - name: Grant Execute Permission to gradlew
         run: chmod +x ./gradlew
         
-      # 4. 🟢 CRITICAL FIX: Forcefully create/overwrite gradle.properties
-      - name: Create Gradle Properties File for JVM Fix
+      # 4. 🟢 CRITICAL FIX 2: Create Global Gradle Properties
+      - name: Create Global Gradle Properties for JVM Fix
         run: |
-          # Yeh command JVM memory settings ko high precedence se set karega,
-          # aur gradlew script ki galti ko override kar dega.
-          echo "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8" >> android/gradle.properties
+          # Yeh file (~/.gradle/) mein banti hai aur sabse zyada priority rakhti hai.
+          mkdir -p ~/.gradle/
+          echo "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8" >> ~/.gradle/gradle.properties
           
-      # 5. FORCE KEYSTORE GENERATION (Debug Build)
+      # 5. Build Debug APK
       - name: Build Debug APK
         run: flutter build apk --debug --no-tree-shake-icons
         
