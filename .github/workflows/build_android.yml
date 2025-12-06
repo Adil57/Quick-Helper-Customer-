@@ -47,11 +47,12 @@ jobs:
           chmod +x ./gradlew 
           echo "DEFAULT_JVM_OPTS line removed successfully."
         
-      # 5. ✅ FINAL FIX: Use simple 'flutter build' but clear the problematic ENV variable
+      # 5. ✅ FINAL FIX: Use simple 'flutter build' and clear ALL problematic ENV variables
       - name: Build Android Release APK (Simpler Command)
-        # CRITICAL FIX: GRADLE_OPTS ko empty set karo taaki woh '-Xmx64m' wala error resolve ho
+        # CRITICAL FIX: GRADLE_OPTS aur JAVA_OPTS dono ko empty set karo
         env:
           GRADLE_OPTS: "" 
+          JAVA_OPTS: "" # <-- Added this to catch the error source
         run: |
           flutter build apk --release 
         
