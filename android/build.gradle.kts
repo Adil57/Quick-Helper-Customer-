@@ -1,25 +1,25 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
-// Tumhari purani buildscript configuration:
 buildscript {
-    ext.kotlin_version = '1.8.20' // Ya tumhara latest version
+    // 🌟 Kotlin Syntax Fix: ext.kotlin_version ko yahan define nahi karte
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        // Buildscript dependencies yahan aayengi
-        classpath 'com.android.tools.build:gradle:8.0.0' // Ya tumhara latest version
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        // Flutter plugin ki dependency bhi yahan hogi
+        // 🌟 Kotlin Syntax Fix: classpath ki jagah 'classpath' use hota hai
+        // Kotlin Version tumhara 'settings.gradle.kts' ya 'gradle-wrapper.properties' se aana chahiye
+        // Ya fir yahan double quotes mein define karo
+        val kotlinVersion = "1.8.20" 
+        
+        // Tumhari dependencies:
+        classpath("com.android.tools.build:gradle:8.0.0") 
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+        // Agar koi aur classpath ho toh yahan add karo
     }
 }
 
-// -----------------------------------------------------------------------------
-// TUMHARI BUILD DIRECTORY CONFIGURATION (MapBox fix ke saath)
-// -----------------------------------------------------------------------------
-
-// Tumhari build directory definition:
+// Tumhari build directory configuration:
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")
@@ -34,32 +34,26 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-// -----------------------------------------------------------------------------
-// 🌟 CRITICAL FIX: MAPBOX REPOSITORY
-// -----------------------------------------------------------------------------
-
+// 🌟 CRITICAL FIX: MAPBOX REPOSITORY (Kotlin Syntax)
 allprojects {
     repositories {
         google()
         mavenCentral()
         
-        // 🚨 CRITICAL FIX: MAPBOX SDK REGISTRY CONFIGURATION
-        // Yeh block SDK download karne ki permission dega (Token use karke)
+        // MapBox Maven repository config
         maven {
-            url 'https://api.mapbox.com/downloads/v2/releases/maven'
+            url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
+            credentials {
+                username = "mapbox" 
+                // Kotlin Syntax mein token access
+                password = project.properties["MAPBOX_DOWNLOADS_TOKEN"] as String? ?: "" 
+            }
             authentication {
                 basic(credentials)
-            }
-            credentials {
-                // Gradle yahan se environment variable uthayega (jo local.properties mein inject hua hai)
-                username = 'mapbox' 
-                password = project.properties['MAPBOX_DOWNLOADS_TOKEN'] ?: "" 
             }
         }
     }
 }
-
-// -----------------------------------------------------------------------------
 
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
