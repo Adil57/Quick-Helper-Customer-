@@ -38,11 +38,8 @@ allprojects {
         maven {
             url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
             
-            // ✅ FIX: The cleanest KTS syntax to set Basic Auth without triggering type errors
-            authentication {
-                // ✅ FIX: Yeh syntax generic type issue ko bypass karta hai
-                create("basic", BasicAuthentication::class.java)
-            } 
+            // ✅ FIX: Using register<Type>("name") as explicitly requested by Gradle error.
+            authentication.register<org.gradle.api.authentication.BasicAuthentication>("basic") 
             
             credentials {
                 username = "mapbox" 
