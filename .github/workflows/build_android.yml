@@ -40,11 +40,11 @@ jobs:
           flutter clean
           flutter pub get
         
-      # 3. Build Android Release APK (CRITICAL FIX: Token Pass Karna)
+      # 3. Build Android Release APK
       - name: Build Android Release APK
         env:
           GRADLE_OPTS: "-Xmx3072m" 
-          # 🌟 MAPBOX_DOWNLOADS_TOKEN को CI environment में डालना
+          # ✅ FIX: Mapbox token ko direct Environment Variable mein set kiya gaya hai.
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }} 
         run: |
           flutter build apk --release 
