@@ -39,8 +39,8 @@ allprojects {
         maven {
             url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
             
-            // ✅ FIX: FINAL SAFE SYNTAX - Using Java class reference for register to bypass KTS ambiguity
-            (this as org.gradle.api.artifacts.repositories.MavenArtifactRepository).authentication.register("basic", org.gradle.api.authentication.BasicAuthentication::class.java)
+            // ✅ FIX: FINAL SAFE SYNTAX - Casting to AuthenticationSupported to resolve 'authentication' property
+            (this as org.gradle.api.artifacts.repositories.AuthenticationSupported).authentication.register("basic", org.gradle.api.authentication.BasicAuthentication::class.java)
             
             credentials {
                 username = "mapbox" 
