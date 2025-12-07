@@ -40,19 +40,15 @@ jobs:
           flutter clean
           flutter pub get
         
-      # 🔥 CRITICAL FIX: TOKEN KO APPEND KARNA
-      - name: Inject Mapbox Token into existing gradle.properties
-        run: |
-          # existing file mein token value ko append/set karna
-          echo "MAPBOX_DOWNLOADS_TOKEN=${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}" >> android/gradle.properties
-        shell: bash
-        
       # 3. Build Android Release APK
+      # 🔥 CRITICAL FIX: MAPBOX_DOWNLOADS_TOKEN ko Environment Variable ke through pass karna.
       - name: Build Android Release APK
         env:
+          # Yahi woh line hai jahan aapka token inject hoga
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }} 
           GRADLE_OPTS: "-Xmx3072m" 
         run: |
-          # Ab token ko project.properties se mil jayega
+          # Ab build chalao, token environment se mil jayega
           flutter build apk --release 
         
       - name: Upload Artifact (APK)
