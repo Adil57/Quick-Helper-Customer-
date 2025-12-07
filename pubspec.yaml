@@ -1,4 +1,4 @@
-# pubspec.yaml (Fixed)
+# pubspec.yaml (Final Version: MapBox)
 
 name: quick_helper_customer
 description: Customer App for booking helper services.
@@ -15,10 +15,9 @@ dependencies:
   auth0_flutter: ^1.14.0 
   http: ^1.2.1 
   
-  # 🟢 MAP SYSTEM (MapBox - No more latlong2 issue)
-  # Latlong2 aur flutter_map hata diye gaye hain
-  mapbox_maps_flutter: ^1.1.0  # Mapbox SDK replaces flutter_map
-  location: ^8.0.0           # Location utility package rehne diya
+  # 🟢 MAP SYSTEM (MapBox)
+  mapbox_maps_flutter: ^1.1.0 
+  location: ^8.0.0           
   
   # UI/Icons
   cupertino_icons: ^1.0.2
