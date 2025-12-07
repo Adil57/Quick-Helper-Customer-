@@ -1,6 +1,6 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
-// ❌ Yahan se 'import org.gradle.internal.authentication.BasicAuthentication' hata diya gaya hai.
+// Import line hata diya gaya hai, kyunki woh unnecessary errors de raha tha.
 
 buildscript {
     repositories {
@@ -31,8 +31,9 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-// 🌟 CRITICAL FIX: MAPBOX REPOSITORY
-// 'authentication' block aur uske andar 'basic()' use kiya gaya hai.
+// 🌟 FINAL CRITICAL FIX: MAPBOX REPOSITORY
+// Yeh syntax 'basic()' function ko directly access karne ke bajaye, 
+// 'authentication.create' method ko BasicAuthentication type ke saath use karta hai.
 allprojects {
     repositories {
         google()
@@ -41,14 +42,14 @@ allprojects {
         maven {
             url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
             
-            // ✅ FIX: Basic Authentication ke liye correct KTS syntax
+            // 🔥 YEH HAI FINAL FIX: Using Groovy-style configuration with the correct type.
+            // Hum Gradle ko bata rahe hain ki "basic" naam ki authentication BasicAuthentication type ki hai.
             authentication { 
-                basic() // Ab yeh resolve ho jayega
+                basic(DelegateClosure.of<org.gradle.api.authentication.BasicAuthentication> {}) 
             }
             
             credentials {
                 username = "mapbox" 
-                // Yeh token local.properties/env se uthaya jayega
                 password = project.properties["MAPBOX_DOWNLOADS_TOKEN"] as String? ?: "" 
             }
         }
