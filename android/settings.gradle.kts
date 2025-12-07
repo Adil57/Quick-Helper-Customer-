@@ -1,5 +1,6 @@
-// File: android/settings.gradle.kts
-
+// =============================
+// Flutter / Kotlin / AGP Setup
+// =============================
 pluginManagement {
     val flutterSdkPath =
         run {
@@ -16,19 +17,6 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
-
-        // ⭐ REQUIRED FOR MAPBOX PLUGINS
-        maven("https://api.mapbox.com/downloads/v2/releases/maven") {
-            authentication {
-                create<BasicAuthentication>("basic")
-            }
-            credentials {
-                username = "mapbox"
-                password =
-                    System.getenv("MAPBOX_DOWNLOADS_TOKEN")
-                        ?: settings.findProperty("MAPBOX_DOWNLOADS_TOKEN")?.toString()
-            }
-        }
     }
 }
 
@@ -38,4 +26,46 @@ plugins {
     id("org.jetbrains.kotlin.android") version "2.2.20" apply false
 }
 
+
+// ====================================
+// 🔥 MAPBOX TOKEN LOADING — FINAL FIX
+// ====================================
+val mapboxToken: String? =
+    System.getenv("MAPBOX_DOWNLOADS_TOKEN")
+        ?: gradle.startParameter.projectProperties["MAPBOX_DOWNLOADS_TOKEN"]?.toString()
+
+if (mapboxToken != null) {
+    println("✅ Mapbox token loaded")
+} else {
+    println("⚠ WARNING: MAPBOX_DOWNLOADS_TOKEN missing")
+}
+
+
+// =============================
+// Include Main App Module
+// =============================
 include(":app")
+
+
+// =============================
+// (OPTIONAL) Extra Repository
+// Needed by some plugins
+// =============================
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+
+        // Mapbox Maven Repo
+        maven {
+            url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
+            credentials {
+                username = "mapbox"
+                password = mapboxToken
+            }
+            authentication {
+                create<BasicAuthentication>("basic")
+            }
+        }
+    }
+}
