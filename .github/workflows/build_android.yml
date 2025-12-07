@@ -12,10 +12,6 @@ jobs:
   build:
     runs-on: windows-latest
 
-    # ⭐ 100% FIX: Token globally available
-    env:
-      MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -31,7 +27,7 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Cache pub-cache for dependencies
+      - name: Cache pub-cache
         uses: actions/cache@v3
         with:
           path: ${{ env.PUB_CACHE }}
@@ -39,29 +35,38 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      - name: Clean and Get Dependencies
+      - name: Flutter clean & get dependencies
         run: |
           flutter clean
           flutter pub get
 
-      # (optional) Debug token
-      - name: Debug Mapbox Token
+      # ⭐ MOST IMPORTANT FIX ⭐
+      - name: Inject Mapbox Token into Gradle Properties
         run: |
-          echo "Mapbox token starts with: ${MAPBOX_DOWNLOADS_TOKEN:0:5}****"
+          echo "MAPBOX_DOWNLOADS_TOKEN=${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}" >> C:\Users\runneradmin\.gradle\gradle.properties
+          echo "sdk.dir=C:\\Users\\runneradmin\\AppData\\Local\\Android\\Sdk" >> C:\Users\runneradmin\.gradle\gradle.properties
 
+      # ⭐ IMPORTANT: Also export env var for plugin fallback
+      - name: Export Mapbox Token to ENV
+        shell: bash
+        run: |
+          echo "MAPBOX_DOWNLOADS_TOKEN=${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}" >> $GITHUB_ENV
+
+      - name: Debug Token
+        run: |
+          echo "Token Starts With: ${env:MAPBOX_DOWNLOADS_TOKEN}" 
+
+      # Build Release APK
       - name: Build Android Release APK
         env:
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
           GRADLE_OPTS: "-Xmx3072m"
         run: |
           flutter build apk --release
 
-      - name: Upload Artifact (APK)
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
           path: build\app\outputs\flutter-apk\app-release.apk
-
-      - name: Notify on Success
-        if: success()
-        run: echo "APK build successful! Check Artifacts tab."
-        
+          
