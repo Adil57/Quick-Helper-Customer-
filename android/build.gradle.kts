@@ -1,6 +1,6 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
-// 🌟 CRITICAL FIX: 'basic' authentication reference ko resolve karne ke liye import
+// 🌟 FINAL FIX: Ab 'basic' reference ko resolve karne ke liye ise explicitly import kiya gaya hai
 import org.gradle.internal.authentication.BasicAuthentication
 
 buildscript {
@@ -41,10 +41,8 @@ allprojects {
         maven {
             url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
             
-            // 🚨 FINAL KTS SYNTAX FIX: basic() function ko is import se resolve kiya gaya hai
-            authentication {
-                basic() 
-            }
+            // 🚨 KTS SYNTAX FIX: authentication.create<BasicAuthentication>("basic")
+            authentication.create<BasicAuthentication>("basic")
             
             credentials {
                 username = "mapbox" 
