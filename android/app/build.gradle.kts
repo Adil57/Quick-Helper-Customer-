@@ -1,13 +1,46 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
-    id("kotlin-android")
+    id("org.jetbrains.kotlin.android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
-    namespace = "com.example.quick_helper_customer"
-    compileSdk = 36
-    ndkVersion = flutter.ndkVersion
+    namespace = "com.adil.quickhelper"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.adil.quickhelper"
+        minSdk = 23
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+
+        // ================================
+        // ⭐ MAPBOX TOKEN FIX (FINAL)
+        // ================================
+        val mapboxToken =
+            System.getenv("MAPBOX_DOWNLOADS_TOKEN")
+                ?: project.findProperty("MAPBOX_DOWNLOADS_TOKEN")?.toString()
+                ?: ""
+
+        manifestPlaceholders["MAPBOX_DOWNLOADS_TOKEN"] = mapboxToken
+        println("📦 Mapbox Token Applied in manifestPlaceholders: $mapboxToken")
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        debug {
+            isMinifyEnabled = false
+        }
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -15,32 +48,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
-
-    defaultConfig {
-        applicationId = "com.example.quick_helper_customer"
-
-        minSdk = 21
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
-
-        manifestPlaceholders["auth0Domain"] = "adil888.us.auth0.com"
-        manifestPlaceholders["auth0Scheme"] = "com.quickhelper.app"
-
-        // PUBLIC Mapbox token (map rendering)
-        resValue(
-            "string",
-            "mapbox_access_token",
-            project.properties["MAPBOX_ACCESS_TOKEN"] as String? ?: ""
-        )
-    }
-
-    buildTypes {
-        release {
-            signingConfig = signingConfigs.getByName("debug")
-        }
+        jvmTarget = "17"
     }
 }
 
@@ -48,20 +56,9 @@ flutter {
     source = "../.."
 }
 
-repositories {
-    google()
-    mavenCentral()
+dependencies {
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.22")
 
-    // ⭐ FINAL MAPBOX FIX – MUST HAVE
-    maven("https://api.mapbox.com/downloads/v2/releases/maven") {
-        authentication {
-            create<BasicAuthentication>("basic")
-        }
-        credentials {
-            username = "mapbox"
-            password =
-                System.getenv("MAPBOX_DOWNLOADS_TOKEN")
-                    ?: project.findProperty("MAPBOX_DOWNLOADS_TOKEN")?.toString()
-        }
-    }
+    // ⭐ Ensure Mapbox dependencies resolve
+    implementation("com.mapbox.maps:android:11.4.0")
 }
