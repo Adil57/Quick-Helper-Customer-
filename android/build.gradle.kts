@@ -1,5 +1,8 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
+// 🔥 IMPORTANT: Import the necessary DSL functions
+import org.gradle.kotlin.dsl.*
+
 buildscript {
     repositories {
         google()
@@ -38,9 +41,14 @@ allprojects {
         maven {
             url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
             
-            // ✅ FIX: Using register<Type>("name") as explicitly requested by Gradle error.
-            authentication.register<org.gradle.api.authentication.BasicAuthentication>("basic") 
-            
+            // ✅ FIX: Use configure block for context resolution
+            configure<org.gradle.api.artifacts.repositories.MavenArtifactRepository> {
+                authentication {
+                    // Ab 'register<...>("basic")' resolve hoga
+                    register<org.gradle.api.authentication.BasicAuthentication>("basic") 
+                }
+            }
+
             credentials {
                 username = "mapbox" 
                 password = project.properties["MAPBOX_DOWNLOADS_TOKEN"] as String? ?: "" 
