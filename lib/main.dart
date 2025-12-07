@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL MAPBOX IMPLEMENTATION)
+// lib/main.dart (FINAL WORKING VERSION: MapBox + Kill Switch Logic)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -7,15 +7,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http; 
 
-// 🟢 MAP IMPORTS (latlong2 aur flutter_map removed)
-// Naya MapBox SDK import
+// 🟢 MAP IMPORTS
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'; 
 // location package agar use karna hai toh yahan import hoga:
 // import 'package:location/location.dart'; 
 
-
 // -----------------------------------------------------------------------------
-// GLOBAL CONFIGURATION (No Change)
+// GLOBAL CONFIGURATION
 // -----------------------------------------------------------------------------
 
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api"; 
@@ -23,25 +21,28 @@ const String auth0Domain = "adil888.us.auth0.com";
 const String auth0ClientId = "OdsfeU9MvAcYGxK0Vd8TAlta9XAprMxx"; 
 const String auth0RedirectUri = "com.quickhelper.app://adil888.us.auth0.com/android/com.example.quick_helper_customer/callback"; 
 
-
 // 🟢 Auth0 Instance
 final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
 
 
 // -----------------------------------------------------------------------------
-// DUMMY STATE MANAGEMENT (No Change)
+// DUMMY STATE MANAGEMENT 
 // -----------------------------------------------------------------------------
 class UserAuth {
   UserProfile? _user; 
   String? _token; 
+
   UserAuth() {}
+
   UserProfile? get user => _user;
   bool get isAuthenticated => _user != null;
+
   void setUser(UserProfile? user, {String? token}) { 
     _user = user; 
     _token = token;
   }
   String? get userId => _user?.sub ?? "temp_user_id_001";
+  
   Future<void> logout(BuildContext context) async {
      _user = null;
      _token = null;
@@ -57,7 +58,7 @@ final UserAuth tempAuth = UserAuth();
 
 
 // -----------------------------------------------------------------------------
-// MAIN ENTRY & APP THEME (No Change)
+// MAIN ENTRY & APP THEME
 // -----------------------------------------------------------------------------
 
 void main() {
@@ -100,11 +101,12 @@ class AuthGate extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// LOGIN CHOICE SCREEN (No Change)
+// LOGIN CHOICE SCREEN
 // -----------------------------------------------------------------------------
 
 class LoginChoiceScreen extends StatefulWidget {
   const LoginChoiceScreen({super.key});
+
   @override
   State<LoginChoiceScreen> createState() => _LoginChoiceScreenState();
 }
@@ -188,6 +190,7 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
 // ----------------- 🟢 MAIN NAVIGATOR (No Change) ----------------- //
 class MainNavigator extends StatelessWidget {
   MainNavigator({super.key});
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -254,7 +257,7 @@ class AccountScreen extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// 🟢 MAP VIEW SCREEN (MAPBOX IMPLEMENTATION - FIXED)
+// 🟢 MAP VIEW SCREEN (MAPBOX + KILL SWITCH IMPLEMENTATION)
 // -----------------------------------------------------------------------------
 class MapViewScreen extends StatefulWidget {
   const MapViewScreen({super.key});
@@ -264,36 +267,57 @@ class MapViewScreen extends StatefulWidget {
 }
 
 class _MapViewScreenState extends State<MapViewScreen> {
-  // MapBox ka LatLng use ho raha hai
   static const LatLng _initialLocation = LatLng(19.0760, 72.8777); 
   
   MapboxMap? mapboxMap;
   PointAnnotationManager? annotationManager;
+  
+  // 🌟 KILL SWITCH VARIABLES
+  bool _isMapServiceEnabled = true; // Default: Enabled
+  bool _isLoadingStatus = true;    // Check status in initState
 
-  // Helper markers (DUMMY DATA ko MapBox Annotations mein convert kiya)
-  // NOTE: MapBox Position uses (Longitude, Latitude)
+  // Helper markers (MapBox Annotations)
   final List<PointAnnotationOptions> _annotationOptions = [
-    // Plumber location: LatLng(19.07, 72.87) -> Position(72.87, 19.07)
     PointAnnotationOptions(
       geometry: Point(coordinates: Position(72.87, 19.07)).toJson(),
-      textField: 'Plumber',
-      textSize: 12,
-      textColor: Colors.blue.value,
-      iconImage: 'plumbing_icon', // Icon assets MapBox setup mein add honge
-      iconSize: 1.5
+      textField: 'Plumber', textColor: Colors.blue.value, iconImage: 'plumbing_icon', iconSize: 1.5
     ),
-    // Electrician location: LatLng(19.09, 72.85) -> Position(72.85, 19.09)
     PointAnnotationOptions(
       geometry: Point(coordinates: Position(72.85, 19.09)).toJson(),
-      textField: 'Electrician',
-      textSize: 12,
-      textColor: Colors.red.value,
-      iconImage: 'electrician_icon',
-      iconSize: 1.5
+      textField: 'Electrician', textColor: Colors.red.value, iconImage: 'electrician_icon', iconSize: 1.5
     ),
   ];
   
-  // Map initialize hone par Annotations (markers) add karna
+  @override
+  void initState() {
+    super.initState();
+    _checkMapStatus(); // Map status check karo
+  }
+
+  // 🌟 Function to check the Kill Switch Status from Backend
+  Future<void> _checkMapStatus() async {
+    setState(() {
+      _isLoadingStatus = true;
+    });
+    try {
+      final response = await http.get(Uri.parse('$mongoApiBase/map/status'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'disabled') {
+          _isMapServiceEnabled = false;
+        }
+      } else {
+        _isMapServiceEnabled = false; 
+      }
+    } catch (e) {
+      print('Map status check failed: $e');
+      _isMapServiceEnabled = false;
+    }
+    setState(() {
+      _isLoadingStatus = false;
+    });
+  }
+
   void _onMapCreated(MapboxMap mapboxMap) {
     this.mapboxMap = mapboxMap;
     mapboxMap.annotations.createPointAnnotationManager().then((manager) {
@@ -304,11 +328,33 @@ class _MapViewScreenState extends State<MapViewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 1. Loading State
+    if (_isLoadingStatus) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
+    // 2. 🌟 Kill Switch Applied (Service Disabled)
+    if (!_isMapServiceEnabled) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Map Service Disabled")),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(20.0),
+            child: Text(
+              "Map service is temporarily unavailable due to potential budget limits. Please check back later.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.red, fontSize: 16),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // 3. Map Active (Default)
     return Scaffold(
       appBar: AppBar(title: const Text("Nearby Helpers (MapBox)")),
       body: MapWidget(
         styleUri: MapboxStyles.MAPBOX_STREETS, 
-        // Initial camera position set karna (Longitude, Latitude format mein)
         cameraOptions: CameraOptions(
           center: Point(coordinates: Position(_initialLocation.longitude, _initialLocation.latitude)).toJson(),
           zoom: 12.0,
@@ -320,7 +366,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
 }
 
 // -----------------------------------------------------------------------------
-// CUSTOM LOGIN SCREEN and rest of the screens (No Change)
+// CUSTOM LOGIN SCREEN
 // -----------------------------------------------------------------------------
 class CustomLoginScreen extends StatefulWidget {
   const CustomLoginScreen({super.key});
@@ -422,7 +468,7 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
   }
 }
 
-// ---------------- REGISTER SCREEN (No Change) ---------------- //
+// ---------------- REGISTER SCREEN ---------------- //
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
   @override
@@ -515,7 +561,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
-// ---------------- NEW: OTP VERIFICATION SCREEN (No Change) ---------------- //
+// ---------------- NEW: OTP VERIFICATION SCREEN ---------------- //
 class OTPVerificationScreen extends StatefulWidget {
   final String email;
   final String name;
@@ -624,7 +670,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
 }
 
 // ---------------------------------------------------------
-// HOME SCREEN (No Change)
+// HOME SCREEN
 // ---------------------------------------------------------
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -831,7 +877,7 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// ------------------ 🟢 BOOKING SCREEN (No Change) ------------------
+// ------------------ 🟢 BOOKING SCREEN ------------------
 class BookingScreen extends StatefulWidget {
   final String helperName;
   final String helperSkill;
@@ -1002,7 +1048,7 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 }
 
-// ------------------ 🟢 HELPER DETAIL PAGE (No Change) ------------------
+// ------------------ 🟢 HELPER DETAIL PAGE ------------------
 class HelperDetailPage extends StatelessWidget {
   final String helperName;
   final String helperSkill;
