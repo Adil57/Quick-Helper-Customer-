@@ -1,3 +1,5 @@
+# File: .github/workflows/your_workflow_file.yml
+
 name: Flutter Android Build (APK)
 
 on:
@@ -41,10 +43,10 @@ jobs:
           flutter pub get
         
       # 3. Build Android Release APK
-      # 🔥 CRITICAL FIX: MAPBOX_DOWNLOADS_TOKEN ko Environment Variable ke through pass karna.
+      # 🔥 CRITICAL FIX: Token ko environment variable (env:) mein set karna
       - name: Build Android Release APK
         env:
-          # Yahi woh line hai jahan aapka token inject hoga
+          # Yahi woh line hai jo Mapbox token ko runner environment mein set karti hai
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }} 
           GRADLE_OPTS: "-Xmx3072m" 
         run: |
