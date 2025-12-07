@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.quick_helper_customer"
-    compileSdk = 36 
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -20,18 +20,21 @@ android {
 
     defaultConfig {
         applicationId = "com.example.quick_helper_customer"
-        
-        minSdk = 21 
-        
+
+        minSdk = 21
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        manifestPlaceholders["auth0Domain"] = "adil888.us.auth0.com" 
-        manifestPlaceholders["auth0Scheme"] = "com.quickhelper.app" 
-        
-        // 🌟 MAPBOX PUBLIC TOKEN (Map render karne ke liye)
-        resValue("string", "mapbox_access_token", project.properties["MAPBOX_ACCESS_TOKEN"] as String? ?: "")
+        manifestPlaceholders["auth0Domain"] = "adil888.us.auth0.com"
+        manifestPlaceholders["auth0Scheme"] = "com.quickhelper.app"
+
+        // PUBLIC Mapbox token (map rendering)
+        resValue(
+            "string",
+            "mapbox_access_token",
+            project.properties["MAPBOX_ACCESS_TOKEN"] as String? ?: ""
+        )
     }
 
     buildTypes {
@@ -43,4 +46,22 @@ android {
 
 flutter {
     source = "../.."
+}
+
+repositories {
+    google()
+    mavenCentral()
+
+    // ⭐ FINAL MAPBOX FIX – MUST HAVE
+    maven("https://api.mapbox.com/downloads/v2/releases/maven") {
+        authentication {
+            create<BasicAuthentication>("basic")
+        }
+        credentials {
+            username = "mapbox"
+            password =
+                System.getenv("MAPBOX_DOWNLOADS_TOKEN")
+                    ?: project.findProperty("MAPBOX_DOWNLOADS_TOKEN")?.toString()
+        }
+    }
 }
