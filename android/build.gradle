@@ -1,4 +1,4 @@
-// File: android/build.gradle (Groovy DSL) - FINAL VERSION
+// File: android/build.gradle (Groovy DSL) - FINAL FINAL VERSION
 
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
@@ -38,14 +38,15 @@ allprojects {
         maven {
             url "https://api.mapbox.com/downloads/v2/releases/maven"
             
-            // ✅ Syntax Fix: Using 'create' method for Basic Auth
+            // ✅ Syntax Fix: Using 'create' method for Basic Auth (solves the compiler issue)
             authentication {
                 create('basic', BasicAuthentication) 
             }
             
             credentials {
                 username = "mapbox" 
-                // ✅ Token Fix: Standard way to read from local.properties (which the workflow will create)
+                // ✅ Token Fix: Reads from project properties (which includes gradle.properties)
+                // This is the correct way for CI when using injected properties/files.
                 password = project.properties["MAPBOX_DOWNLOADS_TOKEN"]
             }
         }
