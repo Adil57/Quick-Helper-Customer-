@@ -1,43 +1,12 @@
-// File: android/build.gradle
-
 buildscript {
     repositories {
         google()
         mavenCentral()
-
-        // ✔ Mapbox plugin needed here too
-        maven {
-            url "https://api.mapbox.com/downloads/v2/releases/maven"
-            authentication {
-                basic(BasicAuthentication)
-            }
-            credentials {
-                username = "mapbox"
-                password = System.getenv("MAPBOX_DOWNLOADS_TOKEN") 
-                    ?: project.findProperty("MAPBOX_DOWNLOADS_TOKEN")
-            }
-        }
     }
     dependencies {
-        def kotlinVersion = "1.8.20"
         classpath 'com.android.tools.build:gradle:8.0.0'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.20"
     }
-}
-
-// BUILD DIR FIX (same as your config)
-def newBuildDir = rootProject.layout.buildDirectory
-        .dir("../../build")
-        .get()
-rootProject.layout.buildDirectory.set(newBuildDir)
-
-subprojects {
-    def newSubprojectBuildDir = newBuildDir.dir(project.name)
-    project.layout.buildDirectory.set(newSubprojectBuildDir)
-}
-
-subprojects {
-    project.evaluationDependsOn(':app')
 }
 
 allprojects {
@@ -45,7 +14,9 @@ allprojects {
         google()
         mavenCentral()
 
-        // ✔ FINAL MAPBOX SDK REPOSITORY (correct)
+        // ============================================
+        // ⭐ MAPBOX MAVEN + UNIVERSAL TOKEN FALLBACK
+        // ============================================
         maven {
             url "https://api.mapbox.com/downloads/v2/releases/maven"
             authentication {
@@ -53,8 +24,11 @@ allprojects {
             }
             credentials {
                 username = "mapbox"
-                password = System.getenv("MAPBOX_DOWNLOADS_TOKEN") 
-                    ?: project.findProperty("MAPBOX_DOWNLOADS_TOKEN")
+                password =
+                        System.getenv("MAPBOX_DOWNLOADS_TOKEN")
+                                ?: rootProject.findProperty("MAPBOX_DOWNLOADS_TOKEN")
+                                ?: project.findProperty("MAPBOX_DOWNLOADS_TOKEN")
+                                ?: ""
             }
         }
     }
