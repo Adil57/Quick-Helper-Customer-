@@ -30,7 +30,7 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-// 🌟 FINAL FIX: MAPBOX REPOSITORY (Groovy Syntax - 100% resolves the issue)
+// 🌟 FINAL FIX: MAPBOX REPOSITORY
 allprojects {
     repositories {
         google()
@@ -39,14 +39,13 @@ allprojects {
         maven {
             url "https://api.mapbox.com/downloads/v2/releases/maven"
             
-            // ✅ FIX: Simple Groovy syntax for Basic Auth - no KTS conflicts
+            // 🔥 YEH HAI FINAL FIX: Using official register method and BasicAuthentication class (Groovy)
             authentication {
-                basic() 
+                register('basic', org.gradle.api.authentication.BasicAuthentication) 
             }
             
             credentials {
                 username = "mapbox" 
-                // Yahan Mapbox token access karne ka syntax Groovy mein alag hai
                 password = project.properties["MAPBOX_DOWNLOADS_TOKEN"] ?: "" 
             }
         }
