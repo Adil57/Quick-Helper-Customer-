@@ -1,4 +1,4 @@
-# .github/workflows/main.yml (Fixed)
+# .github/workflows/main.yml (Final Version: MapBox Token Setup)
 
 name: Flutter Android Build (APK)
 
@@ -18,9 +18,8 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Java Setup ko simpler, more stable v3 action se replace kiya
       - name: Set up Java 17
-        uses: actions/setup-java@v3 
+        uses: actions/setup-java@v3 # Using v3 for stability
         with:
           distribution: 'zulu'
           java-version: '17' 
@@ -30,7 +29,7 @@ jobs:
         with:
           channel: 'stable'
           
-      # Caching ko standard practice ke liye rakha hai
+      # Caching is standard practice
       - name: Cache pub-cache for dependencies
         uses: actions/cache@v3
         with:
@@ -39,17 +38,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      # Clean, Repair ko hata kar sirf Clean aur Get rakha hai
       - name: Clean and Get Dependencies
         run: |
           flutter clean
           flutter pub get
         
+      # 3. Build Android Release APK (Token Pass Karna)
       - name: Build Android Release APK
         env:
           GRADLE_OPTS: "-Xmx3072m" 
+          # 🌟 CRITICAL FIX: MapBox Secret Token ko env mein pass karna
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }} 
         run: |
-          # Mapbox require karta hai ki aap Android/iOS files ko bhi update karein
           flutter build apk --release 
         
       - name: Upload Artifact (APK)
