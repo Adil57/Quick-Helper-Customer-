@@ -4,6 +4,19 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+
+        // ✔ Mapbox plugin needed here too
+        maven {
+            url "https://api.mapbox.com/downloads/v2/releases/maven"
+            authentication {
+                basic(BasicAuthentication)
+            }
+            credentials {
+                username = "mapbox"
+                password = System.getenv("MAPBOX_DOWNLOADS_TOKEN") 
+                    ?: project.findProperty("MAPBOX_DOWNLOADS_TOKEN")
+            }
+        }
     }
     dependencies {
         def kotlinVersion = "1.8.20"
@@ -12,6 +25,7 @@ buildscript {
     }
 }
 
+// BUILD DIR FIX (same as your config)
 def newBuildDir = rootProject.layout.buildDirectory
         .dir("../../build")
         .get()
@@ -21,6 +35,7 @@ subprojects {
     def newSubprojectBuildDir = newBuildDir.dir(project.name)
     project.layout.buildDirectory.set(newSubprojectBuildDir)
 }
+
 subprojects {
     project.evaluationDependsOn(':app')
 }
@@ -30,6 +45,7 @@ allprojects {
         google()
         mavenCentral()
 
+        // ✔ FINAL MAPBOX SDK REPOSITORY (correct)
         maven {
             url "https://api.mapbox.com/downloads/v2/releases/maven"
             authentication {
@@ -37,8 +53,8 @@ allprojects {
             }
             credentials {
                 username = "mapbox"
-                // ✅ FINAL FIX — NO project.properties.get()
-                password = System.getenv("MAPBOX_DOWNLOADS_TOKEN") ?: MAPBOX_DOWNLOADS_TOKEN
+                password = System.getenv("MAPBOX_DOWNLOADS_TOKEN") 
+                    ?: project.findProperty("MAPBOX_DOWNLOADS_TOKEN")
             }
         }
     }
