@@ -1,3 +1,5 @@
+// File: android/settings.gradle.kts
+
 pluginManagement {
     val flutterSdkPath =
         run {
@@ -14,6 +16,19 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
+
+        // ⭐ REQUIRED FOR MAPBOX PLUGINS
+        maven("https://api.mapbox.com/downloads/v2/releases/maven") {
+            authentication {
+                create<BasicAuthentication>("basic")
+            }
+            credentials {
+                username = "mapbox"
+                password =
+                    System.getenv("MAPBOX_DOWNLOADS_TOKEN")
+                        ?: settings.findProperty("MAPBOX_DOWNLOADS_TOKEN")?.toString()
+            }
+        }
     }
 }
 
