@@ -38,10 +38,9 @@ allprojects {
         maven {
             url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
             
-            // ✅ FIX: Standard KTS syntax for creating authentication
-            @Suppress("SuspiciousLegacyType")
+            // ✅ FIX: Using authentication.register<Type>("name") for clean KTS
             authentication {
-                create<org.gradle.api.authentication.BasicAuthentication>("basic") 
+                register<org.gradle.api.authentication.BasicAuthentication>("basic") 
             }
             
             credentials {
