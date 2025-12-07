@@ -1,4 +1,4 @@
-// File: android/build.gradle (Groovy DSL)
+// File: android/build.gradle (Groovy DSL) - FINAL VERSION
 
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
@@ -12,7 +12,6 @@ buildscript {
         
         classpath 'com.android.tools.build:gradle:8.0.0' 
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
-        // Agar koi aur classpath ho toh yahan add karo
     }
 }
 
@@ -30,7 +29,7 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-// 🌟 FINAL FIX: MAPBOX REPOSITORY (Groovy with Create method)
+// 🌟 FINAL FIX: MAPBOX REPOSITORY
 allprojects {
     repositories {
         google()
@@ -39,14 +38,15 @@ allprojects {
         maven {
             url "https://api.mapbox.com/downloads/v2/releases/maven"
             
-            // 🔥 YEH HAI FINAL FIX: Groovy syntax using 'create' and BasicAuthentication class (should resolve the missing method issue)
+            // ✅ Syntax Fix: Using 'create' method for Basic Auth (solves the compiler issue)
             authentication {
                 create('basic', BasicAuthentication) 
             }
             
             credentials {
                 username = "mapbox" 
-                password = project.properties["MAPBOX_DOWNLOADS_TOKEN"] ?: "" 
+                // ✅ Token Fix: Environment variable se password read karna
+                password = System.getenv("MAPBOX_DOWNLOADS_TOKEN")
             }
         }
     }
