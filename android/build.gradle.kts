@@ -1,9 +1,7 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
-// 🔥 IMPORTANT: Import the necessary DSL functions
-import org.gradle.kotlin.dsl.*
-
-buildscript {
+// Import sirf dsl ke liye rakha hai
+import org.gradle.kotlin.dsl.* buildscript {
     repositories {
         google()
         mavenCentral()
@@ -41,14 +39,9 @@ allprojects {
         maven {
             url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
             
-            // ✅ FIX: Use configure block for context resolution
-            configure<org.gradle.api.artifacts.repositories.MavenArtifactRepository> {
-                authentication {
-                    // Ab 'register<...>("basic")' resolve hoga
-                    register<org.gradle.api.authentication.BasicAuthentication>("basic") 
-                }
-            }
-
+            // ✅ FIX: FINAL SAFE SYNTAX - Using Java class reference for register to bypass KTS ambiguity
+            (this as org.gradle.api.artifacts.repositories.MavenArtifactRepository).authentication.register("basic", org.gradle.api.authentication.BasicAuthentication::class.java)
+            
             credentials {
                 username = "mapbox" 
                 password = project.properties["MAPBOX_DOWNLOADS_TOKEN"] as String? ?: "" 
