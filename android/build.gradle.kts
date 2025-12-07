@@ -1,18 +1,13 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    // 🌟 Kotlin Syntax Fix: ext.kotlin_version ko yahan define nahi karte
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        // 🌟 Kotlin Syntax Fix: classpath ki jagah 'classpath' use hota hai
-        // Kotlin Version tumhara 'settings.gradle.kts' ya 'gradle-wrapper.properties' se aana chahiye
-        // Ya fir yahan double quotes mein define karo
         val kotlinVersion = "1.8.20" 
         
-        // Tumhari dependencies:
         classpath("com.android.tools.build:gradle:8.0.0") 
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
         // Agar koi aur classpath ho toh yahan add karo
@@ -34,22 +29,23 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-// 🌟 CRITICAL FIX: MAPBOX REPOSITORY (Kotlin Syntax)
+// 🌟 CRITICAL FIX: MAPBOX REPOSITORY (Corrected KTS Syntax)
 allprojects {
     repositories {
         google()
         mavenCentral()
         
-        // MapBox Maven repository config
         maven {
             url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
+            
+            // 🚨 FINAL KTS SYNTAX FIX for 'basic' authentication:
+            authentication {
+                basic() // 'basic' ko configure karne ke liye block use karna padta hai
+            }
+            
             credentials {
                 username = "mapbox" 
-                // Kotlin Syntax mein token access
                 password = project.properties["MAPBOX_DOWNLOADS_TOKEN"] as String? ?: "" 
-            }
-            authentication {
-                basic(credentials)
             }
         }
     }
