@@ -1,6 +1,11 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
-// Import line hata diya gaya hai, kyunki woh unnecessary errors de raha tha.
+// 🔥 CRITICAL FIX: Missing imports for delegate closure and authentication types in older KTS
+import org.gradle.kotlin.dsl.* import org.gradle.api.internal.artifacts.repositories.AuthenticationSupported
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.api.internal.artifacts.repositories.AuthenticationSupportedInternal // Just in case
+import org.gradle.internal.impldep.org.codehaus.groovy.runtime.DelegatingScript.DelegateClosure // Isse DelegateClosure resolve hoga
+
 
 buildscript {
     repositories {
@@ -32,8 +37,6 @@ subprojects {
 }
 
 // 🌟 FINAL CRITICAL FIX: MAPBOX REPOSITORY
-// Yeh syntax 'basic()' function ko directly access karne ke bajaye, 
-// 'authentication.create' method ko BasicAuthentication type ke saath use karta hai.
 allprojects {
     repositories {
         google()
@@ -42,11 +45,9 @@ allprojects {
         maven {
             url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
             
-            // 🔥 YEH HAI FINAL FIX: Using Groovy-style configuration with the correct type.
-            // Hum Gradle ko bata rahe hain ki "basic" naam ki authentication BasicAuthentication type ki hai.
-            authentication { 
-                basic(DelegateClosure.of<org.gradle.api.authentication.BasicAuthentication> {}) 
-            }
+            // ✅ FIX: authentication.create<> method jo BasicAuthentication ko manually set karta hai
+            // Yeh 'basic()' aur 'DelegateClosure' errors ko bypass karega.
+            (this as AuthenticationSupported).authentication.create<org.gradle.api.authentication.BasicAuthentication>("basic")
             
             credentials {
                 username = "mapbox" 
