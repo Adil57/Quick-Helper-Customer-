@@ -38,15 +38,15 @@ allprojects {
         maven {
             url "https://api.mapbox.com/downloads/v2/releases/maven"
             
-            // ✅ Syntax Fix: Using 'create' method for Basic Auth (solves the compiler issue)
+            // ✅ Syntax Fix: Using 'create' method for Basic Auth
             authentication {
                 create('basic', BasicAuthentication) 
             }
             
             credentials {
                 username = "mapbox" 
-                // ✅ Token Fix: Environment variable se password read karna
-                password = System.getenv("MAPBOX_DOWNLOADS_TOKEN")
+                // ✅ Token Fix: Standard way to read from local.properties (which the workflow will create)
+                password = project.properties["MAPBOX_DOWNLOADS_TOKEN"]
             }
         }
     }
