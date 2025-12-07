@@ -1,22 +1,21 @@
-// lib/main.dart (FINAL WORKING VERSION WITH ALL FIXES)
+// lib/main.dart (FINAL MAPBOX IMPLEMENTATION)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
-// Auth0 UserProfile is ab yahan se use ho rahi hai
 import 'package:auth0_flutter_platform_interface/auth0_flutter_platform_interface.dart'; 
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http; 
-// 🟢 MAP IMPORTS
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong2.dart' hide LatLng;
-      // From pubspec (LatLng type)
+
+// 🟢 MAP IMPORTS (latlong2 aur flutter_map removed)
+// Naya MapBox SDK import
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'; 
 // location package agar use karna hai toh yahan import hoga:
 // import 'package:location/location.dart'; 
 
 
 // -----------------------------------------------------------------------------
-// GLOBAL CONFIGURATION
+// GLOBAL CONFIGURATION (No Change)
 // -----------------------------------------------------------------------------
 
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api"; 
@@ -30,27 +29,19 @@ final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
 
 
 // -----------------------------------------------------------------------------
-// DUMMY STATE MANAGEMENT (FIXED: UserProfile type consistency)
+// DUMMY STATE MANAGEMENT (No Change)
 // -----------------------------------------------------------------------------
-// NOTE: Hum Auth0FlutterPlatformInterface se UserProfile use kar rahe hain
 class UserAuth {
   UserProfile? _user; 
   String? _token; 
-
-  UserAuth() {
-    // Initialization agar non-nullable constructor nahi hai
-  }
-
+  UserAuth() {}
   UserProfile? get user => _user;
   bool get isAuthenticated => _user != null;
-
-  // FIX: setUser function mein parameter type ko explicit Auth0 UserProfile rakho
   void setUser(UserProfile? user, {String? token}) { 
     _user = user; 
     _token = token;
   }
   String? get userId => _user?.sub ?? "temp_user_id_001";
-  
   Future<void> logout(BuildContext context) async {
      _user = null;
      _token = null;
@@ -109,12 +100,11 @@ class AuthGate extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// LOGIN CHOICE SCREEN (Auth0 setUser Fix)
+// LOGIN CHOICE SCREEN (No Change)
 // -----------------------------------------------------------------------------
 
 class LoginChoiceScreen extends StatefulWidget {
   const LoginChoiceScreen({super.key});
-
   @override
   State<LoginChoiceScreen> createState() => _LoginChoiceScreenState();
 }
@@ -123,13 +113,11 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
   bool isLoading = false;
   String? _error;
 
-  // 1. Auth0 Login Function
   Future<void> loginWithAuth0() async { 
       setState(() { _error = null; isLoading = true; });
       try {
         final result = await auth0.webAuthentication(scheme: auth0RedirectUri.split('://').first).login();
         if (mounted) {
-          // FIX: result.user (type Auth0UserProfile) is now correctly passed to setUser
           tempAuth.setUser(result.user, token: result.accessToken); 
           Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => MainNavigator()));
         }
@@ -145,7 +133,6 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
       }
   }
 
-  // 2. Normal Login Function (Navigation)
   void navigateToCustomLogin(BuildContext context) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomLoginScreen()));
   }
@@ -165,7 +152,6 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
                   textAlign: TextAlign.center),
               const SizedBox(height: 60),
 
-              // --- A. LOGIN WITH AUTH0 BUTTON ---
               ElevatedButton.icon(
                 icon: isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.lock_open),
                 label: Text(isLoading ? "Logging in..." : 'Log in with Auth0 (Google/Social)'),
@@ -177,12 +163,8 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
                 onPressed: isLoading ? null : loginWithAuth0,
               ),
               const SizedBox(height: 20),
-
               const Divider(height: 20, thickness: 1, color: Colors.grey),
-
               const SizedBox(height: 20),
-              
-              // --- B. NORMAL LOGIN BUTTON ---
               OutlinedButton.icon(
                 icon: const Icon(Icons.email, color: Colors.indigo),
                 label: const Text('Normal Login (Email/Password)', style: TextStyle(color: Colors.indigo)),
@@ -192,7 +174,6 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
                 ),
                 onPressed: isLoading ? null : () => navigateToCustomLogin(context),
               ),
-              
               if (_error != null) 
                 Padding(padding: const EdgeInsets.only(top: 20), child: Text(_error!, style: const TextStyle(color: Colors.red), textAlign: TextAlign.center)),
             ],
@@ -207,7 +188,6 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
 // ----------------- 🟢 MAIN NAVIGATOR (No Change) ----------------- //
 class MainNavigator extends StatelessWidget {
   MainNavigator({super.key});
-
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -251,7 +231,6 @@ class MainNavigator extends StatelessWidget {
 // ---------------- ACCOUNT SCREEN (No Change) ---------------- //
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -275,7 +254,7 @@ class AccountScreen extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// MAP VIEW SCREEN (OSM STRUCTURE FIXED)
+// 🟢 MAP VIEW SCREEN (MAPBOX IMPLEMENTATION - FIXED)
 // -----------------------------------------------------------------------------
 class MapViewScreen extends StatefulWidget {
   const MapViewScreen({super.key});
@@ -285,51 +264,63 @@ class MapViewScreen extends StatefulWidget {
 }
 
 class _MapViewScreenState extends State<MapViewScreen> {
-  // Map ki shuruati location (Example: Mumbai)
+  // MapBox ka LatLng use ho raha hai
   static const LatLng _initialLocation = LatLng(19.0760, 72.8777); 
+  
+  MapboxMap? mapboxMap;
+  PointAnnotationManager? annotationManager;
 
-  // Helper markers (DUMMY DATA)
-  final List<Marker> _markers = [
-    Marker(
-      point: const LatLng(19.07, 72.87), // Plumber location
-      width: 80,
-      height: 80,
-      child: const Icon(Icons.plumbing, color: Colors.blue, size: 40),
+  // Helper markers (DUMMY DATA ko MapBox Annotations mein convert kiya)
+  // NOTE: MapBox Position uses (Longitude, Latitude)
+  final List<PointAnnotationOptions> _annotationOptions = [
+    // Plumber location: LatLng(19.07, 72.87) -> Position(72.87, 19.07)
+    PointAnnotationOptions(
+      geometry: Point(coordinates: Position(72.87, 19.07)).toJson(),
+      textField: 'Plumber',
+      textSize: 12,
+      textColor: Colors.blue.value,
+      iconImage: 'plumbing_icon', // Icon assets MapBox setup mein add honge
+      iconSize: 1.5
     ),
-    Marker(
-      point: const LatLng(19.09, 72.85), // Electrician location
-      width: 80,
-      height: 80,
-      child: const Icon(Icons.electrical_services, color: Colors.red, size: 40),
+    // Electrician location: LatLng(19.09, 72.85) -> Position(72.85, 19.09)
+    PointAnnotationOptions(
+      geometry: Point(coordinates: Position(72.85, 19.09)).toJson(),
+      textField: 'Electrician',
+      textSize: 12,
+      textColor: Colors.red.value,
+      iconImage: 'electrician_icon',
+      iconSize: 1.5
     ),
   ];
+  
+  // Map initialize hone par Annotations (markers) add karna
+  void _onMapCreated(MapboxMap mapboxMap) {
+    this.mapboxMap = mapboxMap;
+    mapboxMap.annotations.createPointAnnotationManager().then((manager) {
+      annotationManager = manager;
+      annotationManager!.createMulti(_annotationOptions);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Nearby Helpers (Free Map)")),
-      body: FlutterMap(
-        options: const MapOptions(
-          initialCenter: _initialLocation,
-          initialZoom: 12.0,
+      appBar: AppBar(title: const Text("Nearby Helpers (MapBox)")),
+      body: MapWidget(
+        styleUri: MapboxStyles.MAPBOX_STREETS, 
+        // Initial camera position set karna (Longitude, Latitude format mein)
+        cameraOptions: CameraOptions(
+          center: Point(coordinates: Position(_initialLocation.longitude, _initialLocation.latitude)).toJson(),
+          zoom: 12.0,
         ),
-        children: [
-          // Yahan map tiles aayenge (Map ka base)
-          TileLayer(
-            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            userAgentPackageName: 'com.quickhelper.app',
-          ),
-          
-          // Markers layer
-          MarkerLayer(markers: _markers),
-        ],
+        onMapCreated: _onMapCreated,
       ),
     );
   }
 }
 
 // -----------------------------------------------------------------------------
-// CUSTOM LOGIN SCREEN (No Change)
+// CUSTOM LOGIN SCREEN and rest of the screens (No Change)
 // -----------------------------------------------------------------------------
 class CustomLoginScreen extends StatefulWidget {
   const CustomLoginScreen({super.key});
@@ -342,7 +333,6 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
   bool isLoading = false;
   String? _error;
 
-  // MODIFIED: API Login Call
   Future<void> loginUser() async {
     if (email.text.isEmpty || password.text.isEmpty) {
       setState(() => _error = "Please enter email and password.");
@@ -363,7 +353,6 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
         final user = data['user'];
         final token = data['token'];
 
-        // FIX: Auth0 UserProfile use ho raha hai
         tempAuth.setUser(
           UserProfile(name: user['name'] ?? 'Local User', sub: user['id'] ?? user['email']), 
           token: token
@@ -399,7 +388,6 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
             const Text("Login with Email/Password",
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.indigo)),
             const SizedBox(height: 40),
-
             TextField(
               controller: email,
               keyboardType: TextInputType.emailAddress,
@@ -410,10 +398,7 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
               obscureText: true,
               decoration: const InputDecoration(labelText: "Password"),
             ),
-
             const SizedBox(height: 20),
-            
-            // 🟢 CUSTOM LOGIN BUTTON
             ElevatedButton(
               onPressed: isLoading ? null : loginUser, 
               style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50), backgroundColor: Colors.indigo),
@@ -421,10 +406,8 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
                   ? const CircularProgressIndicator(color: Colors.white)
                   : const Text("Log in", style: TextStyle(color: Colors.white)),
             ),
-            
             if (_error != null) 
               Padding(padding: const EdgeInsets.only(top: 10), child: Text(_error!, style: const TextStyle(color: Colors.red))),
-
             TextButton(
               onPressed: () {
                 Navigator.push(context,
@@ -439,7 +422,6 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
   }
 }
 
-
 // ---------------- REGISTER SCREEN (No Change) ---------------- //
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -453,7 +435,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool isLoading = false;
   String? _error;
   
-  // MODIFIED: Start OTP Registration Process
   Future<void> registerUserStartOTP() async {
     if (name.text.isEmpty || email.text.isEmpty || password.text.isEmpty) {
       setState(() => _error = "Please fill all fields.");
@@ -474,13 +455,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("OTP sent to your email. Please verify."))
           );
-          // Navigate to OTP Verification Screen
           Navigator.pushReplacement(context, MaterialPageRoute(
             builder: (_) => OTPVerificationScreen(
               name: name.text, 
               email: email.text, 
               password: password.text,
-              isRegistration: true, // Registration flow hai
+              isRegistration: true,
             )
           ));
         }
@@ -518,9 +498,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               obscureText: true,
               decoration: const InputDecoration(labelText: "Password (min 6 chars)"),
             ),
-
             const SizedBox(height: 20),
-
             ElevatedButton(
               onPressed: isLoading ? null : registerUserStartOTP,
               style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
@@ -549,7 +527,7 @@ class OTPVerificationScreen extends StatefulWidget {
     required this.email, 
     required this.name, 
     required this.password,
-    required this.isRegistration, // Flag to decide API endpoint
+    required this.isRegistration,
   });
 
   @override
@@ -561,7 +539,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   String? _error;
 
   Future<void> verifyOTP() async {
-    if (otp.text.isEmpty || otp.text.length < 4) { // Assuming 4 digit OTP
+    if (otp.text.isEmpty || otp.text.length < 4) {
       setState(() => _error = "Please enter the 4-digit OTP.");
       return;
     }
@@ -575,7 +553,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         body: json.encode({
           'email': widget.email, 
           'otp': otp.text,
-          'name': widget.isRegistration ? widget.name : null, // Name sirf registration mein chahiye
+          'name': widget.isRegistration ? widget.name : null,
           'password': widget.isRegistration ? widget.password : null,
         }),
       );
@@ -585,7 +563,6 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         final user = data['user'];
         final token = data['token'];
 
-        // FIX: Auth0 UserProfile use ho raha hai
         tempAuth.setUser(
           UserProfile(name: user['name'] ?? widget.name, sub: user['id'] ?? widget.email), 
           token: token
@@ -618,17 +595,18 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text("OTP sent to ${widget.email}", style: const TextStyle(fontSize: 16)),
+            Text("OTP sent to ${widget.email}",
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 18, color: Colors.indigo)),
             const SizedBox(height: 20),
             TextField(
               controller: otp,
               keyboardType: TextInputType.number,
-              maxLength: 6, // 6 digits for safety
-              decoration: const InputDecoration(labelText: "Enter OTP"),
+              maxLength: 6,
+              textAlign: TextAlign.center,
+              decoration: const InputDecoration(labelText: "OTP Code"),
             ),
-
             const SizedBox(height: 20),
-
             ElevatedButton(
               onPressed: isLoading ? null : verifyOTP,
               style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
@@ -650,13 +628,11 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
 // ---------------------------------------------------------
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
-
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  // Dummy data for testing HelperDetailPage navigation
   List<Map<String, dynamic>> helpers = [
     {"name": "Ramesh", "skill": "Electrician", "price": 450, "image": ""},
     {"name": "Suresh", "skill": "Plumber", "price": 300, "image": ""},
@@ -671,20 +647,16 @@ class _HomePageState extends State<HomePage> {
     // _loadHelpers();
   }
 
-  // -------- CATEGORY ACTION FIX -------- //
   void _filterByCategory(String category) {
-    // TODO: Yahan tumhara actual API call aayega category ke hisaab se helpers load karne ke liye
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Filtering helpers by: $category'))
     );
     print('Filtered by: $category');
-    // Ab tum yahan API call karke 'helpers' list ko update karoge
   }
 
-  // -------- LOAD HELPERS (RENDER API) -------- //
   Future<void> _loadHelpers() async {
     setState(() => loading = true);
-    // [API call logic remains the same]
+    await Future.delayed(const Duration(seconds: 1)); 
     if (mounted) setState(() => loading = false);
   }
 
@@ -700,7 +672,7 @@ class _HomePageState extends State<HomePage> {
           IconButton(
             icon: const Icon(Icons.person_pin_outlined, color: Colors.black),
             onPressed: () {
-               DefaultTabController.of(context).animateTo(4); // Tab 4 is Account
+               DefaultTabController.of(context).animateTo(4);
             },
           ),
         ],
@@ -730,9 +702,7 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     SizedBox(
                       height: 110,
                       child: ListView(
@@ -747,18 +717,14 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 10),
-
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Text("Available Helpers",
                           style: TextStyle(
                               fontSize: 20, fontWeight: FontWeight.bold)),
                     ),
-
                     const SizedBox(height: 12),
-
                     GridView.builder(
                       padding: const EdgeInsets.all(12),
                       shrinkWrap: true,
@@ -788,7 +754,6 @@ class _HomePageState extends State<HomePage> {
     );
   } 
 
-  // MODIFIED: Category button now calls _filterByCategory
   Widget categoryItem(String title, IconData icon) {
     return InkWell(
       onTap: () => _filterByCategory(title),
@@ -900,8 +865,7 @@ class _BookingScreenState extends State<BookingScreen> {
   
   Future<void> _createBooking() async {
     setState(() => isCreatingBooking = true);
-    // [API call logic]
-    await Future.delayed(const Duration(seconds: 2)); // Simulate API call
+    await Future.delayed(const Duration(seconds: 2));
     if (mounted) {
        ScaffoldMessenger.of(context).showSnackBar(
          SnackBar(content: Text('Booking confirmed for ${widget.helperName}! Total: ₹${totalCost.toStringAsFixed(0)}'))
@@ -993,27 +957,19 @@ class _BookingScreenState extends State<BookingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Helper Info Header
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               color: Colors.indigo,
               child: Text("Booking ${widget.helperName} (${widget.helperSkill})", style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
             ),
-            
-            // Date Picker 
             Card(margin: const EdgeInsets.all(16), child: _buildDatePicker()),
-            
-            // Time Slider
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
               child: Text("Service Duration", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
             Card(margin: const EdgeInsets.symmetric(horizontal: 16), child: _buildTimeSlider()),
-            
             const SizedBox(height: 20),
-
-            // Cost Summary
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
               child: Text("Cost Summary", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -1022,10 +978,7 @@ class _BookingScreenState extends State<BookingScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: _buildCostSummary(),
             ),
-
             const SizedBox(height: 30),
-
-            // Confirm Button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: ElevatedButton(
@@ -1073,7 +1026,6 @@ class HelperDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Helper Image (Placeholder)
             imgUrl.isEmpty
                 ? Container(
                     height: 200,
@@ -1089,27 +1041,19 @@ class HelperDetailPage extends StatelessWidget {
                   ),
             
             const SizedBox(height: 16),
-
-            // Details
             Text(helperName, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             Text(helperSkill, style: const TextStyle(fontSize: 18, color: Colors.indigo)),
             const SizedBox(height: 8),
             Text("Rate: ₹$price / hour", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-            
             const SizedBox(height: 20),
             const Divider(),
-            
-            // Description Placeholder
             const Text("About the Helper", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             const Text(
                 "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Rating, location, and review details will be loaded here.",
                 style: TextStyle(fontSize: 14, height: 1.5)),
-            
             const SizedBox(height: 40),
-
-            // Book Now Button
             ElevatedButton(
               onPressed: () {
                 Navigator.push(
