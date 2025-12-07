@@ -39,7 +39,10 @@ allprojects {
             url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
             
             // ✅ FIX: The cleanest KTS syntax to set Basic Auth without triggering type errors
-            authentication.create("basic") 
+            authentication {
+                // ✅ FIX: Yeh syntax generic type issue ko bypass karta hai
+                create("basic", BasicAuthentication::class.java)
+            } 
             
             credentials {
                 username = "mapbox" 
