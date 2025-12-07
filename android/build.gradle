@@ -1,4 +1,4 @@
-// File: android/build.gradle (Groovy DSL) - FINAL FINAL VERSION
+// File: android/build.gradle 
 
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
@@ -8,8 +8,10 @@ buildscript {
         mavenCentral()
     }
     dependencies {
+        // Aapka Kotlin version jo bhi hai, use rakhein
         def kotlinVersion = "1.8.20" 
         
+        // Aapka Android Gradle Plugin version
         classpath 'com.android.tools.build:gradle:8.0.0' 
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
     }
@@ -29,7 +31,7 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-// 🌟 FINAL FIX: MAPBOX REPOSITORY
+// 🌟 FINAL MAPBOX FIX: TOKEN FALLBACK
 allprojects {
     repositories {
         google()
@@ -38,16 +40,15 @@ allprojects {
         maven {
             url "https://api.mapbox.com/downloads/v2/releases/maven"
             
-            // ✅ Syntax Fix: Using 'create' method for Basic Auth (solves the compiler issue)
+            // ✅ Basic Authentication create karna
             authentication {
                 create('basic', BasicAuthentication) 
             }
             
             credentials {
                 username = "mapbox" 
-                // ✅ Token Fix: Reads from project properties (which includes gradle.properties)
-                // This is the correct way for CI when using injected properties/files.
-                password = project.properties["MAPBOX_DOWNLOADS_TOKEN"]
+                // ✅ CRITICAL FIX: Token ko pehle project properties se, phir environment se uthana.
+                password = project.properties.get("MAPBOX_DOWNLOADS_TOKEN") ?: System.getenv("MAPBOX_DOWNLOADS_TOKEN")
             }
         }
     }
