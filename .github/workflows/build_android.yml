@@ -40,12 +40,16 @@ jobs:
           flutter clean
           flutter pub get
         
+      # 🔥 CRITICAL FIX: local.properties file banana aur token daalna
+      - name: Create local.properties and insert Mapbox Token
+        run: |
+          echo "MAPBOX_DOWNLOADS_TOKEN=${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}" >> android/local.properties
+        shell: bash # Yah ensure karega ki command Windows runner par bhi theek se chale
+        
       # 3. Build Android Release APK
       - name: Build Android Release APK
         env:
           GRADLE_OPTS: "-Xmx3072m" 
-          # ✅ FIX: Mapbox token ko direct Environment Variable mein set kiya gaya hai.
-          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }} 
         run: |
           flutter build apk --release 
         
