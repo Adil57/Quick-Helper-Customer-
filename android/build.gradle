@@ -30,7 +30,7 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-// 🌟 FINAL FIX: MAPBOX REPOSITORY
+// 🌟 FINAL FIX: MAPBOX REPOSITORY (Groovy with Create method)
 allprojects {
     repositories {
         google()
@@ -39,9 +39,9 @@ allprojects {
         maven {
             url "https://api.mapbox.com/downloads/v2/releases/maven"
             
-            // 🔥 YEH HAI FINAL FIX: Using official register method and BasicAuthentication class (Groovy)
+            // 🔥 YEH HAI FINAL FIX: Groovy syntax using 'create' and BasicAuthentication class (should resolve the missing method issue)
             authentication {
-                register('basic', org.gradle.api.authentication.BasicAuthentication) 
+                create('basic', BasicAuthentication) 
             }
             
             credentials {
