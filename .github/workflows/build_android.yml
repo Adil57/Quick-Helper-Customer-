@@ -23,7 +23,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 🔴 FIX: Java version ko 11 se badal kar 17 kiya
+      # Setup Java 17 
       - name: Setup Java 17 (Required by AGP)
         uses: actions/setup-java@v4
         with:
@@ -52,16 +52,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      # 🟢 NEW DEBUGGING STEP ADDED (Verifies the token is passed as an env variable)
+      - name: Verify Token is available in Environment
+        run: echo "Token value check: $MAPBOX_DOWNLOADS_TOKEN"
+
+      # Add MAPBOX token to gradle.properties using the environment variable
       - name: Setup Mapbox Token in Gradle Properties
         run: |
           mkdir -p ~/.gradle
           echo "MAPBOX_DOWNLOADS_TOKEN=${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}" >> ~/.gradle/gradle.properties
       
-      # 🔥 नया डिबगिंग स्टेप यहाँ है 🔥
-      - name: Verify Token is available in Environment
-        run: echo "Token value check: $MAPBOX_DOWNLOADS_TOKEN"
-      # ----------------------------
-
       - name: Flutter Pub Get
         run: flutter pub get
 
