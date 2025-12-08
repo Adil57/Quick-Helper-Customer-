@@ -16,7 +16,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     
-    # 1. Token env variable mein set kiya gaya hai
     env:
       MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
     
@@ -24,13 +23,16 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Java 17 set kiya gaya hai (AGP requirement)
       - name: Setup Java 17 (Required by AGP)
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17' 
 
+      # 🟢 DEBUG STEP 1: Verify Token in Environment 
+      - name: Debug: Print Environment Variables
+        run: printenv | grep MAPBOX 
+      
       - name: Install Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -55,16 +57,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 3. TOKEN INJECTION STEP: Token ko seedhe secrets se gradle.properties mein daal diya
       - name: Setup Mapbox Token in Gradle Properties
         run: |
           mkdir -p ~/.gradle
-          # Yeh line token ko Mapbox Maven repository ke liye set karti hai
+          # Token ko global gradle.properties mein inject kar raha hai
           echo "MAPBOX_DOWNLOADS_TOKEN=${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}" >> ~/.gradle/gradle.properties
       
-      # ⚠️ NOTE: Debugging step (echo) ko yahan nahi daal rahein hain
-      # taaki workflow invalid na ho. Gradle ko token milna chahiye ab.
-      
+      # 🟢 DEBUG STEP 2: Verify Token in Injected File
+      - name: Debug: Check injected gradle.properties content
+        run: cat ~/.gradle/gradle.properties
+
       - name: Flutter Pub Get
         run: flutter pub get
 
