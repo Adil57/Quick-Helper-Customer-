@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     
-    # 🔥 FIX: env variable को यहाँ top-level पर move किया गया है 🔥
+    # 🔥 FIX: env variable को यहाँ top-level पर set किया गया है 🔥
     env:
       MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
     # -----------------------------------------------------------
@@ -50,12 +50,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Add MAPBOX token to gradle.properties (यह स्टेप अब ज़रूरी नहीं, पर रहने देते हैं)
-      # क्योंकि हमने env variable को ऊपर set कर दिया है।
-      - name: Setup Mapbox Token (Optional now)
+      # Add MAPBOX token to gradle.properties (यह स्टेप अब ज़्यादा ज़रूरी नहीं, पर ठीक है)
+      - name: Setup Mapbox Token
         run: |
           mkdir -p ~/.gradle
           echo "MAPBOX_DOWNLOADS_TOKEN=${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}" >> ~/.gradle/gradle.properties
+
+      # 🔥 Debugging Step: Check the token value in logs 🔥
+      - name: Verify Token is available in Environment
+        run: echo "Token value check: $MAPBOX_DOWNLOADS_TOKEN"
+      # ---------------------------------------------------
 
       # Get deps
       - name: Flutter Pub Get
@@ -63,8 +67,6 @@ jobs:
 
       # Build APK
       - name: Build APK
-        # env:
-        #   MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }} <-- यह अब हटा सकते हैं
         run: flutter build apk --release
 
       # Upload
@@ -73,4 +75,4 @@ jobs:
         with:
           name: app-release
           path: build/app/outputs/flutter-apk/app-release.apk
-          
+
