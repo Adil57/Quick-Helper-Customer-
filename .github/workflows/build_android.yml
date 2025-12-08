@@ -5,6 +5,10 @@ on:
     branches:
       - main
   pull_request:
+    types: 
+      - opened
+      - synchronize
+      - reopened
     branches:
       - main
 
@@ -16,13 +20,15 @@ jobs:
       MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
     
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Java
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 🔴 FIX: Java version ko 11 se badal kar 17 kiya
+      - name: Setup Java 17 (Required by AGP)
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '11'
+          java-version: '17' 
 
       - name: Install Flutter
         uses: subosito/flutter-action@v2
@@ -50,7 +56,7 @@ jobs:
         run: |
           mkdir -p ~/.gradle
           echo "MAPBOX_DOWNLOADS_TOKEN=${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}" >> ~/.gradle/gradle.properties
-
+      
       - name: Flutter Pub Get
         run: flutter pub get
 
