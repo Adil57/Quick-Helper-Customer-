@@ -57,6 +57,11 @@ jobs:
           mkdir -p ~/.gradle
           echo "MAPBOX_DOWNLOADS_TOKEN=${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}" >> ~/.gradle/gradle.properties
       
+      # 🔥 नया डिबगिंग स्टेप यहाँ है 🔥
+      - name: Verify Token is available in Environment
+        run: echo "Token value check: $MAPBOX_DOWNLOADS_TOKEN"
+      # ----------------------------
+
       - name: Flutter Pub Get
         run: flutter pub get
 
