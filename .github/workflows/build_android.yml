@@ -35,7 +35,9 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-
+          
+      # ... (Caching Steps) ...
+      
       - name: Cache Flutter pub
         uses: actions/cache@v4
         with:
@@ -53,12 +55,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 3. Token ko seedhe secrets se gradle.properties mein daal diya
+      # 3. TOKEN INJECTION STEP: Token ko seedhe secrets se gradle.properties mein daal diya
       - name: Setup Mapbox Token in Gradle Properties
         run: |
           mkdir -p ~/.gradle
-          # NOTE: Seedhe secrets se value inject karne se invalidation se bach sakte hain
+          # Yeh line token ko Mapbox Maven repository ke liye set karti hai
           echo "MAPBOX_DOWNLOADS_TOKEN=${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}" >> ~/.gradle/gradle.properties
+      
+      # ⚠️ NOTE: Debugging step (echo) ko yahan nahi daal rahein hain
+      # taaki workflow invalid na ho. Gradle ko token milna chahiye ab.
       
       - name: Flutter Pub Get
         run: flutter pub get
