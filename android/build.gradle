@@ -1,3 +1,14 @@
+import java.io.FileInputStream
+import java.util.Properties
+
+// 🟢 FIX 1: local.properties file ko load kiya gaya
+def localPropertiesFile = new File(rootProject.projectDir, "android/local.properties")
+def localProperties = new Properties()
+
+if (localPropertiesFile.exists()) {
+    localProperties.load(new FileInputStream(localPropertiesFile))
+}
+
 buildscript {
     repositories {
         google()
@@ -24,11 +35,10 @@ allprojects {
             }
             credentials {
                 username = "mapbox"
-                password =
-                        System.getenv("MAPBOX_DOWNLOADS_TOKEN")
-                                ?: rootProject.findProperty("MAPBOX_DOWNLOADS_TOKEN")
-                                ?: project.findProperty("MAPBOX_DOWNLOADS_TOKEN")
-                                ?: ""
+                // 🟢 FIX 2: Sabse pehle manually loaded localProperties se token uthaya
+                password = localProperties.getProperty("MAPBOX_DOWNLOADS_TOKEN")
+                        ?: System.getenv("MAPBOX_DOWNLOADS_TOKEN")
+                        ?: ""
             }
         }
     }
