@@ -2,37 +2,33 @@ name: Flutter Android Build
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    # pull_request ko explicit kiya
-    branches: [ main ] 
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
     
-    # env variable ko yahan top-level par set kiya gaya hai
     env:
       MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
     
     steps:
-      # Checkout
       - uses: actions/checkout@v4
-
-      # Setup Java 17
+      
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '11'
 
-      # Setup Flutter
       - name: Install Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
 
-      # Cache pub dependencies
       - name: Cache Flutter pub
         uses: actions/cache@v4
         with:
@@ -40,7 +36,6 @@ jobs:
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: ${{ runner.os }}-pub-
 
-      # Cache Gradle
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -51,25 +46,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Add MAPBOX token to gradle.properties 
-      - name: Setup Mapbox Token
+      - name: Setup Mapbox Token in Gradle Properties
         run: |
           mkdir -p ~/.gradle
           echo "MAPBOX_DOWNLOADS_TOKEN=${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}" >> ~/.gradle/gradle.properties
 
-      # Debugging Step: Check the token value in logs 
-      - name: Verify Token is available in Environment
-        run: echo "Token value check: $MAPBOX_DOWNLOADS_TOKEN"
-      
-      # Get deps
       - name: Flutter Pub Get
         run: flutter pub get
 
-      # Build APK
-      - name: Build APK
+      - name: Build APK (Release)
         run: flutter build apk --release
 
-      # Upload
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
