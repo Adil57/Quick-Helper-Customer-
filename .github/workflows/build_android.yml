@@ -16,6 +16,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     
+    # 1. Token env variable mein set kiya gaya hai
     env:
       MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
     
@@ -23,7 +24,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Setup Java 17 
+      # 2. Java 17 set kiya gaya hai (AGP requirement)
       - name: Setup Java 17 (Required by AGP)
         uses: actions/setup-java@v4
         with:
@@ -52,14 +53,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 🟢 NEW DEBUGGING STEP ADDED (Verifies the token is passed as an env variable)
-      - name: Verify Token is available in Environment
-        run: echo "Token value check: $MAPBOX_DOWNLOADS_TOKEN"
-
-      # Add MAPBOX token to gradle.properties using the environment variable
+      # 3. Token ko seedhe secrets se gradle.properties mein daal diya
       - name: Setup Mapbox Token in Gradle Properties
         run: |
           mkdir -p ~/.gradle
+          # NOTE: Seedhe secrets se value inject karne se invalidation se bach sakte hain
           echo "MAPBOX_DOWNLOADS_TOKEN=${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}" >> ~/.gradle/gradle.properties
       
       - name: Flutter Pub Get
