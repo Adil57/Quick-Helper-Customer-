@@ -5,6 +5,7 @@ on:
     branches:
       - main
   pull_request:
+    # Pull requests ko explicit kiya
     types: 
       - opened
       - synchronize
@@ -16,6 +17,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     
+    # Mapbox token ko environment variable mein set kiya
     env:
       MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
     
@@ -23,26 +25,61 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # 1. Java 17 set kiya gaya hai (Android Gradle Plugin ke liye zaroori)
       - name: Setup Java 17 (Required by AGP)
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17' 
-          
-      # ... (Flutter setup and caching steps remain the same) ...
 
-      # 🟢 FINAL FIX STEP: Token ko seedhe android/gradle.properties mein inject karo
-      - name: Inject Mapbox Token into Project Gradle File
+      # 2. Setup Flutter
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      # 3. Cache pub dependencies
+      - name: Cache Flutter pub
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-pub-
+
+      # 4. Cache Gradle
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 5. FINAL FIX: Token ko android/local.properties mein inject karo
+      - name: Inject Mapbox Token into local.properties
         run: |
-          # File path: android/gradle.properties
-          echo "MAPBOX_DOWNLOADS_TOKEN=${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}" >> android/gradle.properties
-      
+          # local.properties ko banana zaroori hai agar woh exist na karta ho
+          touch android/local.properties 
+          
+          # Token ko inject kar rahe hain, jise Gradle aasaani se read kar sake
+          echo "MAPBOX_DOWNLOADS_TOKEN=${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}" >> android/local.properties
+          
+          # Debug: local.properties ke contents check karo
+          echo "--- Debug: android/local.properties ---"
+          cat android/local.properties
+          echo "----------------------------------------"
+
+      # 6. Get dependencies
       - name: Flutter Pub Get
         run: flutter pub get
 
+      # 7. Build APK
       - name: Build APK (Release)
         run: flutter build apk --release
 
+      # 8. Upload Artifact
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
