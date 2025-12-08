@@ -4,12 +4,14 @@ on:
   push:
     branches: [ main ]
   pull_request:
+    # pull_request ko explicit kiya
+    branches: [ main ] 
 
 jobs:
   build:
     runs-on: ubuntu-latest
     
-    # FIX: env variable को यहाँ top-level पर set किया गया है
+    # env variable ko yahan top-level par set kiya gaya hai
     env:
       MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
     
@@ -73,4 +75,4 @@ jobs:
         with:
           name: app-release
           path: build/app/outputs/flutter-apk/app-release.apk
-
+          
