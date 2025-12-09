@@ -42,13 +42,23 @@ android {
         abi {
             isEnable = true
             reset()
-            isUniversalApk = true // Single universal APK guaranteed
+            isUniversalApk = true 
         }
         density {
-            isEnable = false // Density splitting ko disable kiya gaya hai
+            isEnable = false 
         }
     }
     
+    // 👇 FINAL FIX: LEGACY NAMING FIX (Sabse stable Groovy-style assignment)
+    applicationVariants.all { variant -> // Explicitly defined 'variant'
+        variant.outputs.all { output ->
+            if (variant.buildType.name == "release") {
+                // Legacy Groovy assignment style, jo Kotlin DSL mein supported hota hai
+                output.outputFileName = "app-release.apk" 
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false     
@@ -61,16 +71,6 @@ android {
         }
     }
 }
-
-// 👇 FINAL FIX: Compilation Error theek karne ke liye archiveFileName property use kiya gaya hai.
-androidComponents {
-    onVariants(selector().withBuildType("release")) { variant ->
-        variant.outputs.all { output ->
-            output.archiveFileName.set("app-release.apk") // <-- CRITICAL FIX
-        }
-    }
-}
-
 
 flutter {
     source = "../.."
