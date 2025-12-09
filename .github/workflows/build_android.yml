@@ -52,10 +52,10 @@ jobs:
         run: flutter pub get
 
       - name: Build APK (Release) with Mapbox Public Token
-        run: flutter build apk --release --no-split-per-abi --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }}
+        run: flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }}
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: build/app/outputs/apk/release/app-release.apk
+          name: app-release-split
+          path: build/app/outputs/apk/release/*.apk  # Sab split APKs upload ho jayenge
