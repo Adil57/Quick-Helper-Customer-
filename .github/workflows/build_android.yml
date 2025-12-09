@@ -60,10 +60,10 @@ jobs:
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
-      # 👇 FINAL UPLOAD: Confirmed Path
+      # 👇 FINAL UPLOAD: Wildcard Path (Taki koi bhi generated file mil jaye)
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-final
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/*release.apk 
           
