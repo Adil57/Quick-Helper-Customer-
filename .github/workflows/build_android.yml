@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.pub-cache
-          key: \( {{ runner.os }}-pub- \){{ hashFiles('**/pubspec.lock') }}
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: ${{ runner.os }}-pub-
 
       - name: Cache Gradle
@@ -44,18 +44,25 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: \( {{ runner.os }}-gradle- \){{ hashFiles('**/*.gradle*') }}-${{ hashFiles('**/gradle-wrapper.properties') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}-${{ hashFiles('**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
       - name: Flutter Pub Get
         run: flutter pub get
-
-      - name: Build APK (Release) with Mapbox Public Token
-        run: flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }}
+        
+      # 👇 Zaroori Fix: Mapbox Downloads Token aur Verbose Logging (-v)
+      - name: Build APK (Release) with Detailed Logs and Mapbox Env
+        run: flutter build apk --release -v --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }}
+        env: # Mapbox dependency download ke liye yeh environment variable zaroori hai
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }} 
+          # Agar aapko signing ke issues solve karne hain, toh yahan signing variables bhi add kar sakte hain
+          # KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          # KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-split
-          path: build/app/outputs/apk/release/*.apk  # Sab split APKs upload ho jayenge
+          path: build/app/outputs/apk/release/*.apk 
+          
