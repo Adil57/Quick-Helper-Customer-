@@ -47,23 +47,25 @@ jobs:
       - name: Build APK (Release)
         run: flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }}
         env:
-          # Agar Mapbox secret downloads token chahiye CI mein (recommended for Mapbox v10+)
-          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}  # Agar warning khatam karna ho
+
+      # 🟢 YEH NAYA STEP ADD KIYA – APK ko expected folder mein copy kar deta hai
+      - name: Copy APK to Expected Location
+        run: |
+          mkdir -p build/app/outputs/flutter-apk
+          cp build/app/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/app-release.apk || true
+          cp build/app/outputs/apk/release/*.apk build/app/outputs/flutter-apk/ || true
 
       - name: Debug - List Generated APK Files
         run: |
           echo "=== Searching for generated APKs ==="
-          find . -name "*.apk" -type f || true
+          find . -name "*.apk" -type f
           echo "=== flutter-apk folder ==="
           ls -la build/app/outputs/flutter-apk/ || true
-          echo "=== apk/release folder ==="
-          ls -la build/app/outputs/apk/release/ || true
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: quick-helper-apks
-          path: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/**/*.apk   # Fallback agar kahin aur bhi ho
-          if-no-files-found: error  # Agar nahi mili to fail kar dega (debug ke liye helpful)
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
