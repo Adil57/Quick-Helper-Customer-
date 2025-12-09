@@ -20,7 +20,6 @@ android {
 
     defaultConfig {
         applicationId = "com.example.quick_helper_customer"
-
         minSdk = 21
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -37,25 +36,13 @@ android {
         )
     }
 
-    // 👇 FIX #1: APK Splitting ko disable aur simplify kiya gaya hai (This is stable)
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            isUniversalApk = true 
-        }
-        density {
-            isEnable = false 
-        }
-    }
-    
-    // ❌ UNSTABLE NAMING LOGIC POORA HATA DIYA GAYA HAI TAKI COMPILATION ERROR NA AAYE.
-    
+    // ❌ SPLITS BLOCK POORA HATA DIYA GAYA HAI
+    // Flutter by default universal APK banayega → stable & predictable output path
+
     buildTypes {
         release {
             isMinifyEnabled = false     
             isShrinkResources = false   
-            // signingConfig = signingConfigs.getByName("debug") line removed 
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
