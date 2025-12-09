@@ -1,15 +1,53 @@
 name: Flutter Android Build
 
 on:
-# ... (Baaki code same rahega)
+  push:
+    branches:
+      - main
+  pull_request:
+    types: 
+      - opened
+      - synchronize
+      - reopened
+    branches:
+      - main
 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
     steps:
-      # ... (Initial steps: Checkout, Setup Java, Install Flutter, Cache pub)
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      # CRITICAL FIX: GRADLE CACHE KO HATA DO
-      # Taki build UP-TO-DATE hokar skip na ho.
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Cache Flutter pub
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-pub-
+
+      # 👇 CRITICAL FIX: GRADLE CACHE KO TEMPORARILY DISABLE KIYA GAYA HAI
       # - name: Cache Gradle
-      # ... (Cache Gradle code comment out kiya hua)
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: |
+      #       ~/.gradle/caches
+      #       ~/.gradle/wrapper
+      #     key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}-${{ hashFiles('**/gradle-wrapper.properties') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-gradle-
             
       - name: Flutter Clean (Force fresh build)
         run: flutter clean
@@ -38,11 +76,10 @@ on:
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
-      # 👇 FINAL FIX: Aapka diya hua Exact aur Confirmed Path Use Kiya Gaya Hai
+      # 👇 FINAL FIX: Confirmed Path Use Kiya Gaya Hai
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-final
-          # Yahan exact path: build/app/outputs/flutter-apk/app-release.apk
           path: build/app/outputs/flutter-apk/app-release.apk
           
