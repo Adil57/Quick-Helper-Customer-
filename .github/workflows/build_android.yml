@@ -47,21 +47,22 @@ jobs:
       - name: Build APK (Release)
         run: flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }}
         env:
-          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}  # Agar warning khatam karna ho
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}  # Warning khatam karne ke liye (optional abhi)
 
-      # 🟢 YEH NAYA STEP ADD KIYA – APK ko expected folder mein copy kar deta hai
-      - name: Copy APK to Expected Location
+      # 🟢 FIX STEP: Actual APK ko Flutter expected folder mein copy kar do
+      - name: Fix APK Location for Flutter Tool
         run: |
           mkdir -p build/app/outputs/flutter-apk
-          cp build/app/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/app-release.apk || true
-          cp build/app/outputs/apk/release/*.apk build/app/outputs/flutter-apk/ || true
+          find build/app/outputs/apk/release -name "*.apk" -exec cp {} build/app/outputs/flutter-apk/app-release.apk \;
+          echo "APK copied to expected location"
 
-      - name: Debug - List Generated APK Files
+      # Debug (Pehle run mein dekh lena, baad mein hata dena)
+      - name: Debug - List APKs
         run: |
-          echo "=== Searching for generated APKs ==="
-          find . -name "*.apk" -type f
-          echo "=== flutter-apk folder ==="
+          echo "=== All APKs found ==="
+          find build -name "*.apk" || true
           ls -la build/app/outputs/flutter-apk/ || true
+          ls -la build/app/outputs/apk/release/ || true
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
