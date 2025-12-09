@@ -36,7 +36,7 @@ android {
             project.properties["MAPBOX_ACCESS_TOKEN"] as String? ?: ""
         )
     }
-    
+
     // 👇 FIX #1: APK Splitting ko disable aur simplify kiya gaya hai
     splits {
         abi {
@@ -48,16 +48,7 @@ android {
             isEnable = false // Density splitting ko disable kiya gaya hai
         }
     }
-
-    // 👇 FIX #2: Output file ka naam 'app-release.apk' par fix kiya gaya hai
-    applicationVariants.all {
-        it.outputs.all { output ->
-            if (it.buildType.name == "release") {
-                output.outputFileName.set("app-release.apk")
-            }
-        }
-    }
-
+    
     buildTypes {
         release {
             // 🔥 Mapbox + Release APK fix
@@ -68,6 +59,16 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+    }
+}
+
+// 👇 FIX #2: Compilation error theek karne ke liye naya (Android Components) method use kiya gaya hai.
+// Yeh APK ka naam 'app-release.apk' fix karta hai.
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.outputs.all { output ->
+            output.outputFileName.set("app-release.apk")
         }
     }
 }
