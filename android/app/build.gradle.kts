@@ -37,26 +37,24 @@ android {
         )
     }
 
-    // 👇 FIX #1: APK Splitting ko disable aur simplify kiya gaya hai (Safe code)
+    // 👇 APK Splitting Fix (Taki file ka naam simple rahe)
     splits {
         abi {
             isEnable = true
             reset()
-            isUniversalApk = true // Single universal APK guaranteed
+            isUniversalApk = true 
         }
         density {
-            isEnable = false // Density splitting ko disable kiya gaya hai
+            isEnable = false 
         }
     }
-
-    // ❌ APK RENAMING LOGIC POORA HATA DIYA GAYA HAI TAKI COMPILATION ERROR NA AAYE.
     
+    // 👇 FINAL FIX: Release signing issue solve karne ke liye
     buildTypes {
         release {
-            // 🔥 Mapbox + Release APK fix
-            isMinifyEnabled = false     // Disable code shrinking for now
-            isShrinkResources = false   // Disable resource shrinking
-            signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = false     
+            isShrinkResources = false   
+            // 🔥 Yahan se 'signingConfig = signingConfigs.getByName("debug")' hata diya gaya hai.
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -64,6 +62,16 @@ android {
         }
     }
 }
+
+// 👇 APK Naming Guarantee (Compilation Error Fix ke baad yeh kaam karna chahiye)
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.outputs.all { output ->
+            output.outputFileName.set("app-release.apk")
+        }
+    }
+}
+
 
 flutter {
     source = "../.."
