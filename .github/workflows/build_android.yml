@@ -71,18 +71,15 @@ jobs:
             echo "------------------------------------------------------"
             exit $EXIT_CODE
           else
-            echo "Build Success! Now searching for the APK file."
+            echo "Build Success! APK Artifacts will be uploaded."
           fi
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
-      # 👇 FINAL DIAGNOSTIC STEP: Naya file name dhoondho
-      - name: Check APK Location and Find New Path
-        run: |
-          echo "=========================================================="
-          echo "  🔍 SEARCHING FOR NEW APK FILE NAME..."
-          echo "=========================================================="
-          # find command ab saare .apk files ka naya naam aur path print karega
-          find build -name "*.apk" 
-          echo "=========================================================="
+      # 👇 FINAL FIX: Confirmed Path Use Kiya Gaya Hai
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-final
+          path: build/app/outputs/flutter-apk/app-release.apk
           
