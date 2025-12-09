@@ -51,33 +51,35 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-      # 👇 Yahan Par Critical Fix Kiye Gaye Hain
+      # 👇 Step 1: Filtered Error Output aur Mapbox fix
       - name: Build APK (Release) and Show Filtered Error
-        shell: bash # Ensure we use bash
+        shell: bash
         run: |
-          echo "Starting Flutter Build... (Error details will be filtered)"
+          echo "Starting Flutter Build... (Filtering Logs)"
           
-          # CRITICAL FIX: '|| true' add kiya gaya hai taaki build fail hone par script turant exit na ho.
+          # Build command ko run karo aur error ko ignore karo taaki hum usse filter kar sakein
           BUILD_OUTPUT=$(flutter build apk --release -v --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }} 2>&1) || true
-          EXIT_CODE=$? # Ab sahi exit code capture hoga
+          EXIT_CODE=$?
           
           if [ $EXIT_CODE -ne 0 ]; then
             echo "------------------------------------------------------"
             echo "       🚨 BUILD FAILED - FILTERED ERROR DETAILS 🚨"
             echo "------------------------------------------------------"
-            # Grep: Sirf important lines print karega
+            # Sirf critical error lines print hongi
             echo "$BUILD_OUTPUT" | grep -E "FAILURE:|Caused by:|error:|Execution failed for task" -A 10 -B 5
             echo "------------------------------------------------------"
-            exit $EXIT_CODE # Final step ko fail karo
+            exit $EXIT_CODE
           else
             echo "Build Success! APK Artifacts will be uploaded."
           fi
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
+      # 👇 Step 2: Corrected APK Upload Path
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-split
-          path: build/app/outputs/apk/release/*.apk 
+          # Path ko 'flutter-apk' mein change kiya gaya hai
+          path: build/app/outputs/flutter-apk/*.apk
           
