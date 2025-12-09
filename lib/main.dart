@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL COMPLETE & FIXED - Part 1/2)
+// lib/main.dart (FINAL FINAL FIXED - All Errors Resolved)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -20,7 +20,7 @@ const String auth0RedirectUri = "com.quickhelper.app://adil888.us.auth0.com/andr
 final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
 
 // -----------------------------------------------------------------------------
-// DUMMY STATE MANAGEMENT (Renamed to avoid Auth0 conflict)
+// DUMMY STATE MANAGEMENT (Renamed to avoid conflict)
 // -----------------------------------------------------------------------------
 class AppUserProfile {
   final String name;
@@ -121,7 +121,7 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
       try {
         final result = await auth0.webAuthentication(scheme: auth0RedirectUri.split('://').first).login();
         if (mounted) {
-          tempAuth.setUser(AppUserProfile(name: result.user.displayName ?? "User", sub: result.user.sub ?? ""), token: result.accessToken); 
+          tempAuth.setUser(AppUserProfile(name: result.user.name ?? "User", sub: result.user.sub ?? ""), token: result.accessToken); 
           Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => MainNavigator()));
         }
       } on Exception catch (e) {
@@ -253,7 +253,6 @@ class AccountScreen extends StatelessWidget {
   }
 }
 
-// MAP VIEW SCREEN - FULLY FIXED
 class MapViewScreen extends StatefulWidget {
   const MapViewScreen({super.key});
 
@@ -345,9 +344,6 @@ class _MapViewScreenState extends State<MapViewScreen> {
   }
 }
 
-// -----------------------------------------------------------------------------
-// CUSTOM LOGIN SCREEN (Size fixed - non-const)
-// -----------------------------------------------------------------------------
 class CustomLoginScreen extends StatefulWidget {
   const CustomLoginScreen({super.key});
   @override
@@ -421,7 +417,7 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
             ElevatedButton(
               onPressed: isLoading ? null : loginUser, 
               style: ElevatedButton.styleFrom(
-                minimumSize: Size(double.infinity, 50),  // non-const
+                minimumSize: const Size.fromHeight(50),
                 backgroundColor: Colors.indigo,
               ),
               child: isLoading
@@ -441,7 +437,6 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
   }
 }
 
-// REGISTER SCREEN
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
   @override
@@ -511,7 +506,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ElevatedButton(
               onPressed: isLoading ? null : registerUserStartOTP,
               style: ElevatedButton.styleFrom(
-                minimumSize: Size(double.infinity, 50),
+                minimumSize: const Size.fromHeight(50),
               ),
               child: isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
@@ -526,7 +521,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
-// OTP VERIFICATION SCREEN
 class OTPVerificationScreen extends StatefulWidget {
   final String email;
   final String name;
@@ -622,7 +616,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
             ElevatedButton(
               onPressed: isLoading ? null : verifyOTP,
               style: ElevatedButton.styleFrom(
-                minimumSize: Size(double.infinity, 50),
+                minimumSize: const Size.fromHeight(50),
               ),
               child: isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
@@ -637,7 +631,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   }
 }
 
-// HOME PAGE, BOOKING SCREEN, HELPER DETAIL PAGE (All Size fixes applied)
+// HomePage, BookingScreen, HelperDetailPage - all Size.fromHeight restored (safe & const)
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
   @override
@@ -985,7 +980,7 @@ class _BookingScreenState extends State<BookingScreen> {
               child: ElevatedButton(
                 onPressed: isCreatingBooking ? null : _createBooking,
                 style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50),
+                  minimumSize: const Size.fromHeight(50),
                   backgroundColor: Colors.green.shade600,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 5,
@@ -1077,7 +1072,7 @@ class HelperDetailPage extends StatelessWidget {
                             )));
               },
               style: ElevatedButton.styleFrom(
-                minimumSize: Size(double.infinity, 50),
+                minimumSize: const Size.fromHeight(50),
                 backgroundColor: Colors.indigo,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
