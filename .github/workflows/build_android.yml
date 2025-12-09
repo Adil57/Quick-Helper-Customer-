@@ -60,14 +60,9 @@ jobs:
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
-      # 👇 DIAGNOSTIC STEP: ls -R se path confirm karo
+      # 👇 DIAGNOSTIC STEP: Simple single line command
       - name: Diagnostic: List Final Output Directory
-        run: |
-          echo "=========================================================="
-          echo "  🔍 LISTING FINAL OUTPUT DIRECTORY CONTENTS:"
-          echo "=========================================================="
-          ls -R build/app/outputs/
-          echo "=========================================================="
+        run: ls -R build/app/outputs/
 
       # 👇 FINAL UPLOAD: Confirmed Path
       - name: Upload APK Artifact
