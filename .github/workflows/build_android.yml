@@ -55,11 +55,19 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-      # 👇 FINAL STANDARD BUILD STEP (Ab yeh full time lega aur APK banayega)
       - name: Build APK (Release)
         run: flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }}
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+
+      # 👇 DIAGNOSTIC STEP: ls -R se path confirm karo
+      - name: Diagnostic: List Final Output Directory
+        run: |
+          echo "=========================================================="
+          echo "  🔍 LISTING FINAL OUTPUT DIRECTORY CONTENTS:"
+          echo "=========================================================="
+          ls -R build/app/outputs/
+          echo "=========================================================="
 
       # 👇 FINAL UPLOAD: Confirmed Path
       - name: Upload APK Artifact
