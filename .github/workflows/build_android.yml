@@ -38,30 +38,30 @@ jobs:
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: ${{ runner.os }}-pub-
 
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}-${{ hashFiles('**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+      # 👇 CRITICAL FIX: GRADLE CACHE KO TEMPORARILY DISABLE KIYA GAYA HAI
+      # Taki build UP-TO-DATE hokar skip na ho.
+      # - name: Cache Gradle
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: |
+      #       ~/.gradle/caches
+      #       ~/.gradle/wrapper
+      #     key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}-${{ hashFiles('**/gradle-wrapper.properties') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-gradle-
             
-      # 👇 FIX #1: Flutter Clean - Ensures fresh APK generation
       - name: Flutter Clean (Force fresh build)
         run: flutter clean
 
       - name: Flutter Pub Get
         run: flutter pub get
 
-      # 👇 FIX #2: Build with Filtered Error Output (No more 2500 lines)
       - name: Build APK (Release) and Show Filtered Error
         shell: bash
         run: |
           echo "Starting Flutter Build... (Error details will be filtered)"
           
-          # Build chalao, aur error hone par bhi script ko exit mat hone do
+          # Build command ko run karo, yeh ab lamba time lega
           BUILD_OUTPUT=$(flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }} 2>&1) || true
           EXIT_CODE=$?
           
@@ -69,7 +69,6 @@ jobs:
             echo "------------------------------------------------------"
             echo "       🚨 BUILD FAILED - FILTERED ERROR DETAILS 🚨"
             echo "------------------------------------------------------"
-            # Sirf critical error lines print hongi
             echo "$BUILD_OUTPUT" | grep -E "FAILURE:|Caused by:|error:|Execution failed for task" -A 10 -B 5
             echo "------------------------------------------------------"
             exit $EXIT_CODE
@@ -77,10 +76,9 @@ jobs:
             echo "Build Success! APK Artifacts will be uploaded."
           fi
         env:
-          # Optional: Mapbox downloads token for dependency resolution
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
-      # 👇 FIX #3: Corrected APK Upload Path
+      # 👇 Sahi Path: build/app/outputs/flutter-apk/*.apk
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
