@@ -7,7 +7,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http; 
 // 🟢 MAP IMPORT: Google Maps library import karein
-import 'package:google_maps_flutter/google_maps_flutter.dart'; 
+// Purana hata
+// import 'package:google_maps_flutter/google_maps_flutter.dart';
+
+// Naya add kar
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 
 // -----------------------------------------------------------------------------
@@ -67,7 +71,16 @@ final UserAuth tempAuth = UserAuth();
 // MAIN ENTRY & APP THEME
 // -----------------------------------------------------------------------------
 
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';  // Yeh line top pe add kar (file ke starting imports mein)
+
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();  // Yeh line add ki (Mapbox initialization ke liye zaruri)
+
+  // Public access token set kar (secure way – hardcode mat kar)
+  MapboxOptions.setAccessToken(
+    const String.fromEnvironment('ACCESS_TOKEN'),  // Build command se token aayega
+  );
+
   runApp(const MyApp());
 }
 
@@ -76,20 +89,20 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: "Quick Helper",
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          brightness: Brightness.light, 
-          primarySwatch: Colors.indigo,
-          appBarTheme: const AppBarTheme(
-            color: Colors.white,
-            elevation: 0.5,
-            iconTheme: IconThemeData(color: Colors.black),
-            titleTextStyle: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold)
-          )
-        ),
-        home: const AuthGate(), 
-      );
+      title: "Quick Helper",
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        brightness: Brightness.light, 
+        primarySwatch: Colors.indigo,
+        appBarTheme: const AppBarTheme(
+          color: Colors.white,
+          elevation: 0.5,
+          iconTheme: IconThemeData(color: Colors.black),
+          titleTextStyle: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold)
+        )
+      ),
+      home: const AuthGate(), 
+    );
   }
 }
 
@@ -282,38 +295,54 @@ class MapViewScreen extends StatefulWidget {
 }
 
 class _MapViewScreenState extends State<MapViewScreen> {
-  // Map ki shuruati location (Example: Mumbai)
-  static const CameraPosition _initialCameraPosition = CameraPosition(
-    target: LatLng(19.0760, 72.8777), 
-    zoom: 12.0,
-  );
+  MapboxMap? mapboxMapController;
 
-  // Helper markers (DUMMY DATA)
-  final Set<Marker> _markers = {
-    const Marker(
-      markerId: MarkerId('helper1'),
-      position: LatLng(19.07, 72.87),
-      infoWindow: InfoWindow(title: 'Ramesh - Plumber'),
-    ),
-    const Marker(
-      markerId: MarkerId('helper2'),
-      position: LatLng(19.09, 72.85),
-      infoWindow: InfoWindow(title: 'Suresh - Electrician'),
-    ),
-  };
+  // Map ready hone pe call hoga
+  void _onMapCreated(MapboxMap controller) {
+    mapboxMapController = controller;
+    print('Mapbox Map Initialized');
+
+    // Dummy annotations (markers) add kar rahe hain
+    _addDummyAnnotations();
+  }
+
+  // Dummy helpers ke markers add karne ka function
+  Future<void> _addDummyAnnotations() async {
+    if (mapboxMapController == null) return;
+
+    final annotations = await mapboxMapController!.annotations.createPointAnnotationManager();
+
+    // Helper 1 - Ramesh Plumber
+    var options1 = PointAnnotationOptions(
+      geometry: Point(coordinates: Position(72.87, 19.07)),  // lng, lat
+      textField: "Ramesh - Plumber",
+      textOffset: [0.0, -2.0],
+      iconImage: "marker", // Default marker use karega agar custom nahi
+    );
+    await annotations.addAnnotation(options1);
+
+    // Helper 2 - Suresh Electrician
+    var options2 = PointAnnotationOptions(
+      geometry: Point(coordinates: Position(72.85, 19.09)),
+      textField: "Suresh - Electrician",
+      textOffset: [0.0, -2.0],
+    );
+    await annotations.addAnnotation(options2);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Nearby Helpers (Live Map)")),
-      body: GoogleMap(
-        mapType: MapType.normal,
-        initialCameraPosition: _initialCameraPosition,
-        markers: _markers, // Live helper locations yahan aayenge
-        onMapCreated: (GoogleMapController controller) {
-          // TODO: Yahan tum location service initialize karoge aur helper data load karoge
-          print('Google Map Initialized');
-        },
+      body: MapWidget(
+        key: const GlobalKey(),
+        onMapCreated: _onMapCreated,
+        // Starting camera position - Mumbai
+        cameraOptions: CameraOptions(
+          center: Point(coordinates: Position(72.8777, 19.0760)), // lng, lat order
+          zoom: 12.0,
+        ),
+        styleUri: MapboxStyles.LIGHT, // Ya MapboxStyles.STREETS, DARK, SATELLITE etc.
       ),
     );
   }
