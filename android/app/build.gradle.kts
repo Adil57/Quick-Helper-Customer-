@@ -37,7 +37,7 @@ android {
         )
     }
 
-    // 👇 FIX #1: APK Splitting ko disable aur simplify kiya gaya hai
+    // 👇 FIX #1: APK Splitting ko disable aur simplify kiya gaya hai (Safe code)
     splits {
         abi {
             isEnable = true
@@ -48,6 +48,8 @@ android {
             isEnable = false // Density splitting ko disable kiya gaya hai
         }
     }
+
+    // ❌ APK RENAMING LOGIC POORA HATA DIYA GAYA HAI TAKI COMPILATION ERROR NA AAYE.
     
     buildTypes {
         release {
@@ -59,16 +61,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-        }
-    }
-}
-
-// 👇 FIX #2: Compilation error theek karne ke liye naya (Android Components) method use kiya gaya hai.
-// Yeh APK ka naam 'app-release.apk' fix karta hai.
-androidComponents {
-    onVariants(selector().withBuildType("release")) { variant ->
-        variant.outputs.all { output ->
-            output.outputFileName.set("app-release.apk")
         }
     }
 }
