@@ -1085,20 +1085,375 @@ class _BookingScreenState extends State<BookingScreen> {
     setState(() => isCreatingBooking = true);
     await Future.delayed(const Duration(seconds: 2));
     if (mounted) {
+// ---------------- NEW: OTP VERIFICATION SCREEN (FIXED: Size.fromHeight replaced) ---------------- //
+class OTPVerificationScreen extends StatefulWidget {
+  final String email;
+  final String name;
+  final String password;
+  final bool isRegistration;
+
+  const OTPVerificationScreen({
+    super.key, 
+    required this.email, 
+    required this.name, 
+    required this.password,
+    required this.isRegistration,
+  });
+
+  @override
+  State<OTPVerificationScreen> createState() => _OTPVerificationScreenState();
+}
+
+class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
+  final TextEditingController otp = TextEditingController();
+  bool isLoading = false;
+  String? _error;
+
+  Future<void> verifyOTP() async {
+    if (otp.text.isEmpty || otp.text.length < 4) {
+      setState(() => _error = "Please enter the 4-digit OTP.");
+      return;
+    }
+    setState(() => isLoading = true);
+    _error = null;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$mongoApiBase/auth/verify-otp'), 
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': widget.email, 
+          'otp': otp.text,
+          'name': widget.isRegistration ? widget.name : null,
+          'password': widget.isRegistration ? widget.password : null,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final user = data['user'];
+        final token = data['token'];
+
+        tempAuth.setUser(
+          UserProfile(name: user['name'] ?? widget.name, sub: user['id'] ?? widget.email), 
+          token: token
+        );
+        
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(content: Text("${widget.isRegistration ? 'Registration' : 'Login'} successful!"))
+           );
+           Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => MainNavigator()));
+        }
+      } else {
+         final errorData = json.decode(response.body);
+         setState(() => _error = errorData['message'] ?? 'OTP verification failed. Try again.');
+      }
+    } catch (e) {
+      setState(() => _error = 'Network error or Invalid API response.');
+      print('OTP Verification Error: $e');
+    }
+    
+    if (mounted) setState(() => isLoading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Verify OTP")),
+      body: Padding(
+        padding: const EdgeInsets.all(28.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("OTP sent to ${widget.email}",
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 18, color: Colors.indigo)),
+            const SizedBox(height: 20),
+            TextField(
+              controller: otp,
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              textAlign: TextAlign.center,
+              decoration: const InputDecoration(labelText: "OTP Code"),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: isLoading ? null : verifyOTP,
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),  // Fixed
+              ),
+              child: isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text("Verify & Complete"),
+            ),
+            if (_error != null) 
+              Padding(padding: const EdgeInsets.only(top: 10), child: Text(_error!, style: const TextStyle(color: Colors.red))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------
+// HOME SCREEN (No Mapbox related errors here - Clean)
+// ---------------------------------------------------------
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<Map<String, dynamic>> helpers = [
+    {"name": "Ramesh", "skill": "Electrician", "price": 450, "image": ""},
+    {"name": "Suresh", "skill": "Plumber", "price": 300, "image": ""},
+    {"name": "Anita", "skill": "Cleaner", "price": 250, "image": ""},
+    {"name": "Babu", "skill": "Carpenter", "price": 600, "image": ""},
+  ];
+  bool loading = false; 
+
+  @override
+  void initState() {
+    super.initState();
+    // _loadHelpers();
+  }
+
+  void _filterByCategory(String category) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Filtering helpers by: $category'))
+    );
+    print('Filtered by: $category');
+  }
+
+  Future<void> _loadHelpers() async {
+    setState(() => loading = true);
+    await Future.delayed(const Duration(seconds: 1)); 
+    if (mounted) setState(() => loading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final userName = tempAuth.user?.name ?? "Customer"; 
+
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      appBar: AppBar(
+        title: Text("Welcome, $userName!", style: const TextStyle(color: Colors.black)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_pin_outlined, color: Colors.black),
+            onPressed: () {
+               DefaultTabController.of(context).animateTo(4);
+            },
+          ),
+        ],
+      ),
+
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator( 
+              onRefresh: _loadHelpers,
+              child: SingleChildScrollView( 
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column( 
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [ 
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      color: Colors.white,
+                      width: double.infinity,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text("Find Helpers Near You",
+                              style: TextStyle(
+                                  fontSize: 24, fontWeight: FontWeight.bold)),
+                          SizedBox(height: 3),
+                          Text("Plumbers, Electricians, Cleaners, all nearby"),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 110,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        children: [
+                          categoryItem("Cleaning", Icons.cleaning_services),
+                          categoryItem("Electrician", Icons.electrical_services),
+                          categoryItem("Plumber", Icons.plumbing),
+                          categoryItem("Painter", Icons.format_paint),
+                          categoryItem("Carpenter", Icons.carpenter),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text("Available Helpers",
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(height: 12),
+                    GridView.builder(
+                      padding: const EdgeInsets.all(12),
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: helpers.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: .78,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                      ),
+                      itemBuilder: (context, index) {
+                        final h = helpers[index];
+                        return helperCard(
+                          h["name"] ?? "Unknown",
+                          h["skill"] ?? "Service", 
+                          h["price"] ?? 0,
+                          h["image"] ?? "", 
+                        );
+                      },
+                    )
+                  ],
+                )
+              )
+            )
+    );
+  } 
+
+  Widget categoryItem(String title, IconData icon) {
+    return InkWell(
+      onTap: () => _filterByCategory(title),
+      child: Container(
+        width: 90,
+        margin: const EdgeInsets.only(left: 12),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 34, color: Colors.indigo), 
+            const SizedBox(height: 6),
+            Text(title, textAlign: TextAlign.center),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget helperCard(String name, String skill, int price, String imgUrl) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => HelperDetailPage( 
+                      helperName: name, 
+                      helperSkill: skill,
+                      price: price,
+                      imgUrl: imgUrl,
+                    )));
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+          ],
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          children: [
+            Expanded(
+              child: imgUrl.isEmpty
+                  ? Container(
+                      decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(12)),
+                    )
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(imgUrl, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[300])),
+                    ),
+            ),
+            const SizedBox(height: 8),
+            Text(name,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(skill, style: const TextStyle(color: Colors.grey)),
+            const SizedBox(height: 4),
+            Text("₹$price /hr",
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ------------------ 🟢 BOOKING SCREEN (FIXED: Size.fromHeight replaced) ------------------
+class BookingScreen extends StatefulWidget {
+  final String helperName;
+  final String helperSkill;
+  final int price;
+
+  const BookingScreen({super.key, required this.helperName, required this.helperSkill, required this.price});
+
+  @override
+  State<BookingScreen> createState() => _BookingScreenState();
+}
+
+class _BookingScreenState extends State<BookingScreen> { 
+  DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
+  double estimatedHours = 2.0;
+  bool isCreatingBooking = false;
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null && picked != selectedDate) {
+      setState(() {
+        selectedDate = picked;
+      });
+    }
+  }
+
+  double get totalCost => estimatedHours * widget.price * 1.2; 
+  
+  Future<void> _createBooking() async {
+    setState(() => isCreatingBooking = true);
+    await Future.delayed(const Duration(seconds: 2));
+    if (mounted) {
        ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(content: Text('Booking confirmed for ${widget.helperName}! Total: ₹${totalCost.toStringAsFixed(0)}'))
+         SnackBar(content: Text('Booking confirmed for \( {widget.helperName}! Total: ₹ \){totalCost.toStringAsFixed(0)}'))
        );
        Navigator.pop(context); 
     }
     if (mounted) setState(() => isCreatingBooking = false);
   }
 
-
   Widget _buildDatePicker() { 
     return ListTile(
       leading: const Icon(Icons.calendar_month, color: Colors.indigo),
       title: const Text('Service Date'),
-      subtitle: Text('${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
+      subtitle: Text('\( {selectedDate.day}/ \){selectedDate.month}/${selectedDate.year}'),
       trailing: TextButton(
         onPressed: () => _selectDate(context),
         child: const Text('CHANGE', style: TextStyle(color: Colors.indigo)),
@@ -1106,7 +1461,6 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  
   Widget _buildTimeSlider() { 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1134,7 +1488,6 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-
   Widget _buildCostSummary() { 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1144,7 +1497,7 @@ class _BookingScreenState extends State<BookingScreen> {
       ),
       child: Column(
         children: [
-          _costRow("Helper Rate (${widget.price}/hr)", "₹${(estimatedHours * widget.price).toStringAsFixed(0)}"),
+          _costRow("Helper Rate (\( {widget.price}/hr)", "₹ \){(estimatedHours * widget.price).toStringAsFixed(0)}"),
           _costRow("Service Fee (20%)", "₹${(totalCost - (estimatedHours * widget.price)).toStringAsFixed(0)}"),
           const Divider(),
           _costRow("TOTAL COST", "₹${totalCost.toStringAsFixed(0)}", isTotal: true),
@@ -1152,7 +1505,6 @@ class _BookingScreenState extends State<BookingScreen> {
       ),
     );
   }
-  
   
   Widget _costRow(String title, String amount, {bool isTotal = false}) { 
     return Padding(
@@ -1179,7 +1531,7 @@ class _BookingScreenState extends State<BookingScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               color: Colors.indigo,
-              child: Text("Booking ${widget.helperName} (${widget.helperSkill})", style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+              child: Text("Booking \( {widget.helperName} ( \){widget.helperSkill})", style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
             ),
             Card(margin: const EdgeInsets.all(16), child: _buildDatePicker()),
             const Padding(
@@ -1202,7 +1554,7 @@ class _BookingScreenState extends State<BookingScreen> {
               child: ElevatedButton(
                 onPressed: isCreatingBooking ? null : _createBooking,
                 style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50),
+                  minimumSize: const Size(double.infinity, 50),  // Fixed
                   backgroundColor: Colors.green.shade600,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 5,
@@ -1219,8 +1571,8 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 }
-
-// ------------------ 🟢 HELPER DETAIL PAGE ------------------
+      
+// ------------------ 🟢 HELPER DETAIL PAGE (FIXED: Size.fromHeight replaced) ------------------
 class HelperDetailPage extends StatelessWidget {
   final String helperName;
   final String helperSkill;
@@ -1255,7 +1607,20 @@ class HelperDetailPage extends StatelessWidget {
                   )
                 : ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.network(imgUrl, height: 200, width: double.infinity, fit: BoxFit.cover),
+                    child: Image.network(
+                      imgUrl,
+                      height: 200,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 200,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(12)),
+                        child: const Center(child: Icon(Icons.person, size: 50, color: Colors.grey)),
+                      ),
+                    ),
                   ),
             
             const SizedBox(height: 16),
@@ -1284,7 +1649,7 @@ class HelperDetailPage extends StatelessWidget {
                             )));
               },
               style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
+                minimumSize: const Size(double.infinity, 50),  // Fixed: Full width + height 50
                 backgroundColor: Colors.indigo,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
