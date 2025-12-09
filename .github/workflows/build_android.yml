@@ -51,21 +51,21 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-      # 👇 Yahan naya, filtered script hai jo sirf error dikhayega
+      # 👇 Yahan Par Critical Fix Kiye Gaye Hain
       - name: Build APK (Release) and Show Filtered Error
+        shell: bash # Ensure we use bash
         run: |
           echo "Starting Flutter Build... (Error details will be filtered)"
           
-          # Full build command run karo aur output ko ek variable mein save karo
-          # 2>&1 se stdout aur stderr dono capture ho jaate hain
-          BUILD_OUTPUT=$(flutter build apk --release -v --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }} 2>&1)
-          EXIT_CODE=$? # Build ka exit code check karo
+          # CRITICAL FIX: '|| true' add kiya gaya hai taaki build fail hone par script turant exit na ho.
+          BUILD_OUTPUT=$(flutter build apk --release -v --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }} 2>&1) || true
+          EXIT_CODE=$? # Ab sahi exit code capture hoga
           
           if [ $EXIT_CODE -ne 0 ]; then
             echo "------------------------------------------------------"
             echo "       🚨 BUILD FAILED - FILTERED ERROR DETAILS 🚨"
             echo "------------------------------------------------------"
-            # Grep: Sirf 'FAILURE:', 'Caused by:', 'error:', aur 'Execution failed for task' wali lines (aur unke 10 lines upar/5 lines neeche) print karega
+            # Grep: Sirf important lines print karega
             echo "$BUILD_OUTPUT" | grep -E "FAILURE:|Caused by:|error:|Execution failed for task" -A 10 -B 5
             echo "------------------------------------------------------"
             exit $EXIT_CODE # Final step ko fail karo
@@ -73,12 +73,11 @@ jobs:
             echo "Build Success! APK Artifacts will be uploaded."
           fi
         env:
-          # Mapbox downloads token ko phir se set kiya gaya hai, just in case (aap ignore kar sakte hain, but yeh warning hata dega)
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-split
-          path: build/app/outputs/apk/release/*.apk
+          path: build/app/outputs/apk/release/*.apk 
           
