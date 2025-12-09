@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL FINAL FIXED - All Errors Resolved)
+// lib/main.dart (FINAL COMPLETE - All Errors Fixed - Ready for Release Build)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -417,7 +417,7 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
             ElevatedButton(
               onPressed: isLoading ? null : loginUser, 
               style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
+                minimumSize: const Size(double.infinity, 50),
                 backgroundColor: Colors.indigo,
               ),
               child: isLoading
@@ -506,7 +506,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ElevatedButton(
               onPressed: isLoading ? null : registerUserStartOTP,
               style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
+                minimumSize: const Size(double.infinity, 50),
               ),
               child: isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
@@ -616,7 +616,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
             ElevatedButton(
               onPressed: isLoading ? null : verifyOTP,
               style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
+                minimumSize: const Size(double.infinity, 50),
               ),
               child: isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
@@ -630,8 +630,6 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     );
   }
 }
-
-// HomePage, BookingScreen, HelperDetailPage - all Size.fromHeight restored (safe & const)
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -980,7 +978,7 @@ class _BookingScreenState extends State<BookingScreen> {
               child: ElevatedButton(
                 onPressed: isCreatingBooking ? null : _createBooking,
                 style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50),
+                  minimumSize: const Size(double.infinity, 50),
                   backgroundColor: Colors.green.shade600,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 5,
@@ -1072,7 +1070,7 @@ class HelperDetailPage extends StatelessWidget {
                             )));
               },
               style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
+                minimumSize: const Size(double.infinity, 50),
                 backgroundColor: Colors.indigo,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
