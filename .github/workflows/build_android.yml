@@ -60,10 +60,6 @@ jobs:
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
-      # 👇 DIAGNOSTIC STEP: Simple single line command
-      - name: Diagnostic: List Final Output Directory
-        run: ls -R build/app/outputs/
-
       # 👇 FINAL UPLOAD: Confirmed Path
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
