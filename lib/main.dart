@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL WORKING VERSION WITH LIVE MAP & OTP FLOW + ALL FIXES)
+// lib/main.dart (FINAL WORKING VERSION WITH LIVE MAP & OTP FLOW - SIZE FIXES)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -162,15 +162,18 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
               const SizedBox(height: 60),
 
               // --- A. LOGIN WITH AUTH0 BUTTON ---
-              ElevatedButton.icon(
-                icon: isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.lock_open),
-                label: Text(isLoading ? "Logging in..." : 'Log in with Auth0 (Google/Social)'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  backgroundColor: Colors.indigo.shade600,
-                  foregroundColor: Colors.white,
+              SizedBox(
+                height: 50,
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.lock_open),
+                  label: Text(isLoading ? "Logging in..." : 'Log in with Auth0 (Google/Social)'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigo.shade600,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: isLoading ? null : loginWithAuth0,
                 ),
-                onPressed: isLoading ? null : loginWithAuth0,
               ),
               const SizedBox(height: 20),
 
@@ -179,14 +182,17 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
               const SizedBox(height: 20),
               
               // --- B. NORMAL LOGIN BUTTON ---
-              OutlinedButton.icon(
-                icon: const Icon(Icons.email, color: Colors.indigo),
-                label: const Text('Normal Login (Email/Password)', style: TextStyle(color: Colors.indigo)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  side: const BorderSide(color: Colors.indigo),
+              SizedBox(
+                height: 50,
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.email, color: Colors.indigo),
+                  label: const Text('Normal Login (Email/Password)', style: TextStyle(color: Colors.indigo)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.indigo),
+                  ),
+                  onPressed: isLoading ? null : () => navigateToCustomLogin(context),
                 ),
-                onPressed: isLoading ? null : () => navigateToCustomLogin(context),
               ),
               
               if (_error != null) 
@@ -256,10 +262,14 @@ class AccountScreen extends StatelessWidget {
           children: [
             Text("Logged in as: ${tempAuth.user?.name ?? 'N/A'}"),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => tempAuth.logout(context),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text("Logout", style: TextStyle(color: Colors.white)),
+            SizedBox(
+              height: 50,
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => tempAuth.logout(context),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text("Logout", style: TextStyle(color: Colors.white)),
+              ),
             ),
           ],
         ),
@@ -269,7 +279,7 @@ class AccountScreen extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// 🟢 MAP VIEW SCREEN (MAPBOX + KILL SWITCH IMPLEMENTATION - FULLY FIXED)
+// 🟢 MAP VIEW SCREEN (MAPBOX + KILL SWITCH IMPLEMENTATION - FIXED)
 // -----------------------------------------------------------------------------
 class MapViewScreen extends StatefulWidget {
   const MapViewScreen({super.key});
@@ -376,7 +386,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
 }
 
 // -----------------------------------------------------------------------------
-// CUSTOM LOGIN SCREEN (FIXED: Size with named parameters)
+// MODIFIED: CUSTOM LOGIN SCREEN (API LOGIN FIX)
 // -----------------------------------------------------------------------------
 class CustomLoginScreen extends StatefulWidget {
   const CustomLoginScreen({super.key});
@@ -461,15 +471,16 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
             const SizedBox(height: 20),
             
             // 🟢 CUSTOM LOGIN BUTTON
-            ElevatedButton(
-              onPressed: isLoading ? null : loginUser, 
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(width: double.infinity, height: 50),
-                backgroundColor: Colors.indigo
+            SizedBox(
+              height: 50,
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isLoading ? null : loginUser, 
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("Log in", style: TextStyle(color: Colors.white)),
               ),
-              child: isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("Log in", style: TextStyle(color: Colors.white)),
             ),
             
             if (_error != null) 
@@ -571,14 +582,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
             const SizedBox(height: 20),
 
-            ElevatedButton(
-              onPressed: isLoading ? null : registerUserStartOTP,
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(width: double.infinity, height: 50),
+            SizedBox(
+              height: 50,
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isLoading ? null : registerUserStartOTP,
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("Register & Send OTP"),
               ),
-              child: isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("Register & Send OTP"),
             ),
             if (_error != null) 
               Padding(padding: const EdgeInsets.only(top: 10), child: Text(_error!, style: const TextStyle(color: Colors.red))),
@@ -682,14 +694,15 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
               decoration: const InputDecoration(labelText: "OTP Code"),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: isLoading ? null : verifyOTP,
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(width: double.infinity, height: 50),
+            SizedBox(
+              height: 50,
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isLoading ? null : verifyOTP,
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("Verify & Complete"),
               ),
-              child: isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("Verify & Complete"),
             ),
             if (_error != null) 
               Padding(padding: const EdgeInsets.only(top: 10), child: Text(_error!, style: const TextStyle(color: Colors.red))),
@@ -1058,17 +1071,20 @@ class _BookingScreenState extends State<BookingScreen> {
             const SizedBox(height: 30),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: ElevatedButton(
-                onPressed: isCreatingBooking ? null : _createBooking,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(width: double.infinity, height: 50),
-                  backgroundColor: Colors.green.shade600,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 5,
+              child: SizedBox(
+                height: 50,
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isCreatingBooking ? null : _createBooking,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.shade600,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 5,
+                  ),
+                  child: isCreatingBooking
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("CONFIRM & PROCEED TO PAYMENT", style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
-                child: isCreatingBooking
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("CONFIRM & PROCEED TO PAYMENT", style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(height: 20),
@@ -1131,23 +1147,26 @@ class HelperDetailPage extends StatelessWidget {
                 "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Rating, location, and review details will be loaded here.",
                 style: TextStyle(fontSize: 14, height: 1.5)),
             const SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => BookingScreen(
-                              helperName: helperName,
-                              helperSkill: helperSkill,
-                              price: price,
-                            )));
-              },
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(width: double.infinity, height: 50),
-                backgroundColor: Colors.indigo,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            SizedBox(
+              height: 50,
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => BookingScreen(
+                                helperName: helperName,
+                                helperSkill: helperSkill,
+                                price: price,
+                              )));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text("BOOK THIS HELPER", style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
               ),
-              child: const Text("BOOK THIS HELPER", style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
