@@ -55,38 +55,13 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-      - name: Build APK (Release) and Show Filtered Error
-        shell: bash
-        run: |
-          echo "Starting Flutter Build... (Error details will be filtered)"
-          
-          BUILD_OUTPUT=$(flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }} 2>&1) || true
-          EXIT_CODE=$?
-          
-          if [ $EXIT_CODE -ne 0 ]; then
-            echo "------------------------------------------------------"
-            echo "       🚨 BUILD FAILED - FILTERED ERROR DETAILS 🚨"
-            echo "------------------------------------------------------"
-            echo "$BUILD_OUTPUT" | grep -E "FAILURE:|Caused by:|error:|Execution failed for task" -A 10 -B 5
-            echo "------------------------------------------------------"
-            exit $EXIT_CODE
-          else
-            echo "Build Success! Now running diagnostics..."
-          fi
+      # 👇 FINAL STANDARD BUILD STEP (Ab yeh full time lega aur APK banayega)
+      - name: Build APK (Release)
+        run: flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }}
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
-      # 👇 FINAL DIAGNOSTIC STEP: Yeh naya file name dega
-      - name: Check APK Location and Find New Path
-        run: |
-          echo "=========================================================="
-          echo "  🔍 SEARCHING FOR NEW APK FILE NAME..."
-          echo "=========================================================="
-          # find command ab saare .apk files ka naya naam aur path print karega
-          find build -name "*.apk" 
-          echo "=========================================================="
-
-      # Final Upload Step (Jab aap naya path bata denge, toh isko update karenge)
+      # 👇 FINAL UPLOAD: Confirmed Path
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
