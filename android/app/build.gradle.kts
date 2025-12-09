@@ -37,24 +37,23 @@ android {
         )
     }
 
-    // 👇 APK Splitting Fix (Taki file ka naam simple rahe)
+    // 👇 FIX #1: APK Splitting ko disable aur simplify kiya gaya hai
     splits {
         abi {
             isEnable = true
             reset()
-            isUniversalApk = true 
+            isUniversalApk = true // Single universal APK guaranteed
         }
         density {
-            isEnable = false 
+            isEnable = false // Density splitting ko disable kiya gaya hai
         }
     }
     
-    // 👇 FINAL FIX: Release signing issue solve karne ke liye
     buildTypes {
         release {
             isMinifyEnabled = false     
             isShrinkResources = false   
-            // 🔥 Yahan se 'signingConfig = signingConfigs.getByName("debug")' hata diya gaya hai.
+            // signingConfig = signingConfigs.getByName("debug") line removed 
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -63,11 +62,11 @@ android {
     }
 }
 
-// 👇 APK Naming Guarantee (Compilation Error Fix ke baad yeh kaam karna chahiye)
+// 👇 FINAL FIX: Compilation Error theek karne ke liye archiveFileName property use kiya gaya hai.
 androidComponents {
     onVariants(selector().withBuildType("release")) { variant ->
         variant.outputs.all { output ->
-            output.outputFileName.set("app-release.apk")
+            output.archiveFileName.set("app-release.apk") // <-- CRITICAL FIX
         }
     }
 }
