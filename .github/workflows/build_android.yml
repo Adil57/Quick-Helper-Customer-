@@ -50,5 +50,5 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: quick-helper-customer-apk
-          path: build/app/outputs/apk/release/*.apk   # Sab split APKs upload ho jayenge (arm64 wala main hai)
+          name: quick-helper-apks
+          path: build/app/outputs/apk/release/*.apk  # Yeh correct path hai – sab split APKs upload ho jayenge
