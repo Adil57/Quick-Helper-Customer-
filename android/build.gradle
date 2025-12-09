@@ -44,6 +44,9 @@ allprojects {
     }
 }
 
+// 🟢 IMPORTANT FIX: Standard build directory force kar diya (Flutter ko yahi chahiye)
+rootProject.buildDir = "${rootProject.projectDir}/build"
+
 tasks.register('clean', Delete) {
     delete rootProject.layout.buildDirectory
 }
