@@ -37,7 +37,7 @@ android {
         )
     }
 
-    // 👇 FIX #1: APK Splitting ko disable aur simplify kiya gaya hai
+    // 👇 FIX #1: APK Splitting ko disable aur simplify kiya gaya hai (This is stable)
     splits {
         abi {
             isEnable = true
@@ -49,16 +49,8 @@ android {
         }
     }
     
-    // 👇 FINAL FIX: LEGACY NAMING FIX (Sabse stable Groovy-style assignment)
-    applicationVariants.all { variant -> // Explicitly defined 'variant'
-        variant.outputs.all { output ->
-            if (variant.buildType.name == "release") {
-                // Legacy Groovy assignment style, jo Kotlin DSL mein supported hota hai
-                output.outputFileName = "app-release.apk" 
-            }
-        }
-    }
-
+    // ❌ UNSTABLE NAMING LOGIC POORA HATA DIYA GAYA HAI TAKI COMPILATION ERROR NA AAYE.
+    
     buildTypes {
         release {
             isMinifyEnabled = false     
