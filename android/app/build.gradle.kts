@@ -36,6 +36,27 @@ android {
             project.properties["MAPBOX_ACCESS_TOKEN"] as String? ?: ""
         )
     }
+    
+    // 👇 FIX #1: APK Splitting ko disable aur simplify kiya gaya hai
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            isUniversalApk = true // Single universal APK guaranteed
+        }
+        density {
+            isEnable = false // Density splitting ko disable kiya gaya hai
+        }
+    }
+
+    // 👇 FIX #2: Output file ka naam 'app-release.apk' par fix kiya gaya hai
+    applicationVariants.all {
+        it.outputs.all { output ->
+            if (it.buildType.name == "release") {
+                output.outputFileName.set("app-release.apk")
+            }
+        }
+    }
 
     buildTypes {
         release {
