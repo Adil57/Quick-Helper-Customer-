@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL FIXED VERSION: MapBox Latest + Kill Switch + No Errors)
+// lib/main.dart (FINAL COMPLETE & FIXED: MapBox Latest + All Errors Resolved)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -7,13 +7,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http; 
 
-// 🟢 MAP IMPORTS (Only Mapbox - Google Maps removed)
+// 🟢 MAP IMPORTS (Only Mapbox)
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'; 
 
 // -----------------------------------------------------------------------------
 // GLOBAL CONFIGURATION
 // -----------------------------------------------------------------------------
-
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api"; 
 const String auth0Domain = "adil888.us.auth0.com"; 
 const String auth0ClientId = "OdsfeU9MvAcYGxK0Vd8TAlta9XAprMxx"; 
@@ -62,11 +61,9 @@ final UserAuth tempAuth = UserAuth();
 // -----------------------------------------------------------------------------
 // MAIN ENTRY & APP THEME (FIXED: Token + Initialization)
 // -----------------------------------------------------------------------------
-
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();  // Required for Mapbox latest
+  WidgetsFlutterBinding.ensureInitialized();  // Required for latest Mapbox
 
-  // Public token secure way se set (GitHub Actions se aayega)
   MapboxOptions.setAccessToken(
     const String.fromEnvironment('ACCESS_TOKEN'),
   );
@@ -111,7 +108,7 @@ class AuthGate extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// LOGIN CHOICE SCREEN (No Change)
+// LOGIN CHOICE SCREEN
 // -----------------------------------------------------------------------------
 class LoginChoiceScreen extends StatefulWidget {
   const LoginChoiceScreen({super.key});
@@ -195,7 +192,7 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
   }
 }
 
-// ----------------- 🟢 MAIN NAVIGATOR (No Change) ----------------- //
+// ----------------- 🟢 MAIN NAVIGATOR ----------------- //
 class MainNavigator extends StatelessWidget {
   MainNavigator({super.key});
 
@@ -238,7 +235,7 @@ class MainNavigator extends StatelessWidget {
   }
 }
 
-// ---------------- ACCOUNT SCREEN (No Change) ---------------- //
+// ---------------- ACCOUNT SCREEN ---------------- //
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
   @override
@@ -264,7 +261,7 @@ class AccountScreen extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// 🟢 MAP VIEW SCREEN (FULLY FIXED FOR LATEST MAPBOX - No LatLng, No toJson)
+// 🟢 MAP VIEW SCREEN (FULLY FIXED FOR LATEST MAPBOX)
 // -----------------------------------------------------------------------------
 class MapViewScreen extends StatefulWidget {
   const MapViewScreen({super.key});
@@ -277,7 +274,6 @@ class _MapViewScreenState extends State<MapViewScreen> {
   MapboxMap? mapboxMap;
   PointAnnotationManager? annotationManager;
   
-  // 🌟 KILL SWITCH VARIABLES
   bool _isMapServiceEnabled = true;
   bool _isLoadingStatus = true;
 
@@ -308,7 +304,6 @@ class _MapViewScreenState extends State<MapViewScreen> {
     mapboxMap = controller;
     annotationManager = await controller.annotations.createPointAnnotationManager();
     
-    // Add dummy markers
     final plumber = PointAnnotationOptions(
       geometry: Point(coordinates: Position(72.87, 19.07)),
       textField: 'Plumber',
@@ -351,7 +346,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
         styleUri: MapboxStyles.MAPBOX_STREETS,
         onMapCreated: _onMapCreated,
         cameraOptions: CameraOptions(
-          center: Point(coordinates: Position(72.8777, 19.0760)),  // Mumbai: lng, lat
+          center: Point(coordinates: Position(72.8777, 19.0760)),  // Mumbai
           zoom: 12.0,
         ),
       ),
@@ -360,191 +355,16 @@ class _MapViewScreenState extends State<MapViewScreen> {
 }
 
 // -----------------------------------------------------------------------------
-// CUSTOM LOGIN SCREEN (FIXED: Size.fromHeight replaced)
+// CUSTOM LOGIN, REGISTER, OTP, HOME, BOOKING, HELPER DETAIL (ALL FIXED)
 // -----------------------------------------------------------------------------
+// (Baaki sab classes yahan se – sab Size.fromHeight fixed + safe image)
+
 class CustomLoginScreen extends StatefulWidget {
   const CustomLoginScreen({super.key});
   @override
   State<CustomLoginScreen> createState() => _CustomLoginScreenState();
 }
 
-class _CustomLoginScreenState extends State<CustomLoginScreen> {
-  final TextEditingController email = TextEditingController();
-  final TextEditingController password = TextEditingController();
-  bool isLoading = false;
-  String? _error;
-
-  // ... loginUser function same rahega ...
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Custom Login")),
-      body: Padding(
-        padding: const EdgeInsets.all(28.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text("Login with Email/Password",
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.indigo)),
-            const SizedBox(height: 40),
-            TextField(controller: email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: "Email")),
-            TextField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: "Password")),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: isLoading ? null : loginUser, 
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),  // Fixed
-                backgroundColor: Colors.indigo,
-              ),
-              child: isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("Log in", style: TextStyle(color: Colors.white)),
-            ),
-            if (_error != null) 
-              Padding(padding: const EdgeInsets.only(top: 10), child: Text(_error!, style: const TextStyle(color: Colors.red))),
-            TextButton(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
-              child: const Text("Create an account (OTP Required)"),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------- REGISTER SCREEN (FIXED: Size.fromHeight replaced) ---------------- //
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
-  @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
-}
-
-class _RegisterScreenState extends State<RegisterScreen> {
-  // ... same variables and function ...
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Register (OTP Required)")),
-      body: Padding(
-        padding: const EdgeInsets.all(28.0),
-        child: Column(
-          children: [
-            TextField(controller: name, decoration: const InputDecoration(labelText: "Full Name")),
-            TextField(controller: email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: "Email")),
-            TextField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: "Password (min 6 chars)")),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: isLoading ? null : registerUserStartOTP,
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),  // Fixed
-              ),
-              child: isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("Register & Send OTP"),
-            ),
-            if (_error != null) 
-              Padding(padding: const EdgeInsets.only(top: 10), child: Text(_error!, style: const TextStyle(color: Colors.red))),
-          ],
-        ),
-      ),
-    );
-  }
-} 'plumbing_icon', iconSize: 1.5
-    ),
-    PointAnnotationOptions(
-      geometry: Point(coordinates: Position(72.85, 19.09)).toJson(),
-      textField: 'Electrician', textColor: Colors.red.value, iconImage: 'electrician_icon', iconSize: 1.5
-    ),
-  ];
-  
-  @override
-  void initState() {
-    super.initState();
-    _checkMapStatus(); // Map status check karo
-  }
-
-  // 🌟 Function to check the Kill Switch Status from Backend
-  Future<void> _checkMapStatus() async {
-    setState(() {
-      _isLoadingStatus = true;
-    });
-    try {
-      final response = await http.get(Uri.parse('$mongoApiBase/map/status'));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['status'] == 'disabled') {
-          _isMapServiceEnabled = false;
-        }
-      } else {
-        _isMapServiceEnabled = false; 
-      }
-    } catch (e) {
-      print('Map status check failed: $e');
-      _isMapServiceEnabled = false;
-    }
-    setState(() {
-      _isLoadingStatus = false;
-    });
-  }
-
-  void _onMapCreated(MapboxMap mapboxMap) {
-    this.mapboxMap = mapboxMap;
-    mapboxMap.annotations.createPointAnnotationManager().then((manager) {
-      annotationManager = manager;
-      annotationManager!.createMulti(_annotationOptions);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // 1. Loading State
-    if (_isLoadingStatus) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    
-    // 2. 🌟 Kill Switch Applied (Service Disabled)
-    if (!_isMapServiceEnabled) {
-      return Scaffold(
-        appBar: AppBar(title: const Text("Map Service Disabled")),
-        body: const Center(
-          child: Padding(
-            padding: EdgeInsets.all(20.0),
-            child: Text(
-              "Map service is temporarily unavailable due to potential budget limits. Please check back later.",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.red, fontSize: 16),
-            ),
-          ),
-        ),
-      );
-    }
-
-    // 3. Map Active (Default)
-    return Scaffold(
-      appBar: AppBar(title: const Text("Nearby Helpers (MapBox)")),
-      body: MapWidget(
-        styleUri: MapboxStyles.MAPBOX_STREETS, 
-        cameraOptions: CameraOptions(
-          center: Point(coordinates: Position(_initialLocation.longitude, _initialLocation.latitude)).toJson(),
-          zoom: 12.0,
-        ),
-        onMapCreated: _onMapCreated,
-      ),
-    );
-  }
-}
-
-// -----------------------------------------------------------------------------
-// CUSTOM LOGIN SCREEN
-// -----------------------------------------------------------------------------
-class CustomLoginScreen extends StatefulWidget {
-  const CustomLoginScreen({super.key});
-  @override
-  State<CustomLoginScreen> createState() => _CustomLoginScreenState();
-}
 class _CustomLoginScreenState extends State<CustomLoginScreen> {
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
@@ -580,7 +400,7 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
            ScaffoldMessenger.of(context).showSnackBar(
              const SnackBar(content: Text("Login successful!"))
            );
-           Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => MainNavigator()));
+           Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => MainNavigator()));
         }
       } else {
          final errorData = json.decode(response.body);
@@ -606,20 +426,15 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
             const Text("Login with Email/Password",
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.indigo)),
             const SizedBox(height: 40),
-            TextField(
-              controller: email,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: "Email"),
-            ),
-            TextField(
-              controller: password,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: "Password"),
-            ),
+            TextField(controller: email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: "Email")),
+            TextField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: "Password")),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: isLoading ? null : loginUser, 
-              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50), backgroundColor: Colors.indigo),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                backgroundColor: Colors.indigo,
+              ),
               child: isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
                   : const Text("Log in", style: TextStyle(color: Colors.white)),
@@ -627,10 +442,7 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
             if (_error != null) 
               Padding(padding: const EdgeInsets.only(top: 10), child: Text(_error!, style: const TextStyle(color: Colors.red))),
             TextButton(
-              onPressed: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const RegisterScreen()));
-              },
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
               child: const Text("Create an account (OTP Required)"),
             )
           ],
@@ -640,12 +452,12 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
   }
 }
 
-// ---------------- REGISTER SCREEN ---------------- //
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
+
 class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController name = TextEditingController();
   final TextEditingController email = TextEditingController();
@@ -702,24 +514,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
         padding: const EdgeInsets.all(28.0),
         child: Column(
           children: [
-            TextField(
-              controller: name,
-              decoration: const InputDecoration(labelText: "Full Name"),
-            ),
-            TextField(
-              controller: email,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: "Email"),
-            ),
-            TextField(
-              controller: password,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: "Password (min 6 chars)"),
-            ),
+            TextField(controller: name, decoration: const InputDecoration(labelText: "Full Name")),
+            TextField(controller: email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: "Email")),
+            TextField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: "Password (min 6 chars)")),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: isLoading ? null : registerUserStartOTP,
-              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+              ),
               child: isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
                   : const Text("Register & Send OTP"),
@@ -733,359 +536,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
-// ---------------- NEW: OTP VERIFICATION SCREEN ---------------- //
-class OTPVerificationScreen extends StatefulWidget {
-  final String email;
-  final String name;
-  final String password;
-  final bool isRegistration;
-
-  const OTPVerificationScreen({
-    super.key, 
-    required this.email, 
-    required this.name, 
-    required this.password,
-    required this.isRegistration,
-  });
-
-  @override
-  State<OTPVerificationScreen> createState() => _OTPVerificationScreenState();
-}
-class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
-  final TextEditingController otp = TextEditingController();
-  bool isLoading = false;
-  String? _error;
-
-  Future<void> verifyOTP() async {
-    if (otp.text.isEmpty || otp.text.length < 4) {
-      setState(() => _error = "Please enter the 4-digit OTP.");
-      return;
-    }
-    setState(() => isLoading = true);
-    _error = null;
-
-    try {
-      final response = await http.post(
-        Uri.parse('$mongoApiBase/auth/verify-otp'), 
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'email': widget.email, 
-          'otp': otp.text,
-          'name': widget.isRegistration ? widget.name : null,
-          'password': widget.isRegistration ? widget.password : null,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final user = data['user'];
-        final token = data['token'];
-
-        tempAuth.setUser(
-          UserProfile(name: user['name'] ?? widget.name, sub: user['id'] ?? widget.email), 
-          token: token
-        );
-        
-        if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(content: Text("${widget.isRegistration ? 'Registration' : 'Login'} successful!"))
-           );
-           Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => MainNavigator()));
-        }
-      } else {
-         final errorData = json.decode(response.body);
-         setState(() => _error = errorData['message'] ?? 'OTP verification failed. Try again.');
-      }
-    } catch (e) {
-      setState(() => _error = 'Network error or Invalid API response.');
-      print('OTP Verification Error: $e');
-    }
-    
-    if (mounted) setState(() => isLoading = false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Verify OTP")),
-      body: Padding(
-        padding: const EdgeInsets.all(28.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("OTP sent to ${widget.email}",
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 18, color: Colors.indigo)),
-            const SizedBox(height: 20),
-            TextField(
-              controller: otp,
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              textAlign: TextAlign.center,
-              decoration: const InputDecoration(labelText: "OTP Code"),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: isLoading ? null : verifyOTP,
-              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-              child: isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("Verify & Complete"),
-            ),
-            if (_error != null) 
-              Padding(padding: const EdgeInsets.only(top: 10), child: Text(_error!, style: const TextStyle(color: Colors.red))),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------
-// HOME SCREEN
-// ---------------------------------------------------------
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  List<Map<String, dynamic>> helpers = [
-    {"name": "Ramesh", "skill": "Electrician", "price": 450, "image": ""},
-    {"name": "Suresh", "skill": "Plumber", "price": 300, "image": ""},
-    {"name": "Anita", "skill": "Cleaner", "price": 250, "image": ""},
-    {"name": "Babu", "skill": "Carpenter", "price": 600, "image": ""},
-  ];
-  bool loading = false; 
-
-  @override
-  void initState() {
-    super.initState();
-    // _loadHelpers();
-  }
-
-  void _filterByCategory(String category) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Filtering helpers by: $category'))
-    );
-    print('Filtered by: $category');
-  }
-
-  Future<void> _loadHelpers() async {
-    setState(() => loading = true);
-    await Future.delayed(const Duration(seconds: 1)); 
-    if (mounted) setState(() => loading = false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final userName = tempAuth.user?.name ?? "Customer"; 
-
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: Text("Welcome, $userName!", style: const TextStyle(color: Colors.black)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person_pin_outlined, color: Colors.black),
-            onPressed: () {
-               DefaultTabController.of(context).animateTo(4);
-            },
-          ),
-        ],
-      ),
-
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator( 
-              onRefresh: _loadHelpers,
-              child: SingleChildScrollView( 
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column( 
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [ 
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      color: Colors.white,
-                      width: double.infinity,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text("Find Helpers Near You",
-                              style: TextStyle(
-                                  fontSize: 24, fontWeight: FontWeight.bold)),
-                          SizedBox(height: 3),
-                          Text("Plumbers, Electricians, Cleaners, all nearby"),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 110,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        children: [
-                          categoryItem("Cleaning", Icons.cleaning_services),
-                          categoryItem("Electrician", Icons.electrical_services),
-                          categoryItem("Plumber", Icons.plumbing),
-                          categoryItem("Painter", Icons.format_paint),
-                          categoryItem("Carpenter", Icons.carpenter),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text("Available Helpers",
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.bold)),
-                    ),
-                    const SizedBox(height: 12),
-                    GridView.builder(
-                      padding: const EdgeInsets.all(12),
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: helpers.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: .78,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                      ),
-                      itemBuilder: (context, index) {
-                        final h = helpers[index];
-                        return helperCard(
-                          h["name"] ?? "Unknown",
-                          h["skill"] ?? "Service", 
-                          h["price"] ?? 0,
-                          h["image"] ?? "", 
-                        );
-                      },
-                    )
-                  ],
-                )
-              )
-            )
-    );
-  } 
-
-  Widget categoryItem(String title, IconData icon) {
-    return InkWell(
-      onTap: () => _filterByCategory(title),
-      child: Container(
-        width: 90,
-        margin: const EdgeInsets.only(left: 12),
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 34, color: Colors.indigo), 
-            const SizedBox(height: 6),
-            Text(title, textAlign: TextAlign.center),
-          ],
-        ),
-      ),
-    );
-  }
-  
-  Widget helperCard(String name, String skill, int price, String imgUrl) {
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (_) => HelperDetailPage( 
-                      helperName: name, 
-                      helperSkill: skill,
-                      price: price,
-                      imgUrl: imgUrl,
-                    )));
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-          ],
-        ),
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          children: [
-            Expanded(
-              child: imgUrl.isEmpty
-                  ? Container(
-                      decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(12)),
-                    )
-                  : ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(imgUrl, fit: BoxFit.cover),
-                    ),
-            ),
-            const SizedBox(height: 8),
-            Text(name,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            Text(skill, style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 4),
-            Text("₹$price /hr",
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ------------------ 🟢 BOOKING SCREEN ------------------
-class BookingScreen extends StatefulWidget {
-  final String helperName;
-  final String helperSkill;
-  final int price;
-
-  const BookingScreen({super.key, required this.helperName, required this.helperSkill, required this.price});
-
-  @override
-  State<BookingScreen> createState() => _BookingScreenState();
-}
-class _BookingScreenState extends State<BookingScreen> { 
-  DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
-  double estimatedHours = 2.0;
-  bool isCreatingBooking = false;
-
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (picked != null && picked != selectedDate) {
-      setState(() {
-        selectedDate = picked;
-      });
-    }
-  }
-
-  double get totalCost => estimatedHours * widget.price * 1.2; 
-  
-  Future<void> _createBooking() async {
-    setState(() => isCreatingBooking = true);
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-// ---------------- NEW: OTP VERIFICATION SCREEN (FIXED: Size.fromHeight replaced) ---------------- //
 class OTPVerificationScreen extends StatefulWidget {
   final String email;
   final String name;
@@ -1181,7 +631,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
             ElevatedButton(
               onPressed: isLoading ? null : verifyOTP,
               style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),  // Fixed
+                minimumSize: const Size(double.infinity, 50),
               ),
               child: isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
@@ -1196,9 +646,6 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   }
 }
 
-// ---------------------------------------------------------
-// HOME SCREEN (No Mapbox related errors here - Clean)
-// ---------------------------------------------------------
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
   @override
@@ -1217,14 +664,12 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // _loadHelpers();
   }
 
   void _filterByCategory(String category) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Filtering helpers by: $category'))
     );
-    print('Filtered by: $category');
   }
 
   Future<void> _loadHelpers() async {
@@ -1268,8 +713,7 @@ class _HomePageState extends State<HomePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: const [
                           Text("Find Helpers Near You",
-                              style: TextStyle(
-                                  fontSize: 24, fontWeight: FontWeight.bold)),
+                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                           SizedBox(height: 3),
                           Text("Plumbers, Electricians, Cleaners, all nearby"),
                         ],
@@ -1294,8 +738,7 @@ class _HomePageState extends State<HomePage> {
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Text("Available Helpers",
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.bold)),
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                     ),
                     const SizedBox(height: 12),
                     GridView.builder(
@@ -1303,8 +746,7 @@ class _HomePageState extends State<HomePage> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: helpers.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         childAspectRatio: .78,
                         crossAxisSpacing: 12,
@@ -1383,20 +825,18 @@ class _HomePageState extends State<HomePage> {
                       decoration: BoxDecoration(
                           color: Colors.grey[300],
                           borderRadius: BorderRadius.circular(12)),
+                      child: const Center(child: Icon(Icons.person, size: 50, color: Colors.grey)),
                     )
                   : ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.network(imgUrl, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[300])),
+                      child: Image.network(imgUrl, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[300], child: const Icon(Icons.person, size: 50, color: Colors.grey))),
                     ),
             ),
             const SizedBox(height: 8),
-            Text(name,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             Text(skill, style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 4),
-            Text("₹$price /hr",
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text("₹$price /hr", style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -1404,7 +844,6 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// ------------------ 🟢 BOOKING SCREEN (FIXED: Size.fromHeight replaced) ------------------
 class BookingScreen extends StatefulWidget {
   final String helperName;
   final String helperSkill;
@@ -1554,7 +993,7 @@ class _BookingScreenState extends State<BookingScreen> {
               child: ElevatedButton(
                 onPressed: isCreatingBooking ? null : _createBooking,
                 style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),  // Fixed
+                  minimumSize: const Size(double.infinity, 50),
                   backgroundColor: Colors.green.shade600,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 5,
@@ -1571,8 +1010,7 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 }
-      
-// ------------------ 🟢 HELPER DETAIL PAGE (FIXED: Size.fromHeight replaced) ------------------
+
 class HelperDetailPage extends StatelessWidget {
   final String helperName;
   final String helperSkill;
@@ -1615,9 +1053,7 @@ class HelperDetailPage extends StatelessWidget {
                       errorBuilder: (context, error, stackTrace) => Container(
                         height: 200,
                         width: double.infinity,
-                        decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(12)),
+                        decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(12)),
                         child: const Center(child: Icon(Icons.person, size: 50, color: Colors.grey)),
                       ),
                     ),
@@ -1649,7 +1085,7 @@ class HelperDetailPage extends StatelessWidget {
                             )));
               },
               style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),  // Fixed: Full width + height 50
+                minimumSize: const Size(double.infinity, 50),
                 backgroundColor: Colors.indigo,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
