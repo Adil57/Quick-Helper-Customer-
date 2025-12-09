@@ -50,19 +50,35 @@ jobs:
 
       - name: Flutter Pub Get
         run: flutter pub get
-        
-      # 👇 Zaroori Fix: Mapbox Downloads Token aur Verbose Logging (-v)
-      - name: Build APK (Release) with Detailed Logs and Mapbox Env
-        run: flutter build apk --release -v --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }}
-        env: # Mapbox dependency download ke liye yeh environment variable zaroori hai
-          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }} 
-          # Agar aapko signing ke issues solve karne hain, toh yahan signing variables bhi add kar sakte hain
-          # KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          # KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+
+      # 👇 Yahan naya, filtered script hai jo sirf error dikhayega
+      - name: Build APK (Release) and Show Filtered Error
+        run: |
+          echo "Starting Flutter Build... (Error details will be filtered)"
+          
+          # Full build command run karo aur output ko ek variable mein save karo
+          # 2>&1 se stdout aur stderr dono capture ho jaate hain
+          BUILD_OUTPUT=$(flutter build apk --release -v --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }} 2>&1)
+          EXIT_CODE=$? # Build ka exit code check karo
+          
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "------------------------------------------------------"
+            echo "       🚨 BUILD FAILED - FILTERED ERROR DETAILS 🚨"
+            echo "------------------------------------------------------"
+            # Grep: Sirf 'FAILURE:', 'Caused by:', 'error:', aur 'Execution failed for task' wali lines (aur unke 10 lines upar/5 lines neeche) print karega
+            echo "$BUILD_OUTPUT" | grep -E "FAILURE:|Caused by:|error:|Execution failed for task" -A 10 -B 5
+            echo "------------------------------------------------------"
+            exit $EXIT_CODE # Final step ko fail karo
+          else
+            echo "Build Success! APK Artifacts will be uploaded."
+          fi
+        env:
+          # Mapbox downloads token ko phir se set kiya gaya hai, just in case (aap ignore kar sakte hain, but yeh warning hata dega)
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-split
-          path: build/app/outputs/apk/release/*.apk 
+          path: build/app/outputs/apk/release/*.apk
           
