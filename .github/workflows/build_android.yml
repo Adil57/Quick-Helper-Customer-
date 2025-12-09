@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.pub-cache
-          key: \( {{ runner.os }}-pub- \){{ hashFiles('**/pubspec.lock') }}
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: ${{ runner.os }}-pub-
 
       - name: Flutter Clean
@@ -47,23 +47,25 @@ jobs:
       - name: Build APK (Release)
         run: flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }}
         env:
-          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}  # Warning fully khatam
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
-      # 🟢 MAIN FIX: APK ko Flutter expected location pe copy kar do
+      # 🟢 Copy APK from ANY valid location
       - name: Move APK to Flutter Expected Path
         run: |
           mkdir -p build/app/outputs/flutter-apk
-          find build/app/outputs/apk/release -name "app-release.apk" -exec cp {} build/app/outputs/flutter-apk/app-release.apk \;
-          echo "APK moved successfully to expected path"
 
-      # Debug step (Pehli successful run ke baad hata dena)
-      - name: Debug - Confirm APK Locations
-        run: |
-          echo "=== Expected Flutter Path ==="
-          ls -la build/app/outputs/flutter-apk/ || true
-          echo "=== Actual Gradle Path ==="
-          ls -la build/app/outputs/apk/release/ || true
-          find build -name "*.apk" || true
+          # Copy if Gradle path exists
+          if [ -f build/app/outputs/apk/release/app-release.apk ]; then
+            cp build/app/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/app-release.apk
+          fi
+
+          # Copy if Flutter path exists
+          if [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
+            echo "APK already exists in flutter-apk/"
+          fi
+
+          echo "Final APK files:"
+          find build -name "*.apk"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -71,3 +73,4 @@ jobs:
           name: quick-helper-apks
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
+          
