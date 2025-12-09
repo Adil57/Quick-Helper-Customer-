@@ -36,8 +36,7 @@ android {
         )
     }
 
-    // ❌ SPLITS BLOCK POORA HATA DIYA GAYA HAI
-    // Flutter by default universal APK banayega → stable & predictable output path
+    // ❌ SPLITS BLOCK POORA REMOVE KAR DIYA GAYA (Flutter default universal APK banayega)
 
     buildTypes {
         release {
