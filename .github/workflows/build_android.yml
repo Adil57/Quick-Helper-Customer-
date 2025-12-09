@@ -35,41 +35,20 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          key: \( {{ runner.os }}-pub- \){{ hashFiles('**/pubspec.lock') }}
           restore-keys: ${{ runner.os }}-pub-
 
-      # 👇 CRITICAL FIX: GRADLE CACHE KO TEMPORARILY DISABLE KIYA GAYA HAI
-      # - name: Cache Gradle
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: |
-      #       ~/.gradle/caches
-      #       ~/.gradle/wrapper
-      #     key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}-${{ hashFiles('**/gradle-wrapper.properties') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-gradle-
-            
-      - name: Flutter Clean (Force fresh build)
+      - name: Flutter Clean
         run: flutter clean
 
       - name: Flutter Pub Get
         run: flutter pub get
 
-      # 👇 BUILD STEP: Build chalao, aur fail hone par bhi find command ko chalne do
       - name: Build APK (Release)
-        run: flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }} || true
-        env:
-          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+        run: flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }}
 
-      # 👇 FINAL DIAGNOSTIC STEP: Naya file name dhoondho (Yeh zaroor chalega)
-      - name: Check APK Location and Find New Path
-        run: |
-          echo "=========================================================="
-          echo "  🔍 SEARCHING FOR NEW APK FILE NAME ACROSS ALL BUILD FOLDERS..."
-          echo "=========================================================="
-          # find command ab saare .apk files ka naya naam aur path print karega
-          find build -name "*.apk" 
-          echo "=========================================================="
-
-      # ❌ UPLOAD STEP HATA DIYA GAYA HAI (Jab path mil jayega toh wapas daalenge)
-      
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: quick-helper-customer-apk
+          path: build/app/outputs/apk/release/*.apk   # Sab split APKs upload ho jayenge (arm64 wala main hai)
