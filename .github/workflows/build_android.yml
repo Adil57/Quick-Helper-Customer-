@@ -55,15 +55,21 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
+      # 👇 BUILD STEP: Build chalao, aur fail hone par bhi find command ko chalne do
       - name: Build APK (Release)
-        run: flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }}
+        run: flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }} || true
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
-      # 👇 FINAL UPLOAD: Wildcard Path (Taki koi bhi generated file mil jaye)
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-final
-          path: build/app/outputs/flutter-apk/*release.apk 
-          
+      # 👇 FINAL DIAGNOSTIC STEP: Naya file name dhoondho (Yeh zaroor chalega)
+      - name: Check APK Location and Find New Path
+        run: |
+          echo "=========================================================="
+          echo "  🔍 SEARCHING FOR NEW APK FILE NAME ACROSS ALL BUILD FOLDERS..."
+          echo "=========================================================="
+          # find command ab saare .apk files ka naya naam aur path print karega
+          find build -name "*.apk" 
+          echo "=========================================================="
+
+      # ❌ UPLOAD STEP HATA DIYA GAYA HAI (Jab path mil jayega toh wapas daalenge)
+      
