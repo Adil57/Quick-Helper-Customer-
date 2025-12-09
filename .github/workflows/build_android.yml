@@ -48,41 +48,42 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
             
+      # 👇 FIX #1: Flutter Clean - Ensures fresh APK generation
       - name: Flutter Clean (Force fresh build)
         run: flutter clean
 
       - name: Flutter Pub Get
         run: flutter pub get
 
+      # 👇 FIX #2: Build with Filtered Error Output (No more 2500 lines)
       - name: Build APK (Release) and Show Filtered Error
         shell: bash
         run: |
           echo "Starting Flutter Build... (Error details will be filtered)"
           
-          # Build chalao, aur fail hone par bhi script ko exit mat hone do
-          BUILD_OUTPUT=$(flutter build apk --release -v --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }} 2>&1) || true
+          # Build chalao, aur error hone par bhi script ko exit mat hone do
+          BUILD_OUTPUT=$(flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }} 2>&1) || true
           EXIT_CODE=$?
           
           if [ $EXIT_CODE -ne 0 ]; then
             echo "------------------------------------------------------"
             echo "       🚨 BUILD FAILED - FILTERED ERROR DETAILS 🚨"
             echo "------------------------------------------------------"
+            # Sirf critical error lines print hongi
             echo "$BUILD_OUTPUT" | grep -E "FAILURE:|Caused by:|error:|Execution failed for task" -A 10 -B 5
             echo "------------------------------------------------------"
             exit $EXIT_CODE
           else
-            echo "Build Success! APK Artifacts will be located."
+            echo "Build Success! APK Artifacts will be uploaded."
           fi
         env:
+          # Optional: Mapbox downloads token for dependency resolution
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
-      # 👇 Yahan Par Upload Artifact ki jagah Diagnostic Step hai
-      - name: Check APK Location and Print Path
-        run: |
-          echo "=========================================================="
-          echo "  🔍 SEARCHING FOR APK FILE IN BUILD DIRECTORY..."
-          echo "=========================================================="
-          # find command saari .apk files ko 'build' directory ke andar dhoondh kar print karega
-          find build -name "*.apk" 
-          echo "=========================================================="
+      # 👇 FIX #3: Corrected APK Upload Path
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-split
+          path: build/app/outputs/flutter-apk/*.apk
           
