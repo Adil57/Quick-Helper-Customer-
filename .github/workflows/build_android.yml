@@ -51,4 +51,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: quick-helper-apks
-          path: build/app/outputs/apk/release/*.apk  # Yeh correct path hai – sab split APKs upload ho jayenge
+          path: |
+      build/app/outputs/flutter-apk/app-release.apk
+      build/app/outputs/**/*.apk
