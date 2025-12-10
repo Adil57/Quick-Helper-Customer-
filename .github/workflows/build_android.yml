@@ -53,7 +53,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: quick-helper-apks
-          # *** Yahan path change ho gaya hai ***
-          path: build/host/outputs/apk/app-release.apk 
+          # *** FINAL FIX: Standard Flutter output path ***
+          path: build/app/outputs/flutter-apk/app-release.apk 
           if-no-files-found: error
           
