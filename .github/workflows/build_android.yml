@@ -20,10 +20,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 🔥 FIX 1: Increase watcher limit (must-have)
-      - name: Increase watcher limit
-        run: sudo sysctl fs.inotify.max_user_watches=524288
-
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
@@ -39,7 +35,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          key: \( {{ runner.os }}-pub- \){{ hashFiles('**/pubspec.lock') }}
           restore-keys: ${{ runner.os }}-pub-
 
       - name: Flutter Clean
@@ -48,46 +44,29 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-      # 🔥 FIX 2: Disable Flutter file watcher fully
-      - name: Disable Flutter file watcher
-        run: |
-          export NO_WATCHER=1
-          echo "export NO_WATCHER=1" >> $GITHUB_ENV
-
-      # 🔥 FIX 3: Kill flutter daemon so watcher does NOT restart
-      - name: Kill Flutter Daemon
-        run: |
-          flutter daemon &
-          sleep 3
-          pkill -f flutter
-
-      # 🔥 Build APK
       - name: Build APK (Release)
         run: flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }}
         env:
-          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
-          NO_WATCHER: 1
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}  # Warning khatam
 
-      # 🔥 Ensure folder exists
-      - name: Ensure Flutter APK path exists
-        run: mkdir -p build/app/outputs/flutter-apk
-
-      # 🔥 Move APK from Gradle path (if exists)
-      - name: Move APK to flutter-apk folder
+      # 🟢 PERFECT FIX: Actual release APK ko expected flutter-apk folder mein copy kar do
+      - name: Copy Release APK to Flutter Expected Path
         run: |
-          if [ -f build/app/outputs/apk/release/app-release.apk ]; then
-            cp build/app/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/app-release.apk
-          fi
-          if [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
-            echo "APK ready."
-          fi
-          find build -name "*.apk" || true
+          mkdir -p build/app/outputs/flutter-apk
+          cp build/app/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/app-release.apk
+          echo "APK successfully copied to expected path!"
 
-      # 🔥 Upload APK
+      # Debug (Success ke baad hata dena)
+      - name: Debug - List All APKs
+        run: |
+          echo "=== Actual Gradle Output ==="
+          ls -la build/app/outputs/apk/release/ || true
+          echo "=== Expected Flutter Path ==="
+          ls -la build/app/outputs/flutter-apk/ || true
+
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: quick-helper-apk
+          name: quick-helper-apks
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
-          
