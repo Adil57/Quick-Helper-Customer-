@@ -49,33 +49,6 @@ jobs:
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
-      # 🟢 MAIN FIX: Modern AGP ke liye actual APK ko Flutter expected path pe copy kar do
-      - name: Copy APK to Flutter Expected Path
-        run: |
-          # Target folder banao
-          mkdir -p build/app/outputs/flutter-apk
-          
-          # Actual APK dhundo aur copy karo (exact path for AGP 8+)
-          ACTUAL_APK=$(find android/app/build/outputs/apk/release -name "app-release.apk" | head -1)
-          
-          if [ -f "$ACTUAL_APK" ]; then
-            cp "$ACTUAL_APK" build/app/outputs/flutter-apk/app-release.apk
-            echo "✅ APK copied from $ACTUAL_APK to build/app/outputs/flutter-apk/app-release.apk"
-          else
-            echo "❌ APK not found in expected path – searching broadly"
-            find . -name "app-release.apk" -type f | head -1 | xargs -I {} cp {} build/app/outputs/flutter-apk/app-release.apk || echo "Copy failed!"
-          fi
-
-      # Debug step (Success ke baad hata dena – log mein dikhega kya bana)
-      - name: Debug - APK Locations
-        run: |
-          echo "=== All APK files found ==="
-          find . -name "*.apk" -type f || true
-          echo "=== Actual Gradle Output (app/build) ==="
-          ls -la android/app/build/outputs/apk/release/ || true
-          echo "=== Flutter Expected Output ==="
-          ls -la build/app/outputs/flutter-apk/ || true
-
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
