@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -25,10 +28,11 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
+        // Auth0 placeholders
         manifestPlaceholders["auth0Domain"] = "adil888.us.auth0.com"
         manifestPlaceholders["auth0Scheme"] = "com.quickhelper.app"
 
-        // PUBLIC Mapbox token (map rendering)
+        // Load PUBLIC Mapbox token for the app manifest
         resValue(
             "string",
             "mapbox_access_token",
@@ -38,8 +42,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false     
-            isShrinkResources = false   
+            isMinifyEnabled = false
+            isShrinkResources = false
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -48,23 +53,18 @@ android {
     }
 }
 
+// Flutter config
 flutter {
     source = "../.."
 }
 
-// Repositories for Mapbox plugin
+// Repositories — CLEAN & WORKING
 repositories {
     google()
     mavenCentral()
+}
 
-    maven("https://api.mapbox.com/downloads/v2/releases/maven") {
-        authentication {
-            create<BasicAuthentication>("basic")
-        }
-        credentials {
-            username = "mapbox"
-            password = System.getenv("MAPBOX_DOWNLOADS_TOKEN")
-                ?: project.findProperty("MAPBOX_DOWNLOADS_TOKEN")?.toString()
-        }
-    }
+// Dependencies block (Flutter automatically links libs)
+dependencies {
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:${project.property("kotlin_version")}")
 }
