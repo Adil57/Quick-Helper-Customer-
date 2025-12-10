@@ -44,30 +44,6 @@ allprojects {
     }
 }
 
-// 🟢 MAIN FIX: APK sync task for legacy buildscript (Flutter expected path pe copy)
-def flutterOutDir = file("$buildDir/../app/build/outputs/apk/release")
-def cliOutDir = new File(rootProject.projectDir.parentFile, "build/app/outputs/flutter-apk")
-
-tasks.register("syncFlutterApks", Copy) {
-    from(flutterOutDir)
-    into(cliOutDir)
-    include("app-release.apk")
-    rename("app-release.apk", "app-release.apk")
-    doFirst {
-        cliOutDir.mkdirs()
-        println "[FIX] Syncing APK from $flutterOutDir to $cliOutDir"
-    }
-    doLast {
-        println "[FIX] APK sync complete!"
-    }
-}
-
-tasks.whenTaskAdded { task ->
-    if (task.name == "assembleRelease") {
-        task.finalizedBy("syncFlutterApks")
-    }
-}
-
 tasks.register('clean', Delete) {
     delete rootProject.layout.buildDirectory
 }
