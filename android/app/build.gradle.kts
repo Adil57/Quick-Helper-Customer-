@@ -21,6 +21,21 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
+    // === Naya Signing Config Code Yahan Shuru (Zaroori) ===
+    signingConfigs {
+        create("release") {
+            val keyPropertiesFile = rootProject.file("key.properties")
+            if (keyPropertiesFile.exists()) {
+                val keyProperties = Properties().apply { load(FileInputStream(keyPropertiesFile)) }
+                storeFile = file(keyProperties["storeFile"] as String)
+                storePassword = keyProperties["storePassword"] as String
+                keyAlias = keyProperties["keyAlias"] as String
+                keyPassword = keyProperties["keyPassword"] as String
+            }
+        }
+    }
+    // === Naya Signing Config Code Yahan Khatam ===
+
     defaultConfig {
         applicationId = "com.example.quick_helper_customer"
         minSdk = 21
@@ -46,11 +61,13 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // === Signing Config Ko Apply Karein ===
+            signingConfig = signingConfigs.getByName("release")
+            // =====================================
         }
     }
     
-    // === APK Copy Logic Hata Diya Gaya Hai ===
-    // applicationVariants.configureEach { ... } wala block yahan se hata diya gaya hai.
+    // APK copy logic is removed.
 }
 
 flutter {
