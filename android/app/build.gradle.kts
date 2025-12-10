@@ -49,21 +49,8 @@ android {
         }
     }
     
-    // === FINAL CORRECTED CODE (APK copy fix - Syntax fixed) ===
-    applicationVariants.configureEach {
-        val currentVariant = this
-        if (currentVariant.buildType.name == "release" || currentVariant.buildType.name == "debug") {
-            tasks.named("assemble${currentVariant.name.capitalize()}").configure {
-                doLast {
-                    copy {
-                        from("../../../build/app/outputs/apk/${currentVariant.buildType.name}/app-${currentVariant.buildType.name}.apk")
-                        into("../../../build/host/outputs/apk/")
-                    }
-                }
-            }
-        }
-    }
-    // === FINAL CORRECTED CODE YAHAN KHATAM ===
+    // === APK Copy Logic Hata Diya Gaya Hai ===
+    // applicationVariants.configureEach { ... } wala block yahan se hata diya gaya hai.
 }
 
 flutter {
