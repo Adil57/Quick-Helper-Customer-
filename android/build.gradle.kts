@@ -1,35 +1,22 @@
 import java.io.FileInputStream
 import java.util.Properties
 
-// Load local.properties
-val localProperties = Properties()
-val localPropertiesFile = rootProject.file("local.properties")
+// 🟢 FIX 1: local.properties file ko load kiya gaya
+def localPropertiesFile = new File(rootProject.projectDir, "android/local.properties")
+def localProperties = new Properties()
+
 if (localPropertiesFile.exists()) {
-    localPropertiesFile.inputStream().use { localProperties.load(it) }
+    localProperties.load(new FileInputStream(localPropertiesFile))
 }
 
 buildscript {
     repositories {
         google()
         mavenCentral()
-
-        // Mapbox Maven repo
-        maven("https://api.mapbox.com/downloads/v2/releases/maven") {
-            authentication {
-                create<BasicAuthentication>("basic")
-            }
-            credentials {
-                username = "mapbox"
-                password = System.getenv("MAPBOX_DOWNLOADS_TOKEN")
-                    ?: localProperties.getProperty("MAPBOX_DOWNLOADS_TOKEN")
-                    ?: ""
-            }
-        }
     }
-
     dependencies {
-        classpath("com.android.tools.build:gradle:8.1.4")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22")
+        classpath 'com.android.tools.build:gradle:8.1.4'  // Stable AGP 8.1.4 (beta 8.11.1 avoid kar)
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.10"  // Stable Kotlin 1.9.10
     }
 }
 
@@ -38,21 +25,38 @@ allprojects {
         google()
         mavenCentral()
 
-        // Mapbox repo
-        maven("https://api.mapbox.com/downloads/v2/releases/maven") {
+        // ============================================
+        // ⭐ MAPBOX MAVEN + UNIVERSAL TOKEN FALLBACK
+        // ============================================
+        maven {
+            url "https://api.mapbox.com/downloads/v2/releases/maven"
             authentication {
-                create<BasicAuthentication>("basic")
+                basic(BasicAuthentication)
             }
             credentials {
                 username = "mapbox"
-                password = System.getenv("MAPBOX_DOWNLOADS_TOKEN")
-                    ?: localProperties.getProperty("MAPBOX_DOWNLOADS_TOKEN")
-                    ?: ""
+                // 🟢 FIX 2: Sabse pehle manually loaded localProperties se token uthaya
+                password = localProperties.getProperty("MAPBOX_DOWNLOADS_TOKEN")
+                        ?: System.getenv("MAPBOX_DOWNLOADS_TOKEN")
+                        ?: ""
             }
         }
     }
 }
 
-tasks.register<Delete>("clean") {
-    delete(rootProject.layout.buildDirectory)
+// 🟢 MAIN FIX: Subprojects namespace workaround for AGP 8.0+ (path mismatch aur APK find error fix)
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                if (namespace == null) {
+                    namespace project.group ?: "com.example.${project.name}"
+                }
+            }
+        }
+    }
+}
+
+tasks.register('clean', Delete) {
+    delete rootProject.layout.buildDirectory
 }
