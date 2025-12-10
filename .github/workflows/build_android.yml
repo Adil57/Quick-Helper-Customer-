@@ -20,7 +20,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 🔥 MUST HAVE — Fixes "Already watching path"
+      # 🔥 FIX 1: Increase watcher limit (must-have)
       - name: Increase watcher limit
         run: sudo sysctl fs.inotify.max_user_watches=524288
 
@@ -48,19 +48,46 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-      # 🔥 Re-run flutter doctor to force-watch fixes
-      - name: Flutter Doctor
-        run: flutter doctor -v
+      # 🔥 FIX 2: Disable Flutter file watcher fully
+      - name: Disable Flutter file watcher
+        run: |
+          export NO_WATCHER=1
+          echo "export NO_WATCHER=1" >> $GITHUB_ENV
 
+      # 🔥 FIX 3: Kill flutter daemon so watcher does NOT restart
+      - name: Kill Flutter Daemon
+        run: |
+          flutter daemon &
+          sleep 3
+          pkill -f flutter
+
+      # 🔥 Build APK
       - name: Build APK (Release)
         run: flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }}
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+          NO_WATCHER: 1
 
+      # 🔥 Ensure folder exists
+      - name: Ensure Flutter APK path exists
+        run: mkdir -p build/app/outputs/flutter-apk
+
+      # 🔥 Move APK from Gradle path (if exists)
+      - name: Move APK to flutter-apk folder
+        run: |
+          if [ -f build/app/outputs/apk/release/app-release.apk ]; then
+            cp build/app/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/app-release.apk
+          fi
+          if [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
+            echo "APK ready."
+          fi
+          find build -name "*.apk" || true
+
+      # 🔥 Upload APK
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: quick-helper-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: warn
+          if-no-files-found: error
           
