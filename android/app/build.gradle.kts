@@ -21,7 +21,6 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
-    // === Naya Signing Config Code Yahan Shuru (Zaroori) ===
     signingConfigs {
         create("release") {
             val keyPropertiesFile = rootProject.file("key.properties")
@@ -34,7 +33,6 @@ android {
             }
         }
     }
-    // === Naya Signing Config Code Yahan Khatam ===
 
     defaultConfig {
         applicationId = "com.example.quick_helper_customer"
@@ -49,7 +47,8 @@ android {
         resValue(
             "string",
             "mapbox_access_token",
-            project.properties["MAPBOX_ACCESS_TOKEN"] as String? ?: ""
+            // === Token ko environment variable se uthaya ja raha hai (Mapbox fix) ===
+            System.getenv("MAPBOX_ACCESS_TOKEN") ?: ""
         )
     }
 
@@ -61,13 +60,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // === Signing Config Ko Apply Karein ===
             signingConfig = signingConfigs.getByName("release")
-            // =====================================
         }
     }
-    
-    // APK copy logic is removed.
 }
 
 flutter {
