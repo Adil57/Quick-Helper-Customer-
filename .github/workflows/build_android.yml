@@ -49,6 +49,20 @@ jobs:
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
+      # 🟢 FINAL FIX: Actual APK (modern AGP path) se Flutter expected path pe copy kar do
+      - name: Copy APK to Flutter Expected Path
+        run: |
+          mkdir -p build/app/outputs/flutter-apk
+          ACTUAL_APK="android/app/build/outputs/apk/release/app-release.apk"
+          if [ -f "$ACTUAL_APK" ]; then
+            cp "$ACTUAL_APK" build/app/outputs/flutter-apk/app-release.apk
+            echo "✅ APK copied from $ACTUAL_APK to build/app/outputs/flutter-apk/app-release.apk"
+          else
+            echo "❌ APK not found at $ACTUAL_APK – build may have failed earlier"
+            find . -name "*.apk" || true
+            exit 1
+          fi
+
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
