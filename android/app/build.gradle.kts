@@ -49,18 +49,21 @@ android {
         }
     }
     
-    // === Naya Corrected Code Yahan Shuru (APK copy fix) ===
-    applicationVariants.all { variant -> // 'variant' explicitly define kiya
+    // === FINAL CORRECTED CODE (APK copy fix) ===
+    applicationVariants.configureEach { variant ->
         if (variant.buildType.name == "release" || variant.buildType.name == "debug") {
-            variant.assemble.doLast {
-                copy {
-                    from("../../../build/app/outputs/apk/${variant.buildType.name}/app-${variant.buildType.name}.apk")
-                    into("../../../build/host/outputs/apk/")
+            // Hum assemble.doLast ki jagah Task API use karenge, jo Kotlin DSL mein correct hai
+            tasks.named("assemble${variant.name.capitalize()}").configure {
+                doLast {
+                    copy {
+                        from("../../../build/app/outputs/apk/${variant.buildType.name}/app-${variant.buildType.name}.apk")
+                        into("../../../build/host/outputs/apk/")
+                    }
                 }
             }
         }
     }
-    // === Naya Corrected Code Yahan Khatam ===
+    // === FINAL CORRECTED CODE YAHAN KHATAM ===
 }
 
 flutter {
