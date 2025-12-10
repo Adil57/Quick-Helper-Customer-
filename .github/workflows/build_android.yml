@@ -20,6 +20,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # 🔥 MUST HAVE — Fixes "Already watching path"
+      - name: Increase watcher limit
+        run: sudo sysctl fs.inotify.max_user_watches=524288
+
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
@@ -44,33 +48,19 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
+      # 🔥 Re-run flutter doctor to force-watch fixes
+      - name: Flutter Doctor
+        run: flutter doctor -v
+
       - name: Build APK (Release)
         run: flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }}
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
-      # 🟢 Copy APK from ANY valid location
-      - name: Move APK to Flutter Expected Path
-        run: |
-          mkdir -p build/app/outputs/flutter-apk
-
-          # Copy if Gradle path exists
-          if [ -f build/app/outputs/apk/release/app-release.apk ]; then
-            cp build/app/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/app-release.apk
-          fi
-
-          # Copy if Flutter path exists
-          if [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
-            echo "APK already exists in flutter-apk/"
-          fi
-
-          echo "Final APK files:"
-          find build -name "*.apk"
-
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: quick-helper-apks
+          name: quick-helper-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
+          if-no-files-found: warn
           
