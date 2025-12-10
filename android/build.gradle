@@ -1,13 +1,13 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    ext.kotlin_version = '1.9.0' // UPGRADED KOTLIN VERSION (Fixes FAILURE)
+    ext.kotlin_version = '1.9.0'
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.1.4' // UPGRADED AGP VERSION (Fixes WARNING)
+        classpath 'com.android.tools.build:gradle:8.1.4'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -21,8 +21,6 @@ allprojects {
         maven {
             url "https://api.mapbox.com/downloads/v2/releases/maven"
             credentials {
-                // Do not change with your personal token.
-                // Instead, set environment variable MABOX_DOWNLOADS_TOKEN with your Mapbox token.
                 username = 'mapbox'
                 password = project.properties['MAPBOX_DOWNLOADS_TOKEN'] ?: ""
             }
@@ -30,7 +28,7 @@ allprojects {
     }
 }
 
-// === Build Directory Configuration (For APK location fix) ===
+// === Build Directory Configuration (Required for original error fix) ===
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
