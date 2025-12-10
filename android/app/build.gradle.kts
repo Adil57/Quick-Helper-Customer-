@@ -28,7 +28,6 @@ android {
         manifestPlaceholders["auth0Domain"] = "adil888.us.auth0.com"
         manifestPlaceholders["auth0Scheme"] = "com.quickhelper.app"
 
-        // PUBLIC Mapbox token (map rendering)
         resValue(
             "string",
             "mapbox_access_token",
@@ -52,7 +51,6 @@ flutter {
     source = "../.."
 }
 
-// Repositories for Mapbox plugin
 repositories {
     google()
     mavenCentral()
@@ -67,20 +65,4 @@ repositories {
                 ?: project.findProperty("MAPBOX_DOWNLOADS_TOKEN")?.toString()
         }
     }
-}
-
-// 🟢 MAIN FIX: Copy APK to Flutter expected path after assembleRelease (AGP 8.0+ path mismatch fix)
-tasks.register<Copy>("copyFlutterApkRelease") {
-    dependsOn("assembleRelease")
-    from("$buildDir/outputs/apk/release/app-release.apk")
-    into("../../build/app/outputs/flutter-apk")
-    rename { "app-release.apk" }
-    doLast {
-        println("✅ APK copied to Flutter expected path: build/app/outputs/flutter-apk/app-release.apk")
-    }
-}
-
-// Link the copy task to Flutter build
-tasks.named("assembleRelease") {
-    finalizedBy("copyFlutterApkRelease")
 }
