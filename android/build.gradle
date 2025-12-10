@@ -28,7 +28,7 @@ allprojects {
     }
 }
 
-// === Build Directory Configuration (Required for original error fix) ===
+// === Build Directory Configuration ===
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
