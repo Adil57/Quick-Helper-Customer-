@@ -28,6 +28,7 @@ android {
         manifestPlaceholders["auth0Domain"] = "adil888.us.auth0.com"
         manifestPlaceholders["auth0Scheme"] = "com.quickhelper.app"
 
+        // PUBLIC Mapbox token (map rendering)
         resValue(
             "string",
             "mapbox_access_token",
@@ -51,6 +52,7 @@ flutter {
     source = "../.."
 }
 
+// Repositories for Mapbox plugin
 repositories {
     google()
     mavenCentral()
