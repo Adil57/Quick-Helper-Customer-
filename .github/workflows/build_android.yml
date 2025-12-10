@@ -47,21 +47,34 @@ jobs:
       - name: Build APK (Release)
         run: flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }}
         env:
-          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}  # Warning khatam
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
-      # 🟢 PERFECT FIX: Actual release APK ko expected flutter-apk folder mein copy kar do
-      - name: Copy Release APK to Flutter Expected Path
+      # 🟢 MAIN FIX: Actual APK location se Flutter expected path pe copy kar do (modern AGP ke liye)
+      - name: Copy APK to Flutter Expected Path
         run: |
+          # Expected target dir banao
           mkdir -p build/app/outputs/flutter-apk
-          cp build/app/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/app-release.apk
-          echo "APK successfully copied to expected path!"
+          
+          # Actual APK dhundo (modern path: android/app/build/outputs/apk/release/app-release.apk)
+          ACTUAL_APK=$(find android/app/build/outputs/apk/release -name "app-release.apk" | head -1)
+          
+          if [ -n "$ACTUAL_APK" ]; then
+            cp "$ACTUAL_APK" build/app/outputs/flutter-apk/app-release.apk
+            echo "✅ APK copied from $ACTUAL_APK to build/app/outputs/flutter-apk/app-release.apk"
+          else
+            echo "❌ No APK found in expected actual path – checking alternatives"
+            # Fallback check
+            find . -name "app-release.apk" -type f | head -1 | xargs -I {} cp {} build/app/outputs/flutter-apk/app-release.apk || echo "Still no APK found!"
+          fi
 
-      # Debug (Success ke baad hata dena)
-      - name: Debug - List All APKs
+      # Enhanced Debug (Success ke baad hata dena)
+      - name: Debug - APK Locations
         run: |
-          echo "=== Actual Gradle Output ==="
-          ls -la build/app/outputs/apk/release/ || true
-          echo "=== Expected Flutter Path ==="
+          echo "=== All APK files found ==="
+          find . -name "*.apk" -type f || true
+          echo "=== Gradle actual output (app/build) ==="
+          ls -la android/app/build/outputs/apk/release/ || true
+          echo "=== Flutter expected output ==="
           ls -la build/app/outputs/flutter-apk/ || true
 
       - name: Upload APK Artifact
