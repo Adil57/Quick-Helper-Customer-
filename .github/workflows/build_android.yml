@@ -44,8 +44,22 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
+      # === Naye Signing Steps Yahan Shuru ===
+      - name: Decrypt Keystore and Setup Signing Files
+        run: |
+          # 1. Base64 decoded key ko jks file mein save karein (android/app ke andar)
+          echo "${{ secrets.SIGNING_KEY_JKS_BASE64 }}" | base64 --decode > android/app/upload-key.jks
+          
+          # 2. key.properties file banao, jismein passwords aur alias honge
+          echo "storeFile=upload-key.jks" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+      # === Naye Signing Steps Yahan Khatam ===
+
       - name: Build APK (Release)
-        run: flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }}
+        # --android-skip-build-dependency-validation flag add kiya gaya hai version warnings ke liye
+        run: flutter build apk --release --no-tree-shake-icons --dart-define=ACCESS_TOKEN=${{ secrets.MAPBOX_PUBLIC_TOKEN }} --android-skip-build-dependency-validation
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
 
@@ -53,7 +67,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: quick-helper-apks
-          # *** FINAL FIX: Standard Flutter output path ***
+          # Standard Flutter output path use ho raha hai
           path: build/app/outputs/flutter-apk/app-release.apk 
           if-no-files-found: error
           
