@@ -22,7 +22,7 @@ pluginManagement {
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    id("com.android.application") version "8.1.4" apply false  // Stable AGP 8.1.4 (beta 8.11.1 avoid kar)
+    id("com.android.application") version "8.1.4" apply false  // Stable AGP 8.1.4
     id("org.jetbrains.kotlin.android") version "1.9.10" apply false  // Stable Kotlin 1.9.10
 }
 
