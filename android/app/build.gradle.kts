@@ -49,18 +49,18 @@ android {
         }
     }
     
-    // === Naya Code Yahan Se Shuru Karein (Step 1: Update the App-Level build.gradle) ===
-    applicationVariants.all {
-        if (it.buildType.name == "release" || it.buildType.name == "debug") {
-            it.assemble.doLast {
+    // === Naya Corrected Code Yahan Shuru (APK copy fix) ===
+    applicationVariants.all { variant -> // 'variant' explicitly define kiya
+        if (variant.buildType.name == "release" || variant.buildType.name == "debug") {
+            variant.assemble.doLast {
                 copy {
-                    from("../../../build/app/outputs/apk/${it.buildType.name}/app-${it.buildType.name}.apk")
+                    from("../../../build/app/outputs/apk/${variant.buildType.name}/app-${variant.buildType.name}.apk")
                     into("../../../build/host/outputs/apk/")
                 }
             }
         }
     }
-    // === Naya Code Yahan Khatam ===
+    // === Naya Corrected Code Yahan Khatam ===
 }
 
 flutter {
