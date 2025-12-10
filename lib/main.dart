@@ -64,9 +64,16 @@ final UserAuth tempAuth = UserAuth();
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  MapboxOptions.setAccessToken(
-    const String.fromEnvironment('ACCESS_TOKEN'),
-  );
+  // 🟢 FIX START: Mapbox Token को dynamic tareeke se uthane ke liye 'const' hataya.
+  String accessToken = const String.fromEnvironment('ACCESS_TOKEN');
+  
+  if (accessToken.isNotEmpty) {
+      MapboxOptions.setAccessToken(accessToken);
+  } else {
+      // Agar token empty hai, toh console mein warning milegi.
+      print('ERROR: MAPBOX ACCESS TOKEN is empty or not defined during build/run.');
+  }
+  // 🟢 FIX END
 
   runApp(const MyApp());
 }
