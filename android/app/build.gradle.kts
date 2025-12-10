@@ -36,8 +36,6 @@ android {
         )
     }
 
-    // ❌ SPLITS BLOCK POORA REMOVE KAR DIYA GAYA (Flutter default universal APK banayega)
-
     buildTypes {
         release {
             isMinifyEnabled = false     
@@ -69,4 +67,20 @@ repositories {
                 ?: project.findProperty("MAPBOX_DOWNLOADS_TOKEN")?.toString()
         }
     }
+}
+
+// 🟢 MAIN FIX: Copy APK to Flutter expected path after assembleRelease (AGP 8.0+ path mismatch fix)
+tasks.register<Copy>("copyFlutterApkRelease") {
+    dependsOn("assembleRelease")
+    from("$buildDir/outputs/apk/release/app-release.apk")
+    into("../../build/app/outputs/flutter-apk")
+    rename { "app-release.apk" }
+    doLast {
+        println("✅ APK copied to Flutter expected path: build/app/outputs/flutter-apk/app-release.apk")
+    }
+}
+
+// Link the copy task to Flutter build
+tasks.named("assembleRelease") {
+    finalizedBy("copyFlutterApkRelease")
 }
