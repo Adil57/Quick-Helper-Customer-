@@ -20,9 +20,7 @@ allprojects {
         mavenCentral()
         maven {
             url "https://api.mapbox.com/downloads/v2/releases/maven"
-            authentication {
-                basic(credentials)
-            }
+            // *** FIX: authentication block hata diya gaya hai jiske karan error aa raha tha (line 24) ***
             credentials {
                 // Do not change with your personal token.
                 // Instead, set environment variable MABOX_DOWNLOADS_TOKEN with your Mapbox token.
@@ -33,7 +31,7 @@ allprojects {
     }
 }
 
-// === Naya Code Yahan Se Shuru Karein (Step 2: Adjust the Project-Level build.gradle) ===
+// === Build Directory Configuration (Required for APK location fix) ===
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
@@ -43,4 +41,3 @@ subprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
-// === Naya Code Yahan Khatam ===
