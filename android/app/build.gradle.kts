@@ -28,11 +28,9 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // Auth0 placeholders
         manifestPlaceholders["auth0Domain"] = "adil888.us.auth0.com"
         manifestPlaceholders["auth0Scheme"] = "com.quickhelper.app"
 
-        // Load PUBLIC Mapbox token for the app manifest
         resValue(
             "string",
             "mapbox_access_token",
@@ -44,7 +42,6 @@ android {
         release {
             isMinifyEnabled = false
             isShrinkResources = false
-
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -53,18 +50,16 @@ android {
     }
 }
 
-// Flutter config
 flutter {
     source = "../.."
 }
 
-// Repositories — CLEAN & WORKING
 repositories {
     google()
     mavenCentral()
 }
 
-// Dependencies block (Flutter automatically links libs)
+// ❗ FIX: REMOVE kotlin_version property (this was breaking your build)
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:${project.property("kotlin_version")}")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib")
 }
