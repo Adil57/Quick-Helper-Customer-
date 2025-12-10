@@ -1,7 +1,6 @@
 import java.io.FileInputStream
 import java.util.Properties
 
-// 🟢 FIX 1: local.properties file ko load kiya gaya
 def localPropertiesFile = new File(rootProject.projectDir, "android/local.properties")
 def localProperties = new Properties()
 
@@ -9,25 +8,11 @@ if (localPropertiesFile.exists()) {
     localProperties.load(new FileInputStream(localPropertiesFile))
 }
 
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.0.0'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.20"
-    }
-}
-
 allprojects {
     repositories {
         google()
         mavenCentral()
 
-        // ============================================
-        // ⭐ MAPBOX MAVEN + UNIVERSAL TOKEN FALLBACK
-        // ============================================
         maven {
             url "https://api.mapbox.com/downloads/v2/releases/maven"
             authentication {
@@ -35,7 +20,6 @@ allprojects {
             }
             credentials {
                 username = "mapbox"
-                // 🟢 FIX 2: Sabse pehle manually loaded localProperties se token uthaya
                 password = localProperties.getProperty("MAPBOX_DOWNLOADS_TOKEN")
                         ?: System.getenv("MAPBOX_DOWNLOADS_TOKEN")
                         ?: ""
