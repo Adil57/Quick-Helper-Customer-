@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL CODE WITH ALL FIXES: Ambiguity Error Fixed, Location Centering)
+// lib/main.dart (FINAL CODE WITH ALL FIXES: Working GPS Stream & Puck)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -10,8 +10,7 @@ import 'package:http/http.dart' as http;
 // 🟢 MAP IMPORTS
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'; 
 import 'package:permission_handler/permission_handler.dart'; // Run-time Permission
-// 🟢 FIX: Geolocator ko 'Geo' alias se import karna taaki Position/Geolocator conflict na ho
-import 'package:geolocator/geolocator.dart' as Geo; 
+import 'package:geolocator/geolocator.dart' as Geo; // External GPS Stream
 
 // -----------------------------------------------------------------------------
 // GLOBAL CONFIGURATION
@@ -301,6 +300,8 @@ class _MapViewScreenState extends State<MapViewScreen> {
   PointAnnotationManager? annotationManager;
   
   bool _isLocationPermissionGranted = false; 
+  StreamSubscription<Geo.Position>? _positionStreamSubscription;
+
 
   @override
   void initState() {
@@ -310,6 +311,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
   
   @override
   void dispose() {
+    _positionStreamSubscription?.cancel(); // Stream ko dispose karna
     super.dispose();
   }
 
@@ -323,9 +325,9 @@ class _MapViewScreenState extends State<MapViewScreen> {
       setState(() {
         _isLocationPermissionGranted = true;
       });
-      // Permission milte hi map ko center karne ki koshish karein
+      // Permission milte hi stream shuru karni chahiye
       if (mapboxMap != null) {
-        _centerMapToCurrentLocation();
+        _startListeningToLocationUpdates();
       }
     } else {
       print("Location permission denied by user. Re-requesting.");
@@ -336,29 +338,42 @@ class _MapViewScreenState extends State<MapViewScreen> {
   }
 
 
-  // 🌟 FIX 4: Map ko Current Location par Center karna (Geolocator se)
-  Future<void> _centerMapToCurrentLocation() async {
-      try {
-          // FIX: Geolocator.Position ki jagah Geo.Position use karna
-          Geo.Position position = await Geo.Geolocator.getCurrentPosition(
-              desiredAccuracy: Geo.LocationAccuracy.high // FIX: LocationAccuracy par Geo. prefix
-          );
-          
-          if (mapboxMap != null) {
-              // FIX: Direct mapboxMap.flyTo call
-              await mapboxMap!.flyTo(
-                  CameraOptions(
-                      // FIX: Mapbox Position class use karna
-                      center: Point(coordinates: Position(position.longitude, position.latitude)),
-                      zoom: 16.0, 
-                      bearing: position.heading,
-                  ),
-                  MapAnimationOptions(duration: 2000), 
-              );
-          }
-      } catch (e) {
-          print("Geolocator Error: Could not get location for centering: $e");
-      }
+  // 🌟 FIX 4: Map ko Current Location par Center karna (Geolocator stream se)
+  void _startListeningToLocationUpdates() {
+      if (mapboxMap == null) return;
+      
+      // Stop previous listener if any
+      _positionStreamSubscription?.cancel();
+
+      // Location request settings (Geolocator use karke)
+      final locationSettings = LocationSettings(
+          accuracy: Geo.LocationAccuracy.high,
+          distanceFilter: 1, // Har 1 meter pe update
+      );
+
+      // Stream start karo
+      _positionStreamSubscription = Geo.Geolocator.getPositionStream(locationSettings: locationSettings)
+          .listen((Geo.Position position) {
+        
+        // 🟢 Location Puck ko manually update/re-enable karo (yeh dot dikhane ka final tarika hai)
+        mapboxMap!.location.updateSettings(
+            LocationComponentSettings(
+              enabled: true, 
+              pulsingEnabled: false, 
+              locationPuck: LocationPuck(), 
+            )
+        );
+
+        // Camera ko naye location par move karo
+        mapboxMap!.flyTo(
+            CameraOptions(
+                center: Point(coordinates: Position(position.longitude, position.latitude)),
+                zoom: 16.0, 
+                bearing: position.heading,
+            ),
+            MapAnimationOptions(duration: 500), 
+        );
+      });
   }
 
 
@@ -368,17 +383,18 @@ class _MapViewScreenState extends State<MapViewScreen> {
     annotationManager = await mapboxMap.annotations.createPointAnnotationManager();
 
     if (_isLocationPermissionGranted) {
-        // 🟢 FIX 3: Location Puck Enable karna (minimal settings)
+        // 🟢 FIX: Location Puck ON karna (Ab isko stream se data milega, manual update se)
+        // Yahan sirf initial settings set karenge
         await mapboxMap.location.updateSettings(
             LocationComponentSettings(
               enabled: true, 
-              pulsingEnabled: false, // Neela dot/Arrow ka blinking band
-              locationPuck: LocationPuck(), // Stable dot/arrow ke liye
+              pulsingEnabled: false, 
+              locationPuck: LocationPuck(), 
             )
         );
         
-        // Map create hote hi center karne ki koshish (Agar permission already granted hai)
-        _centerMapToCurrentLocation(); 
+        // Geoloactor stream shuru karna
+        _startListeningToLocationUpdates();
     }
     
     // Helper 1 - Ramesh Plumber
@@ -1113,13 +1129,13 @@ class _BookingScreenState extends State<BookingScreen> {
             Card(margin: const EdgeInsets.all(16), child: _buildDatePicker()),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-              child: Text("Service Duration", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              child: Text("Service Duration", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             ),
             Card(margin: const EdgeInsets.symmetric(horizontal: 16), child: _buildTimeSlider()),
             const SizedBox(height: 20),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-              child: Text("Cost Summary", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              child: Text("Cost Summary", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
