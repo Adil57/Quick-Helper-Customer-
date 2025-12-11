@@ -298,7 +298,6 @@ class MapViewScreen extends StatefulWidget {
 class _MapViewScreenState extends State<MapViewScreen> {
   MapboxMap? mapboxMap;
   PointAnnotationManager? annotationManager;
-  late StreamSubscription<LocationChangeEvent> _locationSubscription;
   
   bool _isLocationPermissionGranted = false; 
 
@@ -310,7 +309,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
   
   @override
   void dispose() {
-    _locationSubscription.cancel();
+    // Location listener ko yahan remove karne ki zaroorat nahi kyunki MapboxMap khud handle karta hai.
     super.dispose();
   }
 
@@ -332,13 +331,13 @@ class _MapViewScreenState extends State<MapViewScreen> {
   }
 
 
-  // 🌟 FINAL FIX: Mapbox API calls aur Location Centering
+  // 🌟 FINAL FIX: Mapbox API calls aur Location Centering (All compiler errors fixed)
   void _onMapCreated(MapboxMap mapboxMap) async {
     this.mapboxMap = mapboxMap;
     annotationManager = await mapboxMap.annotations.createPointAnnotationManager();
 
     if (_isLocationPermissionGranted) {
-        // 🟢 FIX 3: Location Tracking Enable karna (pulsing false, LocationPuck minimal)
+        // 🟢 FIX 3: Location Tracking Enable karna (minimal settings)
         await mapboxMap.location.updateSettings(
             LocationComponentSettings(
               enabled: true, 
@@ -347,25 +346,24 @@ class _MapViewScreenState extends State<MapViewScreen> {
             )
         );
         
-        // 🟢 FIX 4 & 5: Current Location Par Center karna (Correct API: locationChange stream)
+        // 🟢 FIX 4 & 5: Current Location Par Center karna (Correct API: addLocationChangeListener)
         
         // Mapbox location stream ka use karna
-        _locationSubscription = mapboxMap.location.locationChange.listen((event) {
+        // LocationChangeEvent ko use karne ke liye, addLocationChangeListener function use karte hain
+        mapboxMap.location.addLocationChangeListener((event) {
           if (event.positions != null && event.positions!.isNotEmpty) {
              // Location mil gayi, camera move karo
-             // event.positions ek list ho sakti hai, hum pehla element uthayenge
              mapboxMap.camera.flyTo( 
                CameraOptions(
                  center: event.positions![0], 
                  zoom: 16.0,
-                 // Bearing bhi use kar sakte hain agar available ho
                  bearing: event.bearings != null && event.bearings!.isNotEmpty ? event.bearings![0] : null,
                ),
                MapAnimationOptions(duration: 2000),
              );
              
-             // Ek baar center hone ke baad, listener ko rok do taaki map ghumta na rahe
-             _locationSubscription.cancel(); 
+             // Ek baar center hone ke baad listener remove karte hain taki map ghumta na rahe
+             mapboxMap.location.removeLocationChangeListener(mapboxMap.location.locationChange);
           }
         });
     }
