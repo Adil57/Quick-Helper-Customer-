@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL WORKING VERSION: All errors fixed)
+// lib/main.dart (FINAL CODE WITH ALL FIXES: Token, Kill Switch, Permission Handler, Mapbox API)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -286,7 +286,7 @@ class AccountScreen extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// 🟢 MAP VIEW SCREEN (ALL LOCATION AND SYNTAX FIXES APPLIED)
+// 🟢 MAP VIEW SCREEN (ALL LOCATION AND API FIXES APPLIED)
 // -----------------------------------------------------------------------------
 class MapViewScreen extends StatefulWidget {
   const MapViewScreen({super.key});
@@ -298,6 +298,7 @@ class MapViewScreen extends StatefulWidget {
 class _MapViewScreenState extends State<MapViewScreen> {
   MapboxMap? mapboxMap;
   PointAnnotationManager? annotationManager;
+  late StreamSubscription<LocationChangeEvent> _locationSubscription;
   
   bool _isLocationPermissionGranted = false; 
 
@@ -306,8 +307,15 @@ class _MapViewScreenState extends State<MapViewScreen> {
     super.initState();
     _checkAndRequestLocationPermission(); 
   }
+  
+  @override
+  void dispose() {
+    _locationSubscription.cancel();
+    super.dispose();
+  }
 
-  // FIX: Location Permission check
+
+  // FIX 2: Location Permission check
   Future<void> _checkAndRequestLocationPermission() async {
     final status = await Permission.locationWhenInUse.request();
 
@@ -330,8 +338,8 @@ class _MapViewScreenState extends State<MapViewScreen> {
     annotationManager = await mapboxMap.annotations.createPointAnnotationManager();
 
     if (_isLocationPermissionGranted) {
-        // 🟢 FIX 3: Location Tracking Enable karna (Minimal settings)
-        mapboxMap.location.updateSettings(
+        // 🟢 FIX 3: Location Tracking Enable karna (pulsing false, LocationPuck minimal)
+        await mapboxMap.location.updateSettings(
             LocationComponentSettings(
               enabled: true, 
               pulsingEnabled: false, // Neela dot/Arrow ka blinking band
@@ -339,25 +347,25 @@ class _MapViewScreenState extends State<MapViewScreen> {
             )
         );
         
-        // 🟢 FIX 4 & 5: Current Location Par Center karna (API changed: getLastLocation aur camera.flyTo)
-        
-        // Mapbox SDK ko location update karne ke liye thoda time lagta hai
-        await Future.delayed(const Duration(milliseconds: 500));
+        // 🟢 FIX 4 & 5: Current Location Par Center karna (Correct API: locationChange stream)
         
         // Mapbox location stream ka use karna
-        mapboxMap.location.locationChange.listen((location) {
-          if (location.position != null && location.position!.isNotEmpty) {
-             // Pehla valid location milte hi camera move karo aur listener band karo
-             mapboxMap!.camera.flyTo( // '!' operator lagaya taaki null safety ka error na aaye
+        _locationSubscription = mapboxMap.location.locationChange.listen((event) {
+          if (event.positions != null && event.positions!.isNotEmpty) {
+             // Location mil gayi, camera move karo
+             // event.positions ek list ho sakti hai, hum pehla element uthayenge
+             mapboxMap.camera.flyTo( 
                CameraOptions(
-                 center: location.position![0], // Current position ka pehla element
+                 center: event.positions![0], 
                  zoom: 16.0,
-                 bearing: location.bearing,
+                 // Bearing bhi use kar sakte hain agar available ho
+                 bearing: event.bearings != null && event.bearings!.isNotEmpty ? event.bearings![0] : null,
                ),
                MapAnimationOptions(duration: 2000),
              );
-             // Listener stop karne ke liye koi logic laga sakte hain agar zaroori ho
-             // For simplicity, we are letting it run here
+             
+             // Ek baar center hone ke baad, listener ko rok do taaki map ghumta na rahe
+             _locationSubscription.cancel(); 
           }
         });
     }
@@ -412,7 +420,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
       body: MapWidget(
         key: GlobalKey(),
         styleUri: MapboxStyles.MAPBOX_STREETS, 
-        // Initial fallback/Mumbai coordinates (ye code se override ho jayega)
+        // Initial fallback coordinates (ye code se override ho jayega)
         cameraOptions: CameraOptions(
           center: Point(coordinates: Position(72.8777, 19.0760)), 
           zoom: 12.0,
@@ -1085,33 +1093,33 @@ class _BookingScreenState extends State<BookingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // FIX: EdgeInsets::all -> EdgeInsets.all
+            // FIX: Syntax Error: EdgeInsets::all -> EdgeInsets.all
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               color: Colors.indigo,
               child: Text("Booking \( {widget.helperName} ( \){widget.helperSkill})", style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
             ),
-            // FIX: EdgeInsets::all -> EdgeInsets.all
+            // FIX: Syntax Error: EdgeInsets::all -> EdgeInsets.all
             Card(margin: const EdgeInsets.all(16), child: _buildDatePicker()),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
               child: Text("Service Duration", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
-            // FIX: EdgeInsets::symmetric -> EdgeInsets.symmetric
+            // FIX: Syntax Error: EdgeInsets::symmetric -> EdgeInsets.symmetric
             Card(margin: const EdgeInsets.symmetric(horizontal: 16), child: _buildTimeSlider()),
             const SizedBox(height: 20),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
               child: Text("Cost Summary", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
-            // FIX: EdgeInsets::symmetric -> EdgeInsets.symmetric
+            // FIX: Syntax Error: EdgeInsets::symmetric -> EdgeInsets.symmetric
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: _buildCostSummary(),
             ),
             const SizedBox(height: 30),
-            // FIX: EdgeInsets::symmetric -> EdgeInsets.symmetric
+            // FIX: Syntax Error: EdgeInsets::symmetric -> EdgeInsets.symmetric
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: SizedBox(
@@ -1157,7 +1165,7 @@ class HelperDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(helperName)),
-      // FIX: EdgeInsets::all -> EdgeInsets.all
+      // FIX: Syntax Error: EdgeInsets::all -> EdgeInsets.all
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
