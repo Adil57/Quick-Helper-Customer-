@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL WORKING VERSION: Token Fix, Kill Switch Removed, LocationPuck Minimal Fix)
+// lib/main.dart (FINAL CODE WITH PERMISSION HANDLER & LOCATION FIX)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -9,6 +9,9 @@ import 'package:http/http.dart' as http;
 
 // 🟢 MAP IMPORT: Mapbox library
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'; 
+
+// 🟢 FIX 1: LOCATION PERMISSION HANDLER IMPORT
+import 'package:permission_handler/permission_handler.dart'; //
 
 // -----------------------------------------------------------------------------
 // GLOBAL CONFIGURATION
@@ -64,16 +67,14 @@ final UserAuth tempAuth = UserAuth();
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // FIX 1: Mapbox Token को dynamic tareeke se uthane ke liye 'const' hata diya.
+  // FIX: Mapbox Token load
   String accessToken = const String.fromEnvironment('ACCESS_TOKEN');
   
   if (accessToken.isNotEmpty) {
       MapboxOptions.setAccessToken(accessToken);
   } else {
-      // Agar token empty hai, toh console mein warning milegi.
       print('ERROR: MAPBOX ACCESS TOKEN is empty or not defined during build/run.');
   }
-  // FIX 1 END
 
   runApp(const MyApp());
 }
@@ -300,25 +301,50 @@ class _MapViewScreenState extends State<MapViewScreen> {
   PointAnnotationManager? annotationManager;
   
   // Kill Switch Logic permanently removed
+  // 🟢 FIX 2: Location Permission check variable
+  bool _isLocationPermissionGranted = false; 
 
   @override
   void initState() {
     super.initState();
+    _checkAndRequestLocationPermission(); // Permission maangenge
   }
 
-  // 🌟 FIX 2: Location Component Enable kiya gaya hai aur compile error theek kiya
+  // 🟢 FIX 3: Permission Handler ka use karke Location Maangna
+  Future<void> _checkAndRequestLocationPermission() async {
+    final status = await Permission.locationWhenInUse.request();
+
+    if (status.isGranted) {
+      setState(() {
+        _isLocationPermissionGranted = true;
+      });
+    } else {
+      // Permission nahi mili toh user ko batao
+      print("Location permission denied by user. Re-requesting.");
+      setState(() {
+        _isLocationPermissionGranted = false;
+      });
+      // Agar permission denied hai, toh settings kholne ka option de sakte hain
+      // openAppSettings(); 
+    }
+  }
+
+
+  // 🌟 FIX 4: Location Component Enable kiya gaya hai aur compile error theek kiya
   void _onMapCreated(MapboxMap mapboxMap) async {
     this.mapboxMap = mapboxMap;
     annotationManager = await mapboxMap.annotations.createPointAnnotationManager();
 
-    // 🟢 Location Tracking Enable karna (bearingImage aur puckBearing removed, LocationPuck minimal)
-    mapboxMap.location.updateSettings(
-        LocationComponentSettings(
-          enabled: true, // Location component on
-          pulsingEnabled: true, // Location dot dikhane ke liye
-          locationPuck: LocationPuck(), // Minimal object rakha gaya hai
-        )
-    );
+    // 🟢 Location Tracking Enable karna (minimal settings)
+    if (_isLocationPermissionGranted) {
+        mapboxMap.location.updateSettings(
+            LocationComponentSettings(
+              enabled: true, // Location component on
+              pulsingEnabled: true, // Location dot dikhane ke liye
+              locationPuck: LocationPuck(), // Minimal object for default icon
+            )
+        );
+    }
     // 🟢 Location Fix End
 
     // Helper 1 - Ramesh Plumber
@@ -338,7 +364,34 @@ class _MapViewScreenState extends State<MapViewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Map Active (Default)
+    // Permission check hone tak loading/Permission UI dikhana
+    if (!_isLocationPermissionGranted) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Location Required")),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(28.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  "Location access is required to show nearby helpers. Please grant permission.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _checkAndRequestLocationPermission,
+                  child: const Text("Grant Location Permission"),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    
+    // Permission milne par Map dikhana
     return Scaffold(
       appBar: AppBar(title: const Text("Nearby Helpers (MapBox)")),
       body: MapWidget(
