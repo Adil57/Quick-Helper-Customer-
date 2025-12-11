@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL CODE WITH ALL FIXES: Ambiguity Error Fixed, Location Centering, No Compile Errors)
+// lib/main.dart (FINAL CODE WITH ALL FIXES: Forceful Puck Re-enable Fix)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -352,31 +352,35 @@ class _MapViewScreenState extends State<MapViewScreen> {
           accuracy: Geo.LocationAccuracy.high, // FIX: LocationAccuracy par Geo. prefix
           distanceFilter: 1, // Har 1 meter pe update
       );
+      
+      bool isFirstUpdate = true; // Sirf pehli baar center/flyTo use karenge
 
       // Stream start karo
       _positionStreamSubscription = Geo.Geolocator.getPositionStream(locationSettings: locationSettings)
           .listen((Geo.Position position) {
         
-        // 🟢 Location Puck ko manually update/re-enable karo (yeh dot dikhane ka final tarika hai)
+        // 🟢 FIX: Location Puck ko manually update/re-enable karo har update par
+        // Yeh dot dikhane ka final tarika hai
         mapboxMap!.location.updateSettings(
             LocationComponentSettings(
               enabled: true, 
-              pulsingEnabled: false, // Neela dot/Arrow ka blinking band
-              locationPuck: LocationPuck(), // Stable dot/arrow ke liye
+              pulsingEnabled: false, // Stable dot
+              locationPuck: LocationPuck(), 
             )
         );
 
         // Camera ko naye location par move karo
-        // FIX: Direct mapboxMap.flyTo call
-        mapboxMap!.flyTo(
-            CameraOptions(
-                // FIX: Mapbox Position class use karna
-                center: Point(coordinates: Position(position.longitude, position.latitude)),
-                zoom: 16.0, 
-                bearing: position.heading,
-            ),
-            MapAnimationOptions(duration: 500), 
-        );
+        if (isFirstUpdate) {
+            mapboxMap!.flyTo(
+                CameraOptions(
+                    center: Point(coordinates: Position(position.longitude, position.latitude)),
+                    zoom: 16.0, 
+                    bearing: position.heading,
+                ),
+                MapAnimationOptions(duration: 500), 
+            );
+            isFirstUpdate = false; // Next time flyTo nahi chalega
+        }
       });
   }
 
@@ -387,8 +391,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
     annotationManager = await mapboxMap.annotations.createPointAnnotationManager();
 
     if (_isLocationPermissionGranted) {
-        // 🟢 FIX 3: Location Puck ON karna (Ab isko stream se data milega, manual update se)
-        // Yahan sirf initial settings set karenge
+        // 🟢 FIX 3: Location Puck ON karna (Yahan initial settings set karenge)
         await mapboxMap.location.updateSettings(
             LocationComponentSettings(
               enabled: true, 
