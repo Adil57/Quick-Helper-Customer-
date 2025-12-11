@@ -16,9 +16,9 @@ dependencies:
   # 🟢 MAP SYSTEM (MapBox)
   mapbox_maps_flutter: ^2.17.0  
   
-  # 🟢 GPS/LOCATION FIX: Dono packages zaroori hain
-  location: ^6.0.0 # Location stream (latest version uthao)
-  permission_handler: ^11.3.1 # Run-time permission maangne ke liye MANDATORY
+  # 🟢 GPS/LOCATION FIX (Zaroori packages for runtime permission and coordinates)
+  permission_handler: ^11.3.1 # Run-time permission maangne ke liye
+  geolocator: ^11.0.0 # Actual GPS coordinates fetch karne ke liye
   
   # UI/Icons
   cupertino_icons: ^1.0.2
