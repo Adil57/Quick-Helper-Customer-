@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL WORKING VERSION WITH LIVE MAP & LOCATION TRACKING)
+// lib/main.dart (FINAL WORKING VERSION: Token Fix, Kill Switch Removed, Location Fix)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -299,26 +299,23 @@ class _MapViewScreenState extends State<MapViewScreen> {
   MapboxMap? mapboxMap;
   PointAnnotationManager? annotationManager;
   
-  // Kill Switch Logic temporarily removed
+  // Kill Switch Logic permanently removed
 
   @override
   void initState() {
     super.initState();
   }
 
-  // 🌟 FIX 2: Location Component Enable kiya gaya hai
+  // 🌟 FIX 2: Location Component Enable kiya gaya hai aur compile error theek kiya
   void _onMapCreated(MapboxMap mapboxMap) async {
     this.mapboxMap = mapboxMap;
     annotationManager = await mapboxMap.annotations.createPointAnnotationManager();
 
-    // 🟢 Location Tracking Enable karna
+    // 🟢 Location Tracking Enable karna (bearingImage parameter removed)
     mapboxMap.location.updateSettings(
         LocationComponentSettings(
           enabled: true, // Location component on
           pulsingEnabled: true, // Location dot dikhane ke liye
-          locationPuck: LocationPuck(
-            bearingImage: 'mapbox-location-icon', // default location icon
-          ),
         )
     );
     // 🟢 Location Fix End
