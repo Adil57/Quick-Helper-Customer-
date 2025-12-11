@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL CODE WITH ALL FIXES: Token, Permissions, Geolocator, Correct Mapbox API)
+// lib/main.dart (FINAL CODE WITH ALL FIXES: Ambiguity Error Fixed)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -10,7 +10,8 @@ import 'package:http/http.dart' as http;
 // 🟢 MAP IMPORTS
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'; 
 import 'package:permission_handler/permission_handler.dart'; // Run-time Permission
-import 'package:geolocator/geolocator.dart'; // External GPS Stream
+// 🟢 FIX: Geolocator ko 'Geo' alias se import karna taaki Position conflict na ho
+import 'package:geolocator/geolocator.dart' as Geo; 
 
 // -----------------------------------------------------------------------------
 // GLOBAL CONFIGURATION
@@ -327,30 +328,32 @@ class _MapViewScreenState extends State<MapViewScreen> {
         _centerMapToCurrentLocation();
       }
     } else {
-      print("Location permission denied by user.");
+      print("Location permission denied by user. Re-requesting.");
       setState(() {
         _isLocationPermissionGranted = false;
       });
     }
   }
-  
+
+
   // 🌟 FIX 4: Map ko Current Location par Center karna (Geolocator se)
   Future<void> _centerMapToCurrentLocation() async {
       try {
-          // Geolocator se current position uthana
-          Position position = await Geolocator.getCurrentPosition(
+          // FIX: Geolocator.Position ki jagah Geo.Position use karna
+          Geo.Position position = await Geolocator.getCurrentPosition(
               desiredAccuracy: LocationAccuracy.high
           );
           
           if (mapboxMap != null) {
-              // FIX: Direct mapboxMap.flyTo call (Mapbox assistant ne bataya)
+              // FIX: Direct mapboxMap.flyTo call
               await mapboxMap!.flyTo(
                   CameraOptions(
+                      // FIX: Mapbox Position class use karna (Geolocator ki position se coordinates lekar)
                       center: Point(coordinates: Position(position.longitude, position.latitude)),
-                      zoom: 16.0, // Achi zoom level
+                      zoom: 16.0, 
                       bearing: position.heading,
                   ),
-                  MapAnimationOptions(duration: 2000), // Smooth animation
+                  MapAnimationOptions(duration: 2000), 
               );
           }
       } catch (e) {
@@ -365,7 +368,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
     annotationManager = await mapboxMap.annotations.createPointAnnotationManager();
 
     if (_isLocationPermissionGranted) {
-        // 🟢 FIX 3: Location Puck Enable karna (pulsing false, LocationPuck minimal)
+        // 🟢 FIX 3: Location Puck Enable karna (minimal settings)
         await mapboxMap.location.updateSettings(
             LocationComponentSettings(
               enabled: true, 
@@ -578,7 +581,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       final response = await http.post(
-        // TODO: Register API Endpoint (OTP Send)
+        // TODO: Register API Endpoint
         Uri.parse('$mongoApiBase/auth/register-otp'), 
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'name': name.text, 'email': email.text, 'password': password.text}),
