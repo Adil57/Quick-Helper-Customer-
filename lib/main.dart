@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL CODE WITH ALL FIXES: Forceful Puck Re-enable Fix)
+// lib/main.dart (FINAL CODE WITH ALL FIXES: Final Location Puck Fix)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -302,6 +302,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
   
   bool _isLocationPermissionGranted = false; 
   StreamSubscription<Geo.Position>? _positionStreamSubscription;
+  bool isFirstUpdate = true; // Sirf pehli baar center/flyTo use karenge
 
 
   @override
@@ -347,25 +348,24 @@ class _MapViewScreenState extends State<MapViewScreen> {
       _positionStreamSubscription?.cancel();
 
       // Location request settings (Geolocator use karke)
-      // FIX: LocationSettings par Geo. prefix lagaya
       final locationSettings = Geo.LocationSettings(
           accuracy: Geo.LocationAccuracy.high, // FIX: LocationAccuracy par Geo. prefix
           distanceFilter: 1, // Har 1 meter pe update
       );
       
-      bool isFirstUpdate = true; // Sirf pehli baar center/flyTo use karenge
+      isFirstUpdate = true; // Har baar stream start hone par centering reset
 
       // Stream start karo
       _positionStreamSubscription = Geo.Geolocator.getPositionStream(locationSettings: locationSettings)
           .listen((Geo.Position position) {
         
-        // 🟢 FIX: Location Puck ko manually update/re-enable karo har update par
+        // 🟢 FIX 1: Location Puck ko forcefully update/re-enable karo har update par
         // Yeh dot dikhane ka final tarika hai
         mapboxMap!.location.updateSettings(
             LocationComponentSettings(
               enabled: true, 
               pulsingEnabled: false, // Stable dot
-              locationPuck: LocationPuck(), 
+              // locationPuck ko yahan se HATA diya taaki default puck render ho
             )
         );
 
@@ -396,7 +396,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
             LocationComponentSettings(
               enabled: true, 
               pulsingEnabled: false, 
-              locationPuck: LocationPuck(), 
+              // locationPuck ko yahan se HATA diya taaki default puck render ho
             )
         );
         
