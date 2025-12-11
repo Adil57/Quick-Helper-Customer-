@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL WORKING VERSION WITH LIVE MAP & OTP FLOW - SIZE FIXES)
+// lib/main.dart (FINAL WORKING VERSION WITH LIVE MAP & LOCATION TRACKING)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -286,7 +286,7 @@ class AccountScreen extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// 🟢 MAP VIEW SCREEN (KILL SWITCH TEMPORARILY REMOVED)
+// 🟢 MAP VIEW SCREEN (KILL SWITCH TEMPORARILY REMOVED & LOCATION ADDED)
 // -----------------------------------------------------------------------------
 class MapViewScreen extends StatefulWidget {
   const MapViewScreen({super.key});
@@ -299,20 +299,30 @@ class _MapViewScreenState extends State<MapViewScreen> {
   MapboxMap? mapboxMap;
   PointAnnotationManager? annotationManager;
   
-  // 🌟 Kill Switch Logic temporarily removed to prevent backend error display
+  // Kill Switch Logic temporarily removed
 
   @override
   void initState() {
     super.initState();
-    // _checkMapStatus() removed
   }
 
-  // _checkMapStatus() function removed
-
+  // 🌟 FIX 2: Location Component Enable kiya gaya hai
   void _onMapCreated(MapboxMap mapboxMap) async {
     this.mapboxMap = mapboxMap;
     annotationManager = await mapboxMap.annotations.createPointAnnotationManager();
-    
+
+    // 🟢 Location Tracking Enable karna
+    mapboxMap.location.updateSettings(
+        LocationComponentSettings(
+          enabled: true, // Location component on
+          pulsingEnabled: true, // Location dot dikhane ke liye
+          locationPuck: LocationPuck(
+            bearingImage: 'mapbox-location-icon', // default location icon
+          ),
+        )
+    );
+    // 🟢 Location Fix End
+
     // Helper 1 - Ramesh Plumber
     var options1 = PointAnnotationOptions(
       geometry: Point(coordinates: Position(72.87, 19.07)),
@@ -331,7 +341,6 @@ class _MapViewScreenState extends State<MapViewScreen> {
   @override
   Widget build(BuildContext context) {
     // Map Active (Default)
-    // Loading check aur Kill Switch check hata diya gaya hai
     return Scaffold(
       appBar: AppBar(title: const Text("Nearby Helpers (MapBox)")),
       body: MapWidget(
