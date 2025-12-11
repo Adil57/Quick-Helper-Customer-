@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL WORKING VERSION: Token Fix, Kill Switch Removed, Location Fix)
+// lib/main.dart (FINAL WORKING VERSION: Token Fix, Kill Switch Removed, LocationPuck Fix)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -311,11 +311,15 @@ class _MapViewScreenState extends State<MapViewScreen> {
     this.mapboxMap = mapboxMap;
     annotationManager = await mapboxMap.annotations.createPointAnnotationManager();
 
-    // 🟢 Location Tracking Enable karna (bearingImage parameter removed)
+    // 🟢 Location Tracking Enable karna (bearingImage parameter removed, LocationPuck added)
     mapboxMap.location.updateSettings(
         LocationComponentSettings(
           enabled: true, // Location component on
           pulsingEnabled: true, // Location dot dikhane ke liye
+          locationPuck: LocationPuck( // LocationPuck object zaroori hai!
+              puckBearing: PuckBearing.HEADING, 
+              puckBearingEnabled: true,
+          ),
         )
     );
     // 🟢 Location Fix End
@@ -492,7 +496,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       final response = await http.post(
-        // TODO: Register API Endpoint (OTP Send)
+        // TODO: Register API Endpoint
         Uri.parse('$mongoApiBase/auth/register-otp'), 
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'name': name.text, 'email': email.text, 'password': password.text}),
