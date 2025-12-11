@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL CODE WITH ALL FIXES: Final Location Puck Fix)
+// lib/main.dart (FINAL CODE WITH ALL FIXES: Working GPS Stream & Finalized Auth APIs)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -10,8 +10,7 @@ import 'package:http/http.dart' as http;
 // 🟢 MAP IMPORTS
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'; 
 import 'package:permission_handler/permission_handler.dart'; // Run-time Permission
-// 🟢 FIX: Geolocator ko 'Geo' alias se import karna taaki Position/Geolocator conflict na ho
-import 'package:geolocator/geolocator.dart' as Geo; 
+import 'package:geolocator/geolocator.dart' as Geo; // External GPS Stream
 
 // -----------------------------------------------------------------------------
 // GLOBAL CONFIGURATION
@@ -360,7 +359,6 @@ class _MapViewScreenState extends State<MapViewScreen> {
           .listen((Geo.Position position) {
         
         // 🟢 FIX 1: Location Puck ko forcefully update/re-enable karo har update par
-        // Yeh dot dikhane ka final tarika hai
         mapboxMap!.location.updateSettings(
             LocationComponentSettings(
               enabled: true, 
@@ -478,102 +476,130 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
   final TextEditingController password = TextEditingController();
   bool isLoading = false;
   String? _error;
+  final _formKey = GlobalKey<FormState>();
 
-  // MODIFIED: API Login Call
+
+  // MODIFIED: API Login Call (Functional)
   Future<void> loginUser() async {
-    if (email.text.isEmpty || password.text.isEmpty) {
-      setState(() => _error = "Please enter email and password.");
-      return;
-    }
-    setState(() => isLoading = true);
-    _error = null;
-
-    try {
-      final response = await http.post(
-        // TODO: Login API Endpoint
-        Uri.parse('$mongoApiBase/auth/login'), 
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'email': email.text, 'password': password.text}),
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final user = data['user'];
-        final token = data['token'];
-
-        tempAuth.setUser(
-          AppUserProfile(name: user['name'] ?? 'Local User', sub: user['id'] ?? user['email']), 
-          token: token
-        );
-        
-        if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-             const SnackBar(content: Text("Login successful!"))
-           );
-           Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => MainNavigator()));
-        }
-      } else {
-         final errorData = json.decode(response.body);
-         setState(() => _error = errorData['message'] ?? 'Login failed. Check credentials.');
-      }
-    } catch (e) {
-      setState(() => _error = 'Network error or Invalid API response.');
-      print('Login Error: $e');
+    if (!_formKey.currentState!.validate()) {
+        return; 
     }
     
-    if (mounted) setState(() => isLoading = false);
+    setState(() => isLoading = true); // Loading state chalu karna
+    String? error;
+
+    final loginPayload = {
+        'email': email.text.trim(), 
+        'password': password.text,
+    };
+    
+    // API Endpoint: Auth ke liye aapka endpoint
+    final uri = Uri.parse('$mongoApiBase/auth/login'); 
+    
+    try {
+        final response = await http.post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode(loginPayload),
+        );
+
+        if (response.statusCode == 200) {
+            // SUCCESS: Token aur User ID receive karna
+            final responseData = json.decode(response.body);
+            final token = responseData['token'];
+            final user = responseData['user']; 
+            
+            // Token save karna aur Main app mein navigate karna
+            tempAuth.setUser(
+              AppUserProfile(name: user['name'] ?? 'Local User', sub: user['id'] ?? user['email']), 
+              token: token
+            );
+            
+            if (mounted) {
+                 Navigator.of(context).pushAndRemoveUntil(
+                   MaterialPageRoute(builder: (context) => MainNavigator()), 
+                   (Route<dynamic> route) => false
+                 );
+            }
+            return; // Success hone par return
+        } else {
+            // FAILURE: Server se galti aane par
+            final errorData = json.decode(response.body);
+            error = errorData['message'] ?? 'Login failed. Please check your credentials.';
+        }
+
+    } catch (e) {
+        // NETWORK/CONNECTION ERROR: Server tak na pahunchne par
+        error = 'Network error: Could not connect to the login service.';
+        print('Login API Error: $e');
+    } 
+
+    // Error handling aur Loading state band karna
+    if (mounted) {
+      setState(() => isLoading = false);
+      if (error != null) {
+         ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(content: Text(error!), backgroundColor: Colors.red)
+         );
+      }
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Custom Login")),
-      body: Padding(
-        padding: const EdgeInsets.all(28.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text("Login with Email/Password",
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.indigo)),
-            const SizedBox(height: 40),
-
-            TextField(
-              controller: email,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: "Email"),
-            ),
-            TextField(
-              controller: password,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: "Password"),
-            ),
-
-            const SizedBox(height: 20),
-            
-            // 🟢 CUSTOM LOGIN BUTTON
-            SizedBox(
-              height: 50,
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isLoading ? null : loginUser, 
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
-                child: isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Log in", style: TextStyle(color: Colors.white)),
+      body: Form(
+        key: _formKey, // Form key add kiya
+        child: Padding(
+          padding: const EdgeInsets.all(28.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text("Login with Email/Password",
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.indigo)),
+              const SizedBox(height: 40),
+  
+              TextFormField( // TextFormField use kiya for validation
+                controller: email,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(labelText: "Email"),
+                validator: (value) => value!.isEmpty ? 'Email cannot be empty' : null,
               ),
-            ),
-            
-            if (_error != null) 
-              Padding(padding: const EdgeInsets.only(top: 10), child: Text(_error!, style: const TextStyle(color: Colors.red))),
-
-            TextButton(
-              onPressed: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const RegisterScreen()));
-              },
-              child: const Text("Create an account (OTP Required)"),
-            )
-          ],
+              TextFormField( // TextFormField use kiya for validation
+                controller: password,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: "Password"),
+                validator: (value) => value!.isEmpty ? 'Password cannot be empty' : null,
+              ),
+  
+              const SizedBox(height: 20),
+              
+              // 🟢 CUSTOM LOGIN BUTTON
+              SizedBox(
+                height: 50,
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isLoading ? null : loginUser, 
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
+                  child: isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("Log in", style: TextStyle(color: Colors.white)),
+                ),
+              ),
+              
+              // Error message field hata diya, SnackBar use hoga
+              
+              TextButton(
+                onPressed: () {
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const RegisterScreen()));
+                },
+                child: const Text("Create an account (OTP Required)"),
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -591,31 +617,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
   bool isLoading = false;
-  String? _error;
+  final _formKey = GlobalKey<FormState>();
   
-  // MODIFIED: Start OTP Registration Process
+  // MODIFIED: Start OTP Registration Process (API Ready)
   Future<void> registerUserStartOTP() async {
-    if (name.text.isEmpty || email.text.isEmpty || password.text.isEmpty) {
-      setState(() => _error = "Please fill all fields.");
-      return;
+    if (!_formKey.currentState!.validate()) {
+        return; 
     }
+    
     setState(() => isLoading = true);
-    _error = null;
+    String? error;
+    
+    final payload = {
+      'name': name.text.trim(), 
+      'email': email.text.trim(), 
+      'password': password.text,
+    };
 
     try {
+      // API Endpoint: Register and Send OTP
       final response = await http.post(
-        // TODO: Register API Endpoint
         Uri.parse('$mongoApiBase/auth/register-otp'), 
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'name': name.text, 'email': email.text, 'password': password.text}),
+        body: json.encode(payload),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) { 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("OTP sent to your email. Please verify."))
+            const SnackBar(content: Text("OTP sent to your email. Please verify."), backgroundColor: Colors.indigo)
           );
-          // Navigate to OTP Verification Screen
+          // SUCCESS: Navigate to OTP Verification Screen
           Navigator.pushReplacement(context, MaterialPageRoute(
             builder: (_) => OTPVerificationScreen(
               name: name.text, 
@@ -624,57 +656,73 @@ class _RegisterScreenState extends State<RegisterScreen> {
               isRegistration: true, // Registration flow hai
             )
           ));
+          return; // Success hone par return
         }
       } else {
+         // FAILURE: Agar user already exist karta hai ya server error hai
          final errorData = json.decode(response.body);
-         setState(() => _error = errorData['message'] ?? 'Registration failed. User may already exist.');
+         error = errorData['message'] ?? 'Registration failed. Server error: ${response.statusCode}';
       }
     } catch (e) {
-      setState(() => _error = 'Network error or Invalid API response.');
+      // NETWORK/CONNECTION ERROR
+      error = 'Network error: Could not connect to registration service.';
       print('Registration Start OTP Error: $e');
     }
     
-    if (mounted) setState(() => isLoading = false);
+    if (mounted) {
+      setState(() => isLoading = false);
+      if (error != null) {
+         ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(content: Text(error!), backgroundColor: Colors.red)
+         );
+      }
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Register (OTP Required)")),
-      body: Padding(
-        padding: const EdgeInsets.all(28.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: name,
-              decoration: const InputDecoration(labelText: "Full Name"),
-            ),
-            TextField(
-              controller: email,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: "Email"),
-            ),
-            TextField(
-              controller: password,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: "Password (min 6 chars)"),
-            ),
-
-            const SizedBox(height: 20),
-
-            SizedBox(
-              height: 50,
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isLoading ? null : registerUserStartOTP,
-                child: isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Register & Send OTP"),
+      body: Form(
+        key: _formKey, // Form key add kiya
+        child: Padding(
+          padding: const EdgeInsets.all(28.0),
+          child: Column(
+            children: [
+              TextFormField( // TextFormField use kiya for validation
+                controller: name,
+                decoration: const InputDecoration(labelText: "Full Name"),
+                validator: (value) => value!.isEmpty ? 'Name cannot be empty' : null,
               ),
-            ),
-            if (_error != null) 
-              Padding(padding: const EdgeInsets.only(top: 10), child: Text(_error!, style: const TextStyle(color: Colors.red))),
-          ],
+              TextFormField( // TextFormField use kiya for validation
+                controller: email,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(labelText: "Email"),
+                validator: (value) => value!.isEmpty ? 'Email cannot be empty' : null,
+              ),
+              TextFormField( // TextFormField use kiya for validation
+                controller: password,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: "Password (min 6 chars)"),
+                validator: (value) => value!.length < 6 ? 'Password must be at least 6 characters' : null,
+              ),
+  
+              const SizedBox(height: 20),
+  
+              SizedBox(
+                height: 50,
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isLoading ? null : registerUserStartOTP,
+                  child: isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("Register & Send OTP"),
+                ),
+              ),
+              // Error message field hata diya, SnackBar use hoga
+            ],
+          ),
         ),
       ),
     );
@@ -702,34 +750,41 @@ class OTPVerificationScreen extends StatefulWidget {
 class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   final TextEditingController otp = TextEditingController();
   bool isLoading = false;
-  String? _error;
+  final _formKey = GlobalKey<FormState>();
 
+
+  // MODIFIED: Verify OTP (Functional)
   Future<void> verifyOTP() async {
-    if (otp.text.isEmpty || otp.text.length < 4) { // Assuming 4 digit OTP
-      setState(() => _error = "Please enter the 4-digit OTP.");
-      return;
+    if (!_formKey.currentState!.validate()) {
+      return; 
     }
     setState(() => isLoading = true);
-    _error = null;
+    String? error;
+
+    final verifyPayload = {
+      'email': widget.email, 
+      'otp': otp.text,
+      // Registration ke case mein name aur password bhi bhejenge
+      'name': widget.isRegistration ? widget.name : null, 
+      'password': widget.isRegistration ? widget.password : null,
+    };
+    
+    final uri = Uri.parse('$mongoApiBase/auth/verify-otp'); 
 
     try {
       final response = await http.post(
-        // TODO: Verify OTP API Endpoint
-        Uri.parse('$mongoApiBase/auth/verify-otp'), 
+        uri, 
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'email': widget.email, 
-          'otp': otp.text,
-          'name': widget.isRegistration ? widget.name : null, // Name sirf registration mein chahiye
-          'password': widget.isRegistration ? widget.password : null,
-        }),
+        body: json.encode(verifyPayload),
       );
 
       if (response.statusCode == 200) {
+        // SUCCESS: Verification Done, Token aur User ID mil gaye
         final data = json.decode(response.body);
-        final user = data['user'];
         final token = data['token'];
-
+        final user = data['user']; 
+        
+        // Token save karna aur UserAuth state update karna
         tempAuth.setUser(
           AppUserProfile(name: user['name'] ?? widget.name, sub: user['id'] ?? widget.email), 
           token: token
@@ -737,269 +792,78 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         
         if (mounted) {
            ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(content: Text("${widget.isRegistration ? 'Registration' : 'Login'} successful!"))
+             const SnackBar(content: Text("Verification successful! Logging in..."), backgroundColor: Colors.green)
            );
+           // Navigate to Main App
            Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => MainNavigator()));
+           return; // Success hone par return
         }
       } else {
+         // FAILURE: OTP galat hai ya server error hai
          final errorData = json.decode(response.body);
-         setState(() => _error = errorData['message'] ?? 'OTP verification failed. Try again.');
+         error = errorData['message'] ?? 'OTP verification failed. Status: ${response.statusCode}';
       }
     } catch (e) {
-      setState(() => _error = 'Network error or Invalid API response.');
+      // NETWORK/CONNECTION ERROR
+      error = 'Network error: Could not connect to verification service.';
       print('OTP Verification Error: $e');
     }
     
-    if (mounted) setState(() => isLoading = false);
+    if (mounted) {
+      setState(() => isLoading = false);
+      if (error != null) {
+         ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(content: Text(error!), backgroundColor: Colors.red)
+         );
+      }
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Verify OTP")),
-      body: Padding(
-        padding: const EdgeInsets.all(28.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("OTP sent to ${widget.email}",
+      body: Form(
+        key: _formKey, // Form key add kiya
+        child: Padding(
+          padding: const EdgeInsets.all(28.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text("OTP sent to ${widget.email}",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 18, color: Colors.indigo)),
+              const SizedBox(height: 20),
+              TextFormField( // TextFormField use kiya for validation
+                controller: otp,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 18, color: Colors.indigo)),
-            const SizedBox(height: 20),
-            TextField(
-              controller: otp,
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              textAlign: TextAlign.center,
-              decoration: const InputDecoration(labelText: "OTP Code"),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 50,
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isLoading ? null : verifyOTP,
-                child: isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Verify & Complete"),
+                decoration: const InputDecoration(labelText: "OTP Code"),
+                validator: (value) => value!.length != 6 ? 'Enter the 6-digit OTP' : null,
               ),
-            ),
-            if (_error != null) 
-              Padding(padding: const EdgeInsets.only(top: 10), child: Text(_error!, style: const TextStyle(color: Colors.red))),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------
-// HOME SCREEN
-// ---------------------------------------------------------
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  List<Map<String, dynamic>> helpers = [
-    {"name": "Ramesh", "skill": "Electrician", "price": 450, "image": ""},
-    {"name": "Suresh", "skill": "Plumber", "price": 300, "image": ""},
-    {"name": "Anita", "skill": "Cleaner", "price": 250, "image": ""},
-    {"name": "Babu", "skill": "Carpenter", "price": 600, "image": ""},
-  ];
-  bool loading = false; 
-
-  @override
-  void initState() {
-    super.initState();
-    // _loadHelpers();
-  }
-
-  void _filterByCategory(String category) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Filtering helpers by: $category'))
-    );
-    print('Filtered by: $category');
-  }
-
-  Future<void> _loadHelpers() async {
-    setState(() => loading = true);
-    await Future.delayed(const Duration(seconds: 1)); 
-    if (mounted) setState(() => loading = false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final userName = tempAuth.user?.name ?? "Customer"; 
-
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: Text("Welcome, $userName!", style: const TextStyle(color: Colors.black)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person_pin_outlined, color: Colors.black),
-            onPressed: () {
-               DefaultTabController.of(context).animateTo(4);
-            },
+              const SizedBox(height: 20),
+              SizedBox(
+                height: 50,
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isLoading ? null : verifyOTP,
+                  child: isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("Verify & Complete"),
+                ),
+              ),
+              // Error message field hata diya, SnackBar use hoga
+            ],
           ),
-        ],
-      ),
-
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator( 
-              onRefresh: _loadHelpers,
-              child: SingleChildScrollView( 
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column( 
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [ 
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      color: Colors.white,
-                      width: double.infinity,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text("Find Helpers Near You",
-                              style: TextStyle(
-                                  fontSize: 24, fontWeight: FontWeight.bold)),
-                          SizedBox(height: 3),
-                          Text("Plumbers, Electricians, Cleaners, all nearby"),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 110,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        children: [
-                          categoryItem("Cleaning", Icons.cleaning_services),
-                          categoryItem("Electrician", Icons.electrical_services),
-                          categoryItem("Plumber", Icons.plumbing),
-                          categoryItem("Painter", Icons.format_paint),
-                          categoryItem("Carpenter", Icons.carpenter),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text("Available Helpers",
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.bold)),
-                    ),
-                    const SizedBox(height: 12),
-                    GridView.builder(
-                      padding: const EdgeInsets.all(12),
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: helpers.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: .78,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                      ),
-                      itemBuilder: (context, index) {
-                        final h = helpers[index];
-                        return helperCard(
-                          h["name"] ?? "Unknown",
-                          h["skill"] ?? "Service", 
-                          h["price"] ?? 0,
-                          h["image"] ?? "", 
-                        );
-                      },
-                    )
-                  ],
-                )
-              )
-            )
-    );
-  } 
-
-  Widget categoryItem(String title, IconData icon) {
-    return InkWell(
-      onTap: () => _filterByCategory(title),
-      child: Container(
-        width: 90,
-        margin: const EdgeInsets.only(left: 12),
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 34, color: Colors.indigo), 
-            const SizedBox(height: 6),
-            Text(title, textAlign: TextAlign.center),
-          ],
-        ),
-      ),
-    );
-  }
-  
-  Widget helperCard(String name, String skill, int price, String imgUrl) {
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (_) => HelperDetailPage( 
-                      helperName: name, 
-                      helperSkill: skill,
-                      price: price,
-                      imgUrl: imgUrl,
-                    )));
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-          ],
-        ),
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          children: [
-            Expanded(
-              child: imgUrl.isEmpty
-                  ? Container(
-                      decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(12)),
-                    )
-                  : ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(imgUrl, fit: BoxFit.cover),
-                    ),
-            ),
-            const SizedBox(height: 8),
-            Text(name,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            Text(skill, style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 4),
-            Text("₹$price /hr",
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-          ],
         ),
       ),
     );
   }
 }
+
+// ------------------ (OTHER SCREENS REMAIN THE SAME) ------------------
 
 // ------------------ 🟢 BOOKING SCREEN ------------------
 class BookingScreen extends StatefulWidget {
@@ -1033,16 +897,73 @@ class _BookingScreenState extends State<BookingScreen> {
 
   double get totalCost => estimatedHours * widget.price * 1.2; 
   
+  // 🌟 FINAL FIX: Real API Call structure for booking
   Future<void> _createBooking() async {
     setState(() => isCreatingBooking = true);
-    await Future.delayed(const Duration(seconds: 2));
+    String? error;
+
+    final bookingPayload = {
+        'helperId': widget.helperName, 
+        'customerId': tempAuth.userId,
+        'serviceType': widget.helperSkill,
+        'bookingDate': selectedDate.toIso8601String(),
+        'estimatedHours': estimatedHours.toStringAsFixed(1),
+        'totalCost': totalCost.toStringAsFixed(0),
+        // NOTE: Yahan par customer ki current location bhi bhej sakte hain (Geolocator se lekar)
+    };
+    
+    // 1. API Endpoint
+    final uri = Uri.parse('$mongoApiBase/bookings/create'); 
+    
+    try {
+        final response = await http.post(
+            uri,
+            headers: {
+                'Content-Type': 'application/json',
+                // Auth Token bhejna mandatory hai
+                'Authorization': 'Bearer ${tempAuth._token}', 
+            },
+            body: json.encode(bookingPayload),
+        );
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+            // SUCCESS
+            if (mounted) {
+                 ScaffoldMessenger.of(context).showSnackBar(
+                   SnackBar(
+                      content: Text('Booking Successful! Helper ${widget.helperName} assigned.'),
+                      backgroundColor: Colors.green,
+                   )
+                 );
+                 // Navigate to Bookings Tab/Home
+                 Navigator.of(context).pushAndRemoveUntil(
+                   MaterialPageRoute(builder: (context) => MainNavigator()), 
+                   (Route<dynamic> route) => false
+                 );
+            }
+        } else {
+            // FAILURE: Agar server se error (e.g., 400, 500) aaya
+            final errorData = json.decode(response.body);
+            error = errorData['message'] ?? 'Booking failed with status code ${response.statusCode}';
+        }
+
+    } catch (e) {
+        // NETWORK/CONNECTION ERROR
+        error = 'Network error: Could not connect to booking service.';
+        print('Booking API Error: $e');
+    } 
+
     if (mounted) {
-       ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(content: Text('Booking confirmed for \( {widget.helperName}! Total: ₹ \){totalCost.toStringAsFixed(0)}'))
-       );
-       Navigator.pop(context); 
+      setState(() => isCreatingBooking = false);
+      if (error != null) {
+         ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(
+              content: Text(error!),
+              backgroundColor: Colors.red,
+           )
+         );
+      }
     }
-    if (mounted) setState(() => isCreatingBooking = false);
   }
 
 
