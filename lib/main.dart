@@ -64,7 +64,7 @@ final UserAuth tempAuth = UserAuth();
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🟢 FIX START: Mapbox Token को dynamic tareeke se uthane ke liye 'const' hataya.
+  // FIX 1: Mapbox Token को dynamic tareeke se uthane ke liye 'const' hata diya.
   String accessToken = const String.fromEnvironment('ACCESS_TOKEN');
   
   if (accessToken.isNotEmpty) {
@@ -73,7 +73,7 @@ void main() {
       // Agar token empty hai, toh console mein warning milegi.
       print('ERROR: MAPBOX ACCESS TOKEN is empty or not defined during build/run.');
   }
-  // 🟢 FIX END
+  // FIX 1 END
 
   runApp(const MyApp());
 }
@@ -286,7 +286,7 @@ class AccountScreen extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// 🟢 MAP VIEW SCREEN (MAPBOX + KILL SWITCH IMPLEMENTATION - FIXED)
+// 🟢 MAP VIEW SCREEN (KILL SWITCH TEMPORARILY REMOVED)
 // -----------------------------------------------------------------------------
 class MapViewScreen extends StatefulWidget {
   const MapViewScreen({super.key});
@@ -299,39 +299,15 @@ class _MapViewScreenState extends State<MapViewScreen> {
   MapboxMap? mapboxMap;
   PointAnnotationManager? annotationManager;
   
-  // 🌟 KILL SWITCH VARIABLES
-  bool _isMapServiceEnabled = true; // Default: Enabled
-  bool _isLoadingStatus = true;    // Check status in initState
+  // 🌟 Kill Switch Logic temporarily removed to prevent backend error display
 
   @override
   void initState() {
     super.initState();
-    _checkMapStatus(); // Map status check karo
+    // _checkMapStatus() removed
   }
 
-  // 🌟 Function to check the Kill Switch Status from Backend
-  Future<void> _checkMapStatus() async {
-    setState(() {
-      _isLoadingStatus = true;
-    });
-    try {
-      final response = await http.get(Uri.parse('$mongoApiBase/map/status'));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['status'] == 'disabled') {
-          _isMapServiceEnabled = false;
-        }
-      } else {
-        _isMapServiceEnabled = false; 
-      }
-    } catch (e) {
-      print('Map status check failed: $e');
-      _isMapServiceEnabled = false;
-    }
-    setState(() {
-      _isLoadingStatus = false;
-    });
-  }
+  // _checkMapStatus() function removed
 
   void _onMapCreated(MapboxMap mapboxMap) async {
     this.mapboxMap = mapboxMap;
@@ -354,29 +330,8 @@ class _MapViewScreenState extends State<MapViewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Loading State
-    if (_isLoadingStatus) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    
-    // 2. 🌟 Kill Switch Applied (Service Disabled)
-    if (!_isMapServiceEnabled) {
-      return Scaffold(
-        appBar: AppBar(title: const Text("Map Service Disabled")),
-        body: const Center(
-          child: Padding(
-            padding: EdgeInsets.all(20.0),
-            child: Text(
-              "Map service is temporarily unavailable due to potential budget limits. Please check back later.",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.red, fontSize: 16),
-            ),
-          ),
-        ),
-      );
-    }
-
-    // 3. Map Active (Default)
+    // Map Active (Default)
+    // Loading check aur Kill Switch check hata diya gaya hai
     return Scaffold(
       appBar: AppBar(title: const Text("Nearby Helpers (MapBox)")),
       body: MapWidget(
