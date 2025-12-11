@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL CODE WITH ALL FIXES: Token, Kill Switch, Permission Handler, Mapbox API)
+// lib/main.dart (FINAL CODE WITH ALL FIXES: Token, Permissions, Geolocator, Correct Mapbox API)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -7,10 +7,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http; 
 
-// 🟢 MAP IMPORT: Mapbox library
+// 🟢 MAP IMPORTS
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'; 
-// 🟢 LOCATION PERMISSION HANDLER IMPORT
-import 'package:permission_handler/permission_handler.dart'; 
+import 'package:permission_handler/permission_handler.dart'; // Run-time Permission
+import 'package:geolocator/geolocator.dart'; // External GPS Stream
 
 // -----------------------------------------------------------------------------
 // GLOBAL CONFIGURATION
@@ -309,65 +309,75 @@ class _MapViewScreenState extends State<MapViewScreen> {
   
   @override
   void dispose() {
-    // Location listener ko yahan remove karne ki zaroorat nahi kyunki MapboxMap khud handle karta hai.
     super.dispose();
   }
 
 
   // FIX 2: Location Permission check
   Future<void> _checkAndRequestLocationPermission() async {
+    // Permission Handler se request
     final status = await Permission.locationWhenInUse.request();
 
     if (status.isGranted) {
       setState(() {
         _isLocationPermissionGranted = true;
       });
+      // Permission milte hi map ko center karne ki koshish karein
+      if (mapboxMap != null) {
+        _centerMapToCurrentLocation();
+      }
     } else {
-      print("Location permission denied by user. Re-requesting.");
+      print("Location permission denied by user.");
       setState(() {
         _isLocationPermissionGranted = false;
       });
     }
   }
+  
+  // 🌟 FIX 4: Map ko Current Location par Center karna (Geolocator se)
+  Future<void> _centerMapToCurrentLocation() async {
+      try {
+          // Geolocator se current position uthana
+          Position position = await Geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.high
+          );
+          
+          if (mapboxMap != null) {
+              // FIX: Direct mapboxMap.flyTo call (Mapbox assistant ne bataya)
+              await mapboxMap!.flyTo(
+                  CameraOptions(
+                      center: Point(coordinates: Position(position.longitude, position.latitude)),
+                      zoom: 16.0, // Achi zoom level
+                      bearing: position.heading,
+                  ),
+                  MapAnimationOptions(duration: 2000), // Smooth animation
+              );
+          }
+      } catch (e) {
+          print("Geolocator Error: Could not get location for centering: $e");
+      }
+  }
 
 
-  // 🌟 FINAL FIX: Mapbox API calls aur Location Centering (All compiler errors fixed)
+  // 🌟 FINAL FIX: Mapbox Location Puck Enable aur Centering call
   void _onMapCreated(MapboxMap mapboxMap) async {
     this.mapboxMap = mapboxMap;
     annotationManager = await mapboxMap.annotations.createPointAnnotationManager();
 
     if (_isLocationPermissionGranted) {
-        // 🟢 FIX 3: Location Tracking Enable karna (minimal settings)
+        // 🟢 FIX 3: Location Puck Enable karna (pulsing false, LocationPuck minimal)
         await mapboxMap.location.updateSettings(
             LocationComponentSettings(
               enabled: true, 
               pulsingEnabled: false, // Neela dot/Arrow ka blinking band
-              locationPuck: LocationPuck(), // Minimal object for stable arrow/dot
+              locationPuck: LocationPuck(), // Stable dot/arrow ke liye
             )
         );
         
-        // 🟢 FIX 4 & 5: Current Location Par Center karna (Correct API: addLocationChangeListener)
-        
-        // Mapbox location stream ka use karna
-        // LocationChangeEvent ko use karne ke liye, addLocationChangeListener function use karte hain
-        mapboxMap.location.addLocationChangeListener((event) {
-          if (event.positions != null && event.positions!.isNotEmpty) {
-             // Location mil gayi, camera move karo
-             mapboxMap.camera.flyTo( 
-               CameraOptions(
-                 center: event.positions![0], 
-                 zoom: 16.0,
-                 bearing: event.bearings != null && event.bearings!.isNotEmpty ? event.bearings![0] : null,
-               ),
-               MapAnimationOptions(duration: 2000),
-             );
-             
-             // Ek baar center hone ke baad listener remove karte hain taki map ghumta na rahe
-             mapboxMap.location.removeLocationChangeListener(mapboxMap.location.locationChange);
-          }
-        });
+        // Map create hote hi center karne ki koshish (Agar permission already granted hai)
+        _centerMapToCurrentLocation(); 
     }
-
+    
     // Helper 1 - Ramesh Plumber
     var options1 = PointAnnotationOptions(
       geometry: Point(coordinates: Position(72.87, 19.07)),
@@ -1091,33 +1101,28 @@ class _BookingScreenState extends State<BookingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // FIX: Syntax Error: EdgeInsets::all -> EdgeInsets.all
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               color: Colors.indigo,
               child: Text("Booking \( {widget.helperName} ( \){widget.helperSkill})", style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
             ),
-            // FIX: Syntax Error: EdgeInsets::all -> EdgeInsets.all
             Card(margin: const EdgeInsets.all(16), child: _buildDatePicker()),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
               child: Text("Service Duration", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
-            // FIX: Syntax Error: EdgeInsets::symmetric -> EdgeInsets.symmetric
             Card(margin: const EdgeInsets.symmetric(horizontal: 16), child: _buildTimeSlider()),
             const SizedBox(height: 20),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
               child: Text("Cost Summary", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
-            // FIX: Syntax Error: EdgeInsets::symmetric -> EdgeInsets.symmetric
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: _buildCostSummary(),
             ),
             const SizedBox(height: 30),
-            // FIX: Syntax Error: EdgeInsets::symmetric -> EdgeInsets.symmetric
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: SizedBox(
@@ -1163,7 +1168,6 @@ class HelperDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(helperName)),
-      // FIX: Syntax Error: EdgeInsets::all -> EdgeInsets.all
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
