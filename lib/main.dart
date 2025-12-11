@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL CODE WITH ALL FIXES: Ambiguity Error Fixed)
+// lib/main.dart (FINAL CODE WITH ALL FIXES: Ambiguity Error Fixed, Location Centering)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -10,7 +10,7 @@ import 'package:http/http.dart' as http;
 // 🟢 MAP IMPORTS
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'; 
 import 'package:permission_handler/permission_handler.dart'; // Run-time Permission
-// 🟢 FIX: Geolocator ko 'Geo' alias se import karna taaki Position conflict na ho
+// 🟢 FIX: Geolocator ko 'Geo' alias se import karna taaki Position/Geolocator conflict na ho
 import 'package:geolocator/geolocator.dart' as Geo; 
 
 // -----------------------------------------------------------------------------
@@ -340,15 +340,15 @@ class _MapViewScreenState extends State<MapViewScreen> {
   Future<void> _centerMapToCurrentLocation() async {
       try {
           // FIX: Geolocator.Position ki jagah Geo.Position use karna
-          Geo.Position position = await Geolocator.getCurrentPosition(
-              desiredAccuracy: LocationAccuracy.high
+          Geo.Position position = await Geo.Geolocator.getCurrentPosition(
+              desiredAccuracy: Geo.LocationAccuracy.high // FIX: LocationAccuracy par Geo. prefix
           );
           
           if (mapboxMap != null) {
               // FIX: Direct mapboxMap.flyTo call
               await mapboxMap!.flyTo(
                   CameraOptions(
-                      // FIX: Mapbox Position class use karna (Geolocator ki position se coordinates lekar)
+                      // FIX: Mapbox Position class use karna
                       center: Point(coordinates: Position(position.longitude, position.latitude)),
                       zoom: 16.0, 
                       bearing: position.heading,
