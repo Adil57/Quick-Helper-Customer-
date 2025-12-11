@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL CODE WITH ALL FIXES: Working GPS Stream & Puck)
+// lib/main.dart (FINAL CODE WITH ALL FIXES: Ambiguity Error Fixed, Location Centering, No Compile Errors)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -10,7 +10,8 @@ import 'package:http/http.dart' as http;
 // 🟢 MAP IMPORTS
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'; 
 import 'package:permission_handler/permission_handler.dart'; // Run-time Permission
-import 'package:geolocator/geolocator.dart' as Geo; // External GPS Stream
+// 🟢 FIX: Geolocator ko 'Geo' alias se import karna taaki Position/Geolocator conflict na ho
+import 'package:geolocator/geolocator.dart' as Geo; 
 
 // -----------------------------------------------------------------------------
 // GLOBAL CONFIGURATION
@@ -346,8 +347,9 @@ class _MapViewScreenState extends State<MapViewScreen> {
       _positionStreamSubscription?.cancel();
 
       // Location request settings (Geolocator use karke)
-      final locationSettings = LocationSettings(
-          accuracy: Geo.LocationAccuracy.high,
+      // FIX: LocationSettings par Geo. prefix lagaya
+      final locationSettings = Geo.LocationSettings(
+          accuracy: Geo.LocationAccuracy.high, // FIX: LocationAccuracy par Geo. prefix
           distanceFilter: 1, // Har 1 meter pe update
       );
 
@@ -359,14 +361,16 @@ class _MapViewScreenState extends State<MapViewScreen> {
         mapboxMap!.location.updateSettings(
             LocationComponentSettings(
               enabled: true, 
-              pulsingEnabled: false, 
-              locationPuck: LocationPuck(), 
+              pulsingEnabled: false, // Neela dot/Arrow ka blinking band
+              locationPuck: LocationPuck(), // Stable dot/arrow ke liye
             )
         );
 
         // Camera ko naye location par move karo
+        // FIX: Direct mapboxMap.flyTo call
         mapboxMap!.flyTo(
             CameraOptions(
+                // FIX: Mapbox Position class use karna
                 center: Point(coordinates: Position(position.longitude, position.latitude)),
                 zoom: 16.0, 
                 bearing: position.heading,
@@ -383,7 +387,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
     annotationManager = await mapboxMap.annotations.createPointAnnotationManager();
 
     if (_isLocationPermissionGranted) {
-        // 🟢 FIX: Location Puck ON karna (Ab isko stream se data milega, manual update se)
+        // 🟢 FIX 3: Location Puck ON karna (Ab isko stream se data milega, manual update se)
         // Yahan sirf initial settings set karenge
         await mapboxMap.location.updateSettings(
             LocationComponentSettings(
@@ -394,7 +398,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
         );
         
         // Geoloactor stream shuru karna
-        _startListeningToLocationUpdates();
+        _startListeningToLocationUpdates(); 
     }
     
     // Helper 1 - Ramesh Plumber
