@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL CODE WITH ALL FIXES: The Absolute Final Fix)
+// lib/main.dart (FINAL CODE WITH ALL FIXES: The Definitive const Fix)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -594,8 +594,9 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
               
               TextButton(
                 onPressed: () {
+                  // FIX: const hata diya
                   Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => RegisterScreen())); // FIX: const removed
+                      MaterialPageRoute(builder: (_) => RegisterScreen())); 
                 },
                 child: const Text("Create an account (OTP Required)"),
               )
@@ -649,8 +650,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SnackBar(content: Text("OTP sent to your email. Please verify."), backgroundColor: Colors.indigo)
           );
           // SUCCESS: Navigate to OTP Verification Screen
+          // FIX: OTPVerificationScreen se const hata diya
           Navigator.pushReplacement(context, MaterialPageRoute(
-            builder: (_) => const OTPVerificationScreen( // OTPVerificationScreen is Stateless, so const is fine
+            builder: (_) => OTPVerificationScreen(
               name: name.text, 
               email: email.text, 
               password: password.text,
