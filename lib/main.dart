@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL CODE WITH ALL FIXES: Working GPS Stream & Finalized Auth APIs)
+// lib/main.dart (FINAL CODE WITH ALL FIXES: Release Build, Auth API, and GPS Fixes)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -10,7 +10,8 @@ import 'package:http/http.dart' as http;
 // 🟢 MAP IMPORTS
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'; 
 import 'package:permission_handler/permission_handler.dart'; // Run-time Permission
-import 'package:geolocator/geolocator.dart' as Geo; // External GPS Stream
+// 🟢 FIX: Geolocator ko 'Geo' alias se import karna taaki Position/Geolocator conflict na ho
+import 'package:geolocator/geolocator.dart' as Geo; 
 
 // -----------------------------------------------------------------------------
 // GLOBAL CONFIGURATION
@@ -224,11 +225,11 @@ class MainNavigator extends StatelessWidget {
         body: TabBarView(
           physics: const NeverScrollableScrollPhysics(), 
           children: [
-            const HomePage(),
-            const MapViewScreen(), // Tab 1: Map View Screen
-            const Center(child: Text("Bookings Screen")), // Tab 2: Bookings
-            const Center(child: Text("Chat Screen")), // Tab 3: Chat
-            const AccountScreen(), // Tab 4: Account
+            HomePage(),  // FIX: const removed
+            MapViewScreen(), // FIX: const removed
+            const Center(child: Text("Bookings Screen")), 
+            const Center(child: Text("Chat Screen")), 
+            AccountScreen(), // FIX: const removed
           ],
         ),
         bottomNavigationBar: Container(
@@ -475,7 +476,6 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
   bool isLoading = false;
-  String? _error;
   final _formKey = GlobalKey<FormState>();
 
 
@@ -862,8 +862,6 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     );
   }
 }
-
-// ------------------ (OTHER SCREENS REMAIN THE SAME) ------------------
 
 // ------------------ 🟢 BOOKING SCREEN ------------------
 class BookingScreen extends StatefulWidget {
