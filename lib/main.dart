@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL CODE WITH ALL FIXES: The Definitive const Fix)
+// lib/main.dart (FINAL CODE WITH ALL FIXES: The Absolute Final Fix)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -25,12 +25,13 @@ const String auth0RedirectUri = "com.quickhelper.app://adil888.us.auth0.com/andr
 final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
 
 // -----------------------------------------------------------------------------
-// DUMMY STATE MANAGEMENT (Renamed to avoid conflict with Auth0's UserProfile)
+// DUMMY STATE MANAGEMENT (FIX: super.key removed)
 // -----------------------------------------------------------------------------
 class AppUserProfile {
   final String name;
   final String sub;
-  const AppUserProfile({super.key, required this.name, required this.sub});
+  // FIX: super.key hata diya
+  const AppUserProfile({required this.name, required this.sub}); 
 }
 
 class UserAuth {
@@ -594,7 +595,7 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
               TextButton(
                 onPressed: () {
                   Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const RegisterScreen()));
+                      MaterialPageRoute(builder: (_) => RegisterScreen())); // FIX: const removed
                 },
                 child: const Text("Create an account (OTP Required)"),
               )
@@ -649,7 +650,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           );
           // SUCCESS: Navigate to OTP Verification Screen
           Navigator.pushReplacement(context, MaterialPageRoute(
-            builder: (_) => OTPVerificationScreen(
+            builder: (_) => const OTPVerificationScreen( // OTPVerificationScreen is Stateless, so const is fine
               name: name.text, 
               email: email.text, 
               password: password.text,
