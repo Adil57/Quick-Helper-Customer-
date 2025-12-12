@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL CODE WITH ALL FIXES: Final const Ambiguity Fix, Auth API, and GPS Fixes)
+// lib/main.dart (FINAL CODE WITH ALL FIXES: The Definitive const Fix)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -30,7 +30,7 @@ final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
 class AppUserProfile {
   final String name;
   final String sub;
-  const AppUserProfile({required this.name, required this.sub});
+  const AppUserProfile({super.key, required this.name, required this.sub});
 }
 
 class UserAuth {
@@ -213,7 +213,7 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
   }
 }
 
-// ----------------- 🟢 MAIN NAVIGATOR (Tab Order Updated) ----------------- //
+// ----------------- 🟢 MAIN NAVIGATOR (Finalized Const Fix) ----------------- //
 class MainNavigator extends StatelessWidget {
   MainNavigator({super.key});
 
@@ -225,11 +225,11 @@ class MainNavigator extends StatelessWidget {
         body: TabBarView(
           physics: const NeverScrollableScrollPhysics(), 
           children: [
-            const HomePage(),  // FIX: const added back
-            MapViewScreen(), // FIX: const removed (stateful)
+            HomePage(),  // ✅ CONST REMOVED
+            MapViewScreen(), // ✅ CONST REMOVED
             const Center(child: Text("Bookings Screen")), 
             const Center(child: Text("Chat Screen")), 
-            const AccountScreen(), // FIX: const added back
+            AccountScreen(), // ✅ CONST REMOVED
           ],
         ),
         bottomNavigationBar: Container(
@@ -256,9 +256,9 @@ class MainNavigator extends StatelessWidget {
   }
 }
 
-// ---------------- ACCOUNT SCREEN (Const Fix) ---------------- //
+// ---------------- ACCOUNT SCREEN (Const Removed) ---------------- //
 class AccountScreen extends StatelessWidget {
-  const AccountScreen({super.key}); // FIX: const constructor added
+  AccountScreen({super.key}); // FIX: const removed
 
   @override
   Widget build(BuildContext context) {
@@ -606,9 +606,9 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
   }
 }
 
-// ---------------- REGISTER SCREEN (Const Fix) ---------------- //
+// ---------------- REGISTER SCREEN (Const Removed) ---------------- //
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key}); // FIX: const constructor added
+  RegisterScreen({super.key}); // FIX: const removed
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
@@ -857,6 +857,212 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
               // Error message field hata diya, SnackBar use hoga
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ------------------ 🟢 HOME SCREEN (Const Removed) ------------------
+class HomePage extends StatefulWidget {
+  HomePage({super.key}); // FIX: const removed
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<Map<String, dynamic>> helpers = [
+    {"name": "Ramesh", "skill": "Electrician", "price": 450, "image": ""},
+    {"name": "Suresh", "skill": "Plumber", "price": 300, "image": ""},
+    {"name": "Anita", "skill": "Cleaner", "price": 250, "image": ""},
+    {"name": "Babu", "skill": "Carpenter", "price": 600, "image": ""},
+  ];
+  bool loading = false; 
+
+  @override
+  void initState() {
+    super.initState();
+    // _loadHelpers();
+  }
+
+  void _filterByCategory(String category) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Filtering helpers by: $category'))
+    );
+    print('Filtered by: $category');
+  }
+
+  Future<void> _loadHelpers() async {
+    setState(() => loading = true);
+    await Future.delayed(const Duration(seconds: 1)); 
+    if (mounted) setState(() => loading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final userName = tempAuth.user?.name ?? "Customer"; 
+
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      appBar: AppBar(
+        title: Text("Welcome, $userName!", style: const TextStyle(color: Colors.black)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_pin_outlined, color: Colors.black),
+            onPressed: () {
+               DefaultTabController.of(context).animateTo(4);
+            },
+          ),
+        ],
+      ),
+
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator( 
+              onRefresh: _loadHelpers,
+              child: SingleChildScrollView( 
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column( 
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [ 
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      color: Colors.white,
+                      width: double.infinity,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text("Find Helpers Near You",
+                              style: TextStyle(
+                                  fontSize: 24, fontWeight: FontWeight.bold)),
+                          SizedBox(height: 3),
+                          Text("Plumbers, Electricians, Cleaners, all nearby"),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 110,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        children: [
+                          categoryItem("Cleaning", Icons.cleaning_services),
+                          categoryItem("Electrician", Icons.electrical_services),
+                          categoryItem("Plumber", Icons.plumbing),
+                          categoryItem("Painter", Icons.format_paint),
+                          categoryItem("Carpenter", Icons.carpenter),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text("Available Helpers",
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(height: 12),
+                    GridView.builder(
+                      padding: const EdgeInsets.all(12),
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: helpers.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: .78,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                      ),
+                      itemBuilder: (context, index) {
+                        final h = helpers[index];
+                        return helperCard(
+                          h["name"] ?? "Unknown",
+                          h["skill"] ?? "Service", 
+                          h["price"] ?? 0,
+                          h["image"] ?? "", 
+                        );
+                      },
+                    )
+                  ],
+                )
+              )
+            )
+    );
+  } 
+
+  Widget categoryItem(String title, IconData icon) {
+    return InkWell(
+      onTap: () => _filterByCategory(title),
+      child: Container(
+        width: 90,
+        margin: const EdgeInsets.only(left: 12),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 34, color: Colors.indigo), 
+            const SizedBox(height: 6),
+            Text(title, textAlign: TextAlign.center),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget helperCard(String name, String skill, int price, String imgUrl) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => HelperDetailPage( 
+                      helperName: name, 
+                      helperSkill: skill,
+                      price: price,
+                      imgUrl: imgUrl,
+                    )));
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+          ],
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          children: [
+            Expanded(
+              child: imgUrl.isEmpty
+                  ? Container(
+                      decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(12)),
+                    )
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(imgUrl, fit: BoxFit.cover),
+                    ),
+            ),
+            const SizedBox(height: 8),
+            Text(name,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(skill, style: const TextStyle(color: Colors.grey)),
+            const SizedBox(height: 4),
+            Text("₹$price /hr",
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
         ),
       ),
     );
