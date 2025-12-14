@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL CODE WITH ALL FIXES: The Definitive const Fix)
+// lib/main.dart (FINAL CODE: Home Screen API Ready)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -25,12 +25,11 @@ const String auth0RedirectUri = "com.quickhelper.app://adil888.us.auth0.com/andr
 final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
 
 // -----------------------------------------------------------------------------
-// DUMMY STATE MANAGEMENT (FIX: super.key removed)
+// DUMMY STATE MANAGEMENT 
 // -----------------------------------------------------------------------------
 class AppUserProfile {
   final String name;
   final String sub;
-  // FIX: super.key hata diya
   const AppUserProfile({required this.name, required this.sub}); 
 }
 
@@ -226,11 +225,11 @@ class MainNavigator extends StatelessWidget {
         body: TabBarView(
           physics: const NeverScrollableScrollPhysics(), 
           children: [
-            HomePage(),  // ✅ CONST REMOVED
-            MapViewScreen(), // ✅ CONST REMOVED
+            HomePage(),  // CONST REMOVED
+            MapViewScreen(), // CONST REMOVED
             const Center(child: Text("Bookings Screen")), 
             const Center(child: Text("Chat Screen")), 
-            AccountScreen(), // ✅ CONST REMOVED
+            AccountScreen(), // CONST REMOVED
           ],
         ),
         bottomNavigationBar: Container(
@@ -594,7 +593,7 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
               
               TextButton(
                 onPressed: () {
-                  // FIX: const hata diya
+                  // FIX: const removed
                   Navigator.push(context,
                       MaterialPageRoute(builder: (_) => RegisterScreen())); 
                 },
@@ -739,6 +738,7 @@ class OTPVerificationScreen extends StatefulWidget {
   final String password;
   final bool isRegistration;
 
+  // FIX: constructor par const rakha, lekin call site se hata diya
   const OTPVerificationScreen({
     super.key, 
     required this.email, 
@@ -866,7 +866,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   }
 }
 
-// ------------------ 🟢 HOME SCREEN (Const Removed) ------------------
+// ------------------ 🟢 HOME SCREEN (API READY) ------------------
 class HomePage extends StatefulWidget {
   HomePage({super.key}); // FIX: const removed
   @override
@@ -874,18 +874,15 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<Map<String, dynamic>> helpers = [
-    {"name": "Ramesh", "skill": "Electrician", "price": 450, "image": ""},
-    {"name": "Suresh", "skill": "Plumber", "price": 300, "image": ""},
-    {"name": "Anita", "skill": "Cleaner", "price": 250, "image": ""},
-    {"name": "Babu", "skill": "Carpenter", "price": 600, "image": ""},
-  ];
+  // Hardcoded list ko shuruat mein empty rakha
+  List<Map<String, dynamic>> helpers = []; 
   bool loading = false; 
 
   @override
   void initState() {
     super.initState();
-    // _loadHelpers();
+    // FIX: Page load hote hi helpers ko load karna
+    _loadHelpers(); 
   }
 
   void _filterByCategory(String category) {
@@ -895,11 +892,50 @@ class _HomePageState extends State<HomePage> {
     print('Filtered by: $category');
   }
 
+  // MODIFIED: Fetch helpers from the backend API
   Future<void> _loadHelpers() async {
     setState(() => loading = true);
-    await Future.delayed(const Duration(seconds: 1)); 
-    if (mounted) setState(() => loading = false);
+    String? error;
+    
+    final uri = Uri.parse('$mongoApiBase/helpers/list'); 
+
+    try {
+      final response = await http.get(uri); // GET Request
+
+      if (response.statusCode == 200) {
+        // SUCCESS: List of helpers received
+        final responseData = json.decode(response.body);
+        
+        // Assuming backend sends a list under the key 'helpers'
+        List<dynamic> fetchedHelpers = responseData['helpers'] ?? []; 
+        
+        // Hardcoded list ko replace kar diya
+        helpers = fetchedHelpers.map((h) => h as Map<String, dynamic>).toList(); 
+        
+      } else {
+        // FAILURE: Server se galti aayi (e.g., list empty hai)
+        final errorData = json.decode(response.body);
+        error = errorData['message'] ?? 'Failed to load helpers. Status: ${response.statusCode}';
+        helpers = [];
+      }
+
+    } catch (e) {
+      // NETWORK/CONNECTION ERROR: Server tak pahunch nahi paaya
+      error = 'Error: Could not connect to the helper service API.';
+      print('Helper List API Error: $e');
+      helpers = [];
+    } 
+
+    if (mounted) {
+      setState(() => loading = false);
+      if (error != null) {
+         ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(content: Text(error!), backgroundColor: Colors.red)
+         );
+      }
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -966,7 +1002,13 @@ class _HomePageState extends State<HomePage> {
                               fontSize: 20, fontWeight: FontWeight.bold)),
                     ),
                     const SizedBox(height: 12),
-                    GridView.builder(
+                    // Check if helpers list is empty or not
+                    helpers.isEmpty 
+                    ? const Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: Center(child: Text("No helpers found or failed to load data.")),
+                      )
+                    : GridView.builder(
                       padding: const EdgeInsets.all(12),
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
