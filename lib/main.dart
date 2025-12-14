@@ -1,9 +1,9 @@
-// lib/main.dart (FINAL CODE: Home Screen API Ready)
+// lib/main.dart (FINAL CODE: 30 Second Timeout Added)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
 import 'package:auth0_flutter_platform_interface/auth0_flutter_platform_interface.dart'; 
-import 'dart:async';
+import 'dart:async'; // Ye import timeout ke liye zaroori hai
 import 'dart:convert';
 import 'package:http/http.dart' as http; 
 
@@ -501,7 +501,7 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
             uri,
             headers: {'Content-Type': 'application/json'},
             body: json.encode(loginPayload),
-        );
+        ).timeout(const Duration(seconds: 30)); // FIX: Timeout added
 
         if (response.statusCode == 200) {
             // SUCCESS: Token aur User ID receive karna
@@ -529,8 +529,12 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
         }
 
     } catch (e) {
-        // NETWORK/CONNECTION ERROR: Server tak na pahunchne par
-        error = 'Network error: Could not connect to the login service.';
+        // NETWORK/CONNECTION ERROR: Server tak na pahunchne par ya Timeout
+        if (e is TimeoutException) {
+          error = 'Network Timeout: Server took too long to respond. Please try again.';
+        } else {
+          error = 'Network error: Could not connect to the login service.';
+        }
         print('Login API Error: $e');
     } 
 
@@ -641,7 +645,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Uri.parse('$mongoApiBase/auth/register-otp'), 
         headers: {'Content-Type': 'application/json'},
         body: json.encode(payload),
-      );
+      ).timeout(const Duration(seconds: 30)); // FIX: Timeout added
 
       if (response.statusCode == 200 || response.statusCode == 201) { 
         if (mounted) {
@@ -666,8 +670,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
          error = errorData['message'] ?? 'Registration failed. Server error: ${response.statusCode}';
       }
     } catch (e) {
-      // NETWORK/CONNECTION ERROR
-      error = 'Network error: Could not connect to registration service.';
+      // NETWORK/CONNECTION ERROR: Server tak na pahunchne par ya Timeout
+      if (e is TimeoutException) {
+          error = 'Network Timeout: Server took too long to respond. Please try again.';
+      } else {
+          error = 'Network error: Could not connect to registration service.';
+      }
       print('Registration Start OTP Error: $e');
     }
     
@@ -738,7 +746,6 @@ class OTPVerificationScreen extends StatefulWidget {
   final String password;
   final bool isRegistration;
 
-  // FIX: constructor par const rakha, lekin call site se hata diya
   const OTPVerificationScreen({
     super.key, 
     required this.email, 
@@ -779,7 +786,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         uri, 
         headers: {'Content-Type': 'application/json'},
         body: json.encode(verifyPayload),
-      );
+      ).timeout(const Duration(seconds: 30)); // FIX: Timeout added
 
       if (response.statusCode == 200) {
         // SUCCESS: Verification Done, Token aur User ID mil gaye
@@ -807,8 +814,12 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
          error = errorData['message'] ?? 'OTP verification failed. Status: ${response.statusCode}';
       }
     } catch (e) {
-      // NETWORK/CONNECTION ERROR
-      error = 'Network error: Could not connect to verification service.';
+      // NETWORK/CONNECTION ERROR: Server tak na pahunchne par ya Timeout
+      if (e is TimeoutException) {
+          error = 'Network Timeout: Server took too long to respond. Please try again.';
+      } else {
+          error = 'Network error: Could not connect to verification service.';
+      }
       print('OTP Verification Error: $e');
     }
     
@@ -900,7 +911,7 @@ class _HomePageState extends State<HomePage> {
     final uri = Uri.parse('$mongoApiBase/helpers/list'); 
 
     try {
-      final response = await http.get(uri); // GET Request
+      final response = await http.get(uri).timeout(const Duration(seconds: 30)); // FIX: Timeout added
 
       if (response.statusCode == 200) {
         // SUCCESS: List of helpers received
@@ -921,7 +932,11 @@ class _HomePageState extends State<HomePage> {
 
     } catch (e) {
       // NETWORK/CONNECTION ERROR: Server tak pahunch nahi paaya
-      error = 'Error: Could not connect to the helper service API.';
+      if (e is TimeoutException) {
+          error = 'Network Timeout: Server took too long to respond. Please try again.';
+      } else {
+          error = 'Error: Could not connect to the helper service API.';
+      }
       print('Helper List API Error: $e');
       helpers = [];
     } 
@@ -1173,7 +1188,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 'Authorization': 'Bearer ${tempAuth._token}', 
             },
             body: json.encode(bookingPayload),
-        );
+        ).timeout(const Duration(seconds: 30)); // FIX: Timeout added
 
         if (response.statusCode == 200 || response.statusCode == 201) {
             // SUCCESS
@@ -1198,7 +1213,11 @@ class _BookingScreenState extends State<BookingScreen> {
 
     } catch (e) {
         // NETWORK/CONNECTION ERROR
-        error = 'Network error: Could not connect to booking service.';
+        if (e is TimeoutException) {
+            error = 'Network Timeout: Server took too long to respond. Please try again.';
+        } else {
+            error = 'Network error: Could not connect to booking service.';
+        }
         print('Booking API Error: $e');
     } 
 
