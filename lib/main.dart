@@ -1,20 +1,21 @@
-// lib/main.dart (FINAL CODE: Uri.https Fix Applied + Helper Registration Button)
+// lib/main.dart (FINAL CODE: Hardcoded URL, Uri.https, aur Timeout 15s Fixes Applied)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
 import 'package:auth0_flutter_platform_interface/auth0_flutter_platform_interface.dart'; 
-import 'dart:async'; // Ye import timeout ke liye zaroori hai
+import 'dart:async'; 
 import 'dart:convert';
 import 'package:http/http.dart' as http; 
 
 // 🟢 MAP IMPORTS
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'; 
-import 'package:permission_handler/permission_handler.dart'; // Run-time Permission
+import 'package:permission_handler/permission_handler.dart'; 
 import 'package:geolocator/geolocator.dart' as Geo; 
 
 // -----------------------------------------------------------------------------
 // GLOBAL CONFIGURATION
 // -----------------------------------------------------------------------------
+// Note: Yeh variable abhi bhi rakhenge, lekin niche functions mein hardcoded URL use karenge
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api"; 
 const String auth0Domain = "adil888.us.auth0.com"; 
 const String auth0ClientId = "OdsfeU9MvAcYGxK0Vd8TAlta9XAprMxx"; 
@@ -614,12 +615,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     };
 
     try {
-      // API Endpoint: Register and Send OTP
+      // 🌟 FINAL FIX 1: URL ko hardcode kiya taaki koi invisible character ya encoding issue na ho
       final response = await http.post(
-        Uri.parse('$mongoApiBase/auth/register-otp'), 
+        Uri.parse('https://quick-helper-backend.onrender.com/api/auth/register-otp'), 
         headers: {'Content-Type': 'application/json'},
         body: json.encode(payload),
-      ).timeout(const Duration(seconds: 30)); 
+        // 🌟 FINAL FIX 2: Timeout ko 15s kiya taaki jaldi error de agar server tak request nahi pahunchti
+      ).timeout(const Duration(seconds: 15)); 
 
       if (response.statusCode == 200 || response.statusCode == 201) { 
         if (mounted) {
@@ -644,8 +646,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } catch (e) {
       if (e is TimeoutException) {
+          // Timeout error (server tak nahi pahuncha ya server crash hua)
           error = 'Network Timeout: Server took too long to respond. Please try again.';
       } else {
+          // General connection error
           error = 'Network error: Could not connect to registration service.';
       }
       print('Registration Start OTP Error: $e');
@@ -681,16 +685,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'name': tempAuth.user?.name ?? name.text.trim(), 
         'skill': "Electrician", 
         'price': 500,           
-        'latitude': 19.0760,    // Mumbai Location
+        'latitude': 19.0760,    // Dummy Location (Mumbai)
         'longitude': 72.8777,
       };
 
       try {
+          // 🌟 FINAL FIX 1: URL ko hardcode kiya
           final response = await http.post(
-            Uri.parse('$mongoApiBase/helpers/register'), 
+            Uri.parse('https://quick-helper-backend.onrender.com/api/helpers/register'), 
             headers: {'Content-Type': 'application/json'},
             body: json.encode(helperPayload),
-          ).timeout(const Duration(seconds: 30));
+            // 🌟 FINAL FIX 2: Timeout ko 15s kiya
+          ).timeout(const Duration(seconds: 15));
 
           if (response.statusCode == 200 || response.statusCode == 201) { 
              if (mounted) {
@@ -761,7 +767,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
 
               const SizedBox(height: 20),
-              // 🟢 NEW HELPER REGISTRATION BUTTON (Temporary for testing)
+              // 🟢 TEMPORARY HELPER REGISTRATION BUTTON
               SizedBox(
                 height: 50,
                 width: double.infinity,
@@ -820,14 +826,15 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
       'password': widget.isRegistration ? widget.password : null,
     };
     
-    final uri = Uri.parse('$mongoApiBase/auth/verify-otp'); 
+    // 🌟 URL hardcoded
+    final uri = Uri.parse('https://quick-helper-backend.onrender.com/api/auth/verify-otp'); 
 
     try {
       final response = await http.post(
         uri, 
         headers: {'Content-Type': 'application/json'},
         body: json.encode(verifyPayload),
-      ).timeout(const Duration(seconds: 30)); 
+      ).timeout(const Duration(seconds: 15)); // Timeout 15s
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -950,14 +957,14 @@ class _HomePageState extends State<HomePage> {
     setState(() => loading = true);
     String? error;
     
-    // FINAL FIX: Uri.https use kiya URL encoding issue ko theek karne ke liye
+    // 🌟 FINAL FIX 1: Uri.https use kiya (URL Encoding Fix)
     final uri = Uri.https(
         'quick-helper-backend.onrender.com', 
         'api/helpers/list'                  
     ); 
 
     try {
-      final response = await http.get(uri).timeout(const Duration(seconds: 30)); 
+      final response = await http.get(uri).timeout(const Duration(seconds: 15)); // Timeout 15s
 
       if (response.statusCode == 200) {
         // SUCCESS
@@ -1229,7 +1236,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 'Authorization': 'Bearer ${tempAuth._token}', 
             },
             body: json.encode(bookingPayload),
-        ).timeout(const Duration(seconds: 30)); 
+        ).timeout(const Duration(seconds: 15)); // Timeout 15s
 
         if (response.statusCode == 200 || response.statusCode == 201) {
             // SUCCESS
