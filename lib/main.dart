@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL CODE: Uri.https Fix Applied in _loadHelpers())
+// lib/main.dart (FINAL CODE: Uri.https Fix Applied + Helper Registration Button)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -15,7 +15,6 @@ import 'package:geolocator/geolocator.dart' as Geo;
 // -----------------------------------------------------------------------------
 // GLOBAL CONFIGURATION
 // -----------------------------------------------------------------------------
-// Note: Isko abhi bhi rakhenge, lekin niche Uri.https mein hum hardcode karenge
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api"; 
 const String auth0Domain = "adil888.us.auth0.com"; 
 const String auth0ClientId = "OdsfeU9MvAcYGxK0Vd8TAlta9XAprMxx"; 
@@ -586,7 +585,7 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
   }
 }
 
-// ---------------- REGISTER SCREEN (No Change) ---------------- //
+// ---------------- REGISTER SCREEN (Helper Registration Button Added) ---------------- //
 class RegisterScreen extends StatefulWidget {
   RegisterScreen({super.key}); 
   @override
@@ -663,6 +662,63 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
 
+  // 🟢 NEW FUNCTION: Register User as Helper (Temporary Test)
+  Future<void> _registerHelper() async {
+      // Check: Ensure user is logged in/registered (tempAuth.user must be set)
+      if (tempAuth.user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please register/login first."), backgroundColor: Colors.red)
+        );
+        return;
+      }
+
+      setState(() => isLoading = true);
+      String? error;
+      
+      // Hardcoded dummy values for testing the API
+      final helperPayload = {
+        'userId': tempAuth.userId, 
+        'name': tempAuth.user?.name ?? name.text.trim(), 
+        'skill': "Electrician", 
+        'price': 500,           
+        'latitude': 19.0760,    // Mumbai Location
+        'longitude': 72.8777,
+      };
+
+      try {
+          final response = await http.post(
+            Uri.parse('$mongoApiBase/helpers/register'), 
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode(helperPayload),
+          ).timeout(const Duration(seconds: 30));
+
+          if (response.statusCode == 200 || response.statusCode == 201) { 
+             if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Successfully registered as a Helper! Check Home tab."), backgroundColor: Colors.green)
+                );
+             }
+             return; 
+          } else {
+             final errorData = json.decode(response.body);
+             error = errorData['message'] ?? 'Helper registration failed. Status: ${response.statusCode}';
+          }
+      } catch (e) {
+          error = 'Network error during Helper Registration.';
+          print('Helper Registration Error: $e');
+      }
+
+      if (mounted) {
+        setState(() => isLoading = false);
+        if (error != null) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(content: Text(error!), backgroundColor: Colors.red)
+           );
+        }
+      }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -701,6 +757,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text("Register & Send OTP"),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+              // 🟢 NEW HELPER REGISTRATION BUTTON (Temporary for testing)
+              SizedBox(
+                height: 50,
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isLoading ? null : _registerHelper,
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                  child: isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("TEMPORARY: REGISTER ME AS A HELPER", style: TextStyle(color: Colors.white)),
                 ),
               ),
             ],
@@ -842,7 +912,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   }
 }
 
-// ------------------ 🟢 HOME SCREEN (API READY with Uri.https FIX) ------------------
+// ------------------ 🟢 HOME SCREEN (Uri.https FIX Applied) ------------------
 class HomePage extends StatefulWidget {
   HomePage({super.key}); 
   @override
@@ -880,42 +950,35 @@ class _HomePageState extends State<HomePage> {
     setState(() => loading = true);
     String? error;
     
-    // 🌟 FINAL FIX: Uri.parse ki jagah Uri.https use kiya URL encoding issue ko theek karne ke liye
+    // FINAL FIX: Uri.https use kiya URL encoding issue ko theek karne ke liye
     final uri = Uri.https(
-        'quick-helper-backend.onrender.com', // Base host (no https://)
-        'api/helpers/list'                   // Correct path (starting with /)
+        'quick-helper-backend.onrender.com', 
+        'api/helpers/list'                  
     ); 
 
     try {
-      // NOTE: Server 200 return kar raha hai, par body empty array [] ho sakti hai
       final response = await http.get(uri).timeout(const Duration(seconds: 30)); 
 
       if (response.statusCode == 200) {
         // SUCCESS
         final responseData = json.decode(response.body);
         
-        // Agar server empty array [] bhejta hai, toh yeh List<dynamic> banega
         if (responseData is List) {
            helpers = responseData.map((h) => h as Map<String, dynamic>).toList(); 
         } else {
-           // Agar koi aur format aaya toh fallback use karo
            error = 'Invalid data format from server. Using fallback.';
            helpers = fallbackHelpers;
         }
 
       } else {
-        // FAILURE: Server se status code mila par data nahi -> Fallback use karo
         error = 'Server Error (${response.statusCode}): Failed to load helpers. Using fallback data.';
         helpers = fallbackHelpers; 
       }
 
     } on TimeoutException {
-      // CONNECTION TIMEOUT -> Fallback use karo
       error = 'Network Timeout: Server took too long to respond. Using fallback data.';
       helpers = fallbackHelpers; 
     } catch (e) {
-      // GENERAL CONNECTION ERROR (e.g., DNS/Host Unreachable) -> Fallback use karo
-      // Ye error abhi bhi aa sakta hai agar DNS resolve nahi hota
       error = 'Connection Error: Could not reach the API server. Using fallback data.';
       print('Helper List API Error: $e');
       helpers = fallbackHelpers; 
