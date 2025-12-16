@@ -1,4 +1,4 @@
-// lib/main.dart (FINAL CODE: 30 Second Timeout Added)
+// lib/main.dart (FINAL CODE: Uri.https Fix Applied in _loadHelpers())
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart'; 
@@ -10,12 +10,12 @@ import 'package:http/http.dart' as http;
 // 🟢 MAP IMPORTS
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'; 
 import 'package:permission_handler/permission_handler.dart'; // Run-time Permission
-// 🟢 FIX: Geolocator ko 'Geo' alias se import karna taaki Position/Geolocator conflict na ho
 import 'package:geolocator/geolocator.dart' as Geo; 
 
 // -----------------------------------------------------------------------------
 // GLOBAL CONFIGURATION
 // -----------------------------------------------------------------------------
+// Note: Isko abhi bhi rakhenge, lekin niche Uri.https mein hum hardcode karenge
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api"; 
 const String auth0Domain = "adil888.us.auth0.com"; 
 const String auth0ClientId = "OdsfeU9MvAcYGxK0Vd8TAlta9XAprMxx"; 
@@ -25,7 +25,7 @@ const String auth0RedirectUri = "com.quickhelper.app://adil888.us.auth0.com/andr
 final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
 
 // -----------------------------------------------------------------------------
-// DUMMY STATE MANAGEMENT 
+// DUMMY STATE MANAGEMENT (No Change)
 // -----------------------------------------------------------------------------
 class AppUserProfile {
   final String name;
@@ -62,12 +62,10 @@ class UserAuth {
 final UserAuth tempAuth = UserAuth();
 
 // -----------------------------------------------------------------------------
-// MAIN ENTRY & APP THEME (FIXED: Token + Initialization)
+// MAIN ENTRY & APP THEME (No Change)
 // -----------------------------------------------------------------------------
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // FIX 1: Mapbox Token load
   String accessToken = const String.fromEnvironment('ACCESS_TOKEN');
   
   if (accessToken.isNotEmpty) {
@@ -101,7 +99,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// ---------------- 🟢 AUTH GATE ---------------- //
+// ---------------- 🟢 AUTH GATE (No Change) ---------------- //
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -213,9 +211,9 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
   }
 }
 
-// ----------------- 🟢 MAIN NAVIGATOR (Finalized Const Fix) ----------------- //
+// ----------------- 🟢 MAIN NAVIGATOR (No Change) ----------------- //
 class MainNavigator extends StatelessWidget {
-  MainNavigator({super.key});
+  MainNavigator({super.key}); 
 
   @override
   Widget build(BuildContext context) {
@@ -225,11 +223,11 @@ class MainNavigator extends StatelessWidget {
         body: TabBarView(
           physics: const NeverScrollableScrollPhysics(), 
           children: [
-            HomePage(),  // CONST REMOVED
-            MapViewScreen(), // CONST REMOVED
+            HomePage(), 
+            MapViewScreen(), 
             const Center(child: Text("Bookings Screen")), 
             const Center(child: Text("Chat Screen")), 
-            AccountScreen(), // CONST REMOVED
+            AccountScreen(), 
           ],
         ),
         bottomNavigationBar: Container(
@@ -244,10 +242,10 @@ class MainNavigator extends StatelessWidget {
             indicatorColor: Colors.indigo,
             tabs: [
               Tab(icon: Icon(Icons.home), text: "Home"),
-              Tab(icon: Icon(Icons.map), text: "Map"), // Tab 1
-              Tab(icon: Icon(Icons.receipt), text: "Bookings"), // Tab 2
-              Tab(icon: Icon(Icons.chat), text: "Chat"), // Tab 3
-              Tab(icon: Icon(Icons.person), text: "Account"), // Tab 4
+              Tab(icon: Icon(Icons.map), text: "Map"), 
+              Tab(icon: Icon(Icons.receipt), text: "Bookings"), 
+              Tab(icon: Icon(Icons.chat), text: "Chat"), 
+              Tab(icon: Icon(Icons.person), text: "Account"), 
             ],
           ),
         ),
@@ -256,9 +254,9 @@ class MainNavigator extends StatelessWidget {
   }
 }
 
-// ---------------- ACCOUNT SCREEN (Const Removed) ---------------- //
+// ---------------- ACCOUNT SCREEN (No Change) ---------------- //
 class AccountScreen extends StatelessWidget {
-  AccountScreen({super.key}); // FIX: const removed
+  AccountScreen({super.key}); 
 
   @override
   Widget build(BuildContext context) {
@@ -287,7 +285,7 @@ class AccountScreen extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// 🟢 MAP VIEW SCREEN (ALL LOCATION AND API FIXES APPLIED)
+// 🟢 MAP VIEW SCREEN (No Change)
 // -----------------------------------------------------------------------------
 class MapViewScreen extends StatefulWidget {
   const MapViewScreen({super.key});
@@ -302,7 +300,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
   
   bool _isLocationPermissionGranted = false; 
   StreamSubscription<Geo.Position>? _positionStreamSubscription;
-  bool isFirstUpdate = true; // Sirf pehli baar center/flyTo use karenge
+  bool isFirstUpdate = true; 
 
 
   @override
@@ -313,21 +311,19 @@ class _MapViewScreenState extends State<MapViewScreen> {
   
   @override
   void dispose() {
-    _positionStreamSubscription?.cancel(); // Stream ko dispose karna
+    _positionStreamSubscription?.cancel(); 
     super.dispose();
   }
 
 
-  // FIX 2: Location Permission check
+  // Location Permission check
   Future<void> _checkAndRequestLocationPermission() async {
-    // Permission Handler se request
     final status = await Permission.locationWhenInUse.request();
 
     if (status.isGranted) {
       setState(() {
         _isLocationPermissionGranted = true;
       });
-      // Permission milte hi stream shuru karni chahiye
       if (mapboxMap != null) {
         _startListeningToLocationUpdates();
       }
@@ -340,35 +336,29 @@ class _MapViewScreenState extends State<MapViewScreen> {
   }
 
 
-  // 🌟 FIX 4: Map ko Current Location par Center karna (Geolocator stream se)
+  // Map ko Current Location par Center karna (Geolocator stream se)
   void _startListeningToLocationUpdates() {
       if (mapboxMap == null) return;
       
-      // Stop previous listener if any
       _positionStreamSubscription?.cancel();
 
-      // Location request settings (Geolocator use karke)
       final locationSettings = Geo.LocationSettings(
-          accuracy: Geo.LocationAccuracy.high, // FIX: LocationAccuracy par Geo. prefix
-          distanceFilter: 1, // Har 1 meter pe update
+          accuracy: Geo.LocationAccuracy.high, 
+          distanceFilter: 1, 
       );
       
-      isFirstUpdate = true; // Har baar stream start hone par centering reset
+      isFirstUpdate = true; 
 
-      // Stream start karo
       _positionStreamSubscription = Geo.Geolocator.getPositionStream(locationSettings: locationSettings)
           .listen((Geo.Position position) {
         
-        // 🟢 FIX 1: Location Puck ko forcefully update/re-enable karo har update par
         mapboxMap!.location.updateSettings(
             LocationComponentSettings(
               enabled: true, 
-              pulsingEnabled: false, // Stable dot
-              // locationPuck ko yahan se HATA diya taaki default puck render ho
+              pulsingEnabled: false, 
             )
         );
 
-        // Camera ko naye location par move karo
         if (isFirstUpdate) {
             mapboxMap!.flyTo(
                 CameraOptions(
@@ -378,39 +368,36 @@ class _MapViewScreenState extends State<MapViewScreen> {
                 ),
                 MapAnimationOptions(duration: 500), 
             );
-            isFirstUpdate = false; // Next time flyTo nahi chalega
+            isFirstUpdate = false; 
         }
       });
   }
 
 
-  // 🌟 FINAL FIX: Mapbox Location Puck Enable aur Centering call
+  // Mapbox Location Puck Enable aur Centering call
   void _onMapCreated(MapboxMap mapboxMap) async {
     this.mapboxMap = mapboxMap;
     annotationManager = await mapboxMap.annotations.createPointAnnotationManager();
 
     if (_isLocationPermissionGranted) {
-        // 🟢 FIX 3: Location Puck ON karna (Yahan initial settings set karenge)
         await mapboxMap.location.updateSettings(
             LocationComponentSettings(
               enabled: true, 
               pulsingEnabled: false, 
-              // locationPuck ko yahan se HATA diya taaki default puck render ho
             )
         );
         
-        // Geoloactor stream shuru karna
         _startListeningToLocationUpdates(); 
     }
     
-    // Helper 1 - Ramesh Plumber
+    // Helper 1 - Ramesh Plumber (Dummy Annotation)
     var options1 = PointAnnotationOptions(
       geometry: Point(coordinates: Position(72.87, 19.07)),
       textField: "Ramesh - Plumber",
     );
     await annotationManager?.create(options1);
 
-    // Helper 2 - Suresh Electrician
+    // Helper 2 - Suresh Electrician (Dummy Annotation)
     var options2 = PointAnnotationOptions(
       geometry: Point(coordinates: Position(72.85, 19.09)),
       textField: "Suresh - Electrician",
@@ -420,7 +407,6 @@ class _MapViewScreenState extends State<MapViewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Permission check hone tak loading/Permission UI dikhana
     if (!_isLocationPermissionGranted) {
       return Scaffold(
         appBar: AppBar(title: const Text("Location Required")),
@@ -447,13 +433,11 @@ class _MapViewScreenState extends State<MapViewScreen> {
       );
     }
     
-    // Permission milne par Map dikhana
     return Scaffold(
       appBar: AppBar(title: const Text("Nearby Helpers (MapBox)")),
       body: MapWidget(
         key: GlobalKey(),
         styleUri: MapboxStyles.MAPBOX_STREETS, 
-        // Initial fallback coordinates (ye code se override ho jayega)
         cameraOptions: CameraOptions(
           center: Point(coordinates: Position(72.8777, 19.0760)), 
           zoom: 12.0,
@@ -465,7 +449,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
 }
 
 // -----------------------------------------------------------------------------
-// MODIFIED: CUSTOM LOGIN SCREEN (API LOGIN FIX)
+// CUSTOM LOGIN SCREEN (No Change)
 // -----------------------------------------------------------------------------
 class CustomLoginScreen extends StatefulWidget {
   const CustomLoginScreen({super.key});
@@ -479,13 +463,13 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
   final _formKey = GlobalKey<FormState>();
 
 
-  // MODIFIED: API Login Call (Functional)
+  // API Login Call (Functional)
   Future<void> loginUser() async {
     if (!_formKey.currentState!.validate()) {
         return; 
     }
     
-    setState(() => isLoading = true); // Loading state chalu karna
+    setState(() => isLoading = true); 
     String? error;
 
     final loginPayload = {
@@ -493,7 +477,6 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
         'password': password.text,
     };
     
-    // API Endpoint: Auth ke liye aapka endpoint
     final uri = Uri.parse('$mongoApiBase/auth/login'); 
     
     try {
@@ -501,15 +484,13 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
             uri,
             headers: {'Content-Type': 'application/json'},
             body: json.encode(loginPayload),
-        ).timeout(const Duration(seconds: 30)); // FIX: Timeout added
+        ).timeout(const Duration(seconds: 30)); 
 
         if (response.statusCode == 200) {
-            // SUCCESS: Token aur User ID receive karna
             final responseData = json.decode(response.body);
             final token = responseData['token'];
             final user = responseData['user']; 
             
-            // Token save karna aur Main app mein navigate karna
             tempAuth.setUser(
               AppUserProfile(name: user['name'] ?? 'Local User', sub: user['id'] ?? user['email']), 
               token: token
@@ -521,15 +502,13 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
                    (Route<dynamic> route) => false
                  );
             }
-            return; // Success hone par return
+            return; 
         } else {
-            // FAILURE: Server se galti aane par
             final errorData = json.decode(response.body);
             error = errorData['message'] ?? 'Login failed. Please check your credentials.';
         }
 
     } catch (e) {
-        // NETWORK/CONNECTION ERROR: Server tak na pahunchne par ya Timeout
         if (e is TimeoutException) {
           error = 'Network Timeout: Server took too long to respond. Please try again.';
         } else {
@@ -538,7 +517,6 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
         print('Login API Error: $e');
     } 
 
-    // Error handling aur Loading state band karna
     if (mounted) {
       setState(() => isLoading = false);
       if (error != null) {
@@ -555,7 +533,7 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text("Custom Login")),
       body: Form(
-        key: _formKey, // Form key add kiya
+        key: _formKey, 
         child: Padding(
           padding: const EdgeInsets.all(28.0),
           child: Column(
@@ -565,13 +543,13 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.indigo)),
               const SizedBox(height: 40),
   
-              TextFormField( // TextFormField use kiya for validation
+              TextFormField( 
                 controller: email,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(labelText: "Email"),
                 validator: (value) => value!.isEmpty ? 'Email cannot be empty' : null,
               ),
-              TextFormField( // TextFormField use kiya for validation
+              TextFormField( 
                 controller: password,
                 obscureText: true,
                 decoration: const InputDecoration(labelText: "Password"),
@@ -593,11 +571,8 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
                 ),
               ),
               
-              // Error message field hata diya, SnackBar use hoga
-              
               TextButton(
                 onPressed: () {
-                  // FIX: const removed
                   Navigator.push(context,
                       MaterialPageRoute(builder: (_) => RegisterScreen())); 
                 },
@@ -611,9 +586,9 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
   }
 }
 
-// ---------------- REGISTER SCREEN (Const Removed) ---------------- //
+// ---------------- REGISTER SCREEN (No Change) ---------------- //
 class RegisterScreen extends StatefulWidget {
-  RegisterScreen({super.key}); // FIX: const removed
+  RegisterScreen({super.key}); 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
@@ -624,7 +599,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool isLoading = false;
   final _formKey = GlobalKey<FormState>();
   
-  // MODIFIED: Start OTP Registration Process (API Ready)
+  // Start OTP Registration Process (API Ready)
   Future<void> registerUserStartOTP() async {
     if (!_formKey.currentState!.validate()) {
         return; 
@@ -645,7 +620,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Uri.parse('$mongoApiBase/auth/register-otp'), 
         headers: {'Content-Type': 'application/json'},
         body: json.encode(payload),
-      ).timeout(const Duration(seconds: 30)); // FIX: Timeout added
+      ).timeout(const Duration(seconds: 30)); 
 
       if (response.statusCode == 200 || response.statusCode == 201) { 
         if (mounted) {
@@ -653,16 +628,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SnackBar(content: Text("OTP sent to your email. Please verify."), backgroundColor: Colors.indigo)
           );
           // SUCCESS: Navigate to OTP Verification Screen
-          // FIX: OTPVerificationScreen se const hata diya
           Navigator.pushReplacement(context, MaterialPageRoute(
             builder: (_) => OTPVerificationScreen(
               name: name.text, 
               email: email.text, 
               password: password.text,
-              isRegistration: true, // Registration flow hai
+              isRegistration: true, 
             )
           ));
-          return; // Success hone par return
+          return; 
         }
       } else {
          // FAILURE: Agar user already exist karta hai ya server error hai
@@ -670,7 +644,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
          error = errorData['message'] ?? 'Registration failed. Server error: ${response.statusCode}';
       }
     } catch (e) {
-      // NETWORK/CONNECTION ERROR: Server tak na pahunchne par ya Timeout
       if (e is TimeoutException) {
           error = 'Network Timeout: Server took too long to respond. Please try again.';
       } else {
@@ -695,23 +668,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text("Register (OTP Required)")),
       body: Form(
-        key: _formKey, // Form key add kiya
+        key: _formKey, 
         child: Padding(
           padding: const EdgeInsets.all(28.0),
           child: Column(
             children: [
-              TextFormField( // TextFormField use kiya for validation
+              TextFormField( 
                 controller: name,
                 decoration: const InputDecoration(labelText: "Full Name"),
                 validator: (value) => value!.isEmpty ? 'Name cannot be empty' : null,
               ),
-              TextFormField( // TextFormField use kiya for validation
+              TextFormField( 
                 controller: email,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(labelText: "Email"),
                 validator: (value) => value!.isEmpty ? 'Email cannot be empty' : null,
               ),
-              TextFormField( // TextFormField use kiya for validation
+              TextFormField( 
                 controller: password,
                 obscureText: true,
                 decoration: const InputDecoration(labelText: "Password (min 6 chars)"),
@@ -730,7 +703,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       : const Text("Register & Send OTP"),
                 ),
               ),
-              // Error message field hata diya, SnackBar use hoga
             ],
           ),
         ),
@@ -739,7 +711,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
-// ---------------- NEW: OTP VERIFICATION SCREEN (Const Fix) ---------------- //
+// ---------------- NEW: OTP VERIFICATION SCREEN (No Change) ---------------- //
 class OTPVerificationScreen extends StatefulWidget {
   final String email;
   final String name;
@@ -763,7 +735,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   final _formKey = GlobalKey<FormState>();
 
 
-  // MODIFIED: Verify OTP (Functional)
+  // Verify OTP (Functional)
   Future<void> verifyOTP() async {
     if (!_formKey.currentState!.validate()) {
       return; 
@@ -774,7 +746,6 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     final verifyPayload = {
       'email': widget.email, 
       'otp': otp.text,
-      // Registration ke case mein name aur password bhi bhejenge
       'name': widget.isRegistration ? widget.name : null, 
       'password': widget.isRegistration ? widget.password : null,
     };
@@ -786,15 +757,13 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         uri, 
         headers: {'Content-Type': 'application/json'},
         body: json.encode(verifyPayload),
-      ).timeout(const Duration(seconds: 30)); // FIX: Timeout added
+      ).timeout(const Duration(seconds: 30)); 
 
       if (response.statusCode == 200) {
-        // SUCCESS: Verification Done, Token aur User ID mil gaye
         final data = json.decode(response.body);
         final token = data['token'];
         final user = data['user']; 
         
-        // Token save karna aur UserAuth state update karna
         tempAuth.setUser(
           AppUserProfile(name: user['name'] ?? widget.name, sub: user['id'] ?? widget.email), 
           token: token
@@ -804,17 +773,14 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
            ScaffoldMessenger.of(context).showSnackBar(
              const SnackBar(content: Text("Verification successful! Logging in..."), backgroundColor: Colors.green)
            );
-           // Navigate to Main App
            Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => MainNavigator()));
-           return; // Success hone par return
+           return; 
         }
       } else {
-         // FAILURE: OTP galat hai ya server error hai
          final errorData = json.decode(response.body);
          error = errorData['message'] ?? 'OTP verification failed. Status: ${response.statusCode}';
       }
     } catch (e) {
-      // NETWORK/CONNECTION ERROR: Server tak na pahunchne par ya Timeout
       if (e is TimeoutException) {
           error = 'Network Timeout: Server took too long to respond. Please try again.';
       } else {
@@ -839,7 +805,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text("Verify OTP")),
       body: Form(
-        key: _formKey, // Form key add kiya
+        key: _formKey, 
         child: Padding(
           padding: const EdgeInsets.all(28.0),
           child: Column(
@@ -849,7 +815,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 18, color: Colors.indigo)),
               const SizedBox(height: 20),
-              TextFormField( // TextFormField use kiya for validation
+              TextFormField( 
                 controller: otp,
                 keyboardType: TextInputType.number,
                 maxLength: 6,
@@ -868,7 +834,6 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                       : const Text("Verify & Complete"),
                 ),
               ),
-              // Error message field hata diya, SnackBar use hoga
             ],
           ),
         ),
@@ -877,22 +842,29 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   }
 }
 
-// ------------------ 🟢 HOME SCREEN (API READY) ------------------
+// ------------------ 🟢 HOME SCREEN (API READY with Uri.https FIX) ------------------
 class HomePage extends StatefulWidget {
-  HomePage({super.key}); // FIX: const removed
+  HomePage({super.key}); 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  // Hardcoded list ko shuruat mein empty rakha
   List<Map<String, dynamic>> helpers = []; 
   bool loading = false; 
+
+  // Fallback data
+  List<Map<String, dynamic>> fallbackHelpers = [
+    {"name": "Ramesh", "skill": "Electrician", "price": 450, "image": ""},
+    {"name": "Suresh", "skill": "Plumber", "price": 300, "image": ""},
+    {"name": "Anita", "skill": "Cleaner", "price": 250, "image": ""},
+    {"name": "Babu", "skill": "Carpenter", "price": 600, "image": ""},
+  ];
+
 
   @override
   void initState() {
     super.initState();
-    // FIX: Page load hote hi helpers ko load karna
     _loadHelpers(); 
   }
 
@@ -903,49 +875,57 @@ class _HomePageState extends State<HomePage> {
     print('Filtered by: $category');
   }
 
-  // MODIFIED: Fetch helpers from the backend API
+  // MODIFIED: Fetch helpers from the backend API with Uri.https FIX
   Future<void> _loadHelpers() async {
     setState(() => loading = true);
     String? error;
     
-    final uri = Uri.parse('$mongoApiBase/helpers/list'); 
+    // 🌟 FINAL FIX: Uri.parse ki jagah Uri.https use kiya URL encoding issue ko theek karne ke liye
+    final uri = Uri.https(
+        'quick-helper-backend.onrender.com', // Base host (no https://)
+        'api/helpers/list'                   // Correct path (starting with /)
+    ); 
 
     try {
-      final response = await http.get(uri).timeout(const Duration(seconds: 30)); // FIX: Timeout added
+      // NOTE: Server 200 return kar raha hai, par body empty array [] ho sakti hai
+      final response = await http.get(uri).timeout(const Duration(seconds: 30)); 
 
       if (response.statusCode == 200) {
-        // SUCCESS: List of helpers received
+        // SUCCESS
         final responseData = json.decode(response.body);
         
-        // Assuming backend sends a list under the key 'helpers'
-        List<dynamic> fetchedHelpers = responseData['helpers'] ?? []; 
-        
-        // Hardcoded list ko replace kar diya
-        helpers = fetchedHelpers.map((h) => h as Map<String, dynamic>).toList(); 
-        
+        // Agar server empty array [] bhejta hai, toh yeh List<dynamic> banega
+        if (responseData is List) {
+           helpers = responseData.map((h) => h as Map<String, dynamic>).toList(); 
+        } else {
+           // Agar koi aur format aaya toh fallback use karo
+           error = 'Invalid data format from server. Using fallback.';
+           helpers = fallbackHelpers;
+        }
+
       } else {
-        // FAILURE: Server se galti aayi (e.g., list empty hai)
-        final errorData = json.decode(response.body);
-        error = errorData['message'] ?? 'Failed to load helpers. Status: ${response.statusCode}';
-        helpers = [];
+        // FAILURE: Server se status code mila par data nahi -> Fallback use karo
+        error = 'Server Error (${response.statusCode}): Failed to load helpers. Using fallback data.';
+        helpers = fallbackHelpers; 
       }
 
+    } on TimeoutException {
+      // CONNECTION TIMEOUT -> Fallback use karo
+      error = 'Network Timeout: Server took too long to respond. Using fallback data.';
+      helpers = fallbackHelpers; 
     } catch (e) {
-      // NETWORK/CONNECTION ERROR: Server tak pahunch nahi paaya
-      if (e is TimeoutException) {
-          error = 'Network Timeout: Server took too long to respond. Please try again.';
-      } else {
-          error = 'Error: Could not connect to the helper service API.';
-      }
+      // GENERAL CONNECTION ERROR (e.g., DNS/Host Unreachable) -> Fallback use karo
+      // Ye error abhi bhi aa sakta hai agar DNS resolve nahi hota
+      error = 'Connection Error: Could not reach the API server. Using fallback data.';
       print('Helper List API Error: $e');
-      helpers = [];
+      helpers = fallbackHelpers; 
     } 
 
     if (mounted) {
       setState(() => loading = false);
       if (error != null) {
          ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(content: Text(error!), backgroundColor: Colors.red)
+           SnackBar(content: Text(error!), backgroundColor: Colors.orange) 
          );
       }
     }
@@ -1111,7 +1091,7 @@ class _HomePageState extends State<HomePage> {
                     )
                   : ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.network(imgUrl, fit: BoxFit.cover),
+                      child: Image.network(imgUrl, height: 200, width: double.infinity, fit: BoxFit.cover),
                     ),
             ),
             const SizedBox(height: 8),
@@ -1129,7 +1109,7 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// ------------------ 🟢 BOOKING SCREEN ------------------
+// ------------------ 🟢 BOOKING SCREEN (No Change) ------------------
 class BookingScreen extends StatefulWidget {
   final String helperName;
   final String helperSkill;
@@ -1161,7 +1141,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
   double get totalCost => estimatedHours * widget.price * 1.2; 
   
-  // 🌟 FINAL FIX: Real API Call structure for booking
+  // Real API Call structure for booking
   Future<void> _createBooking() async {
     setState(() => isCreatingBooking = true);
     String? error;
@@ -1173,7 +1153,6 @@ class _BookingScreenState extends State<BookingScreen> {
         'bookingDate': selectedDate.toIso8601String(),
         'estimatedHours': estimatedHours.toStringAsFixed(1),
         'totalCost': totalCost.toStringAsFixed(0),
-        // NOTE: Yahan par customer ki current location bhi bhej sakte hain (Geolocator se lekar)
     };
     
     // 1. API Endpoint
@@ -1184,11 +1163,10 @@ class _BookingScreenState extends State<BookingScreen> {
             uri,
             headers: {
                 'Content-Type': 'application/json',
-                // Auth Token bhejna mandatory hai
                 'Authorization': 'Bearer ${tempAuth._token}', 
             },
             body: json.encode(bookingPayload),
-        ).timeout(const Duration(seconds: 30)); // FIX: Timeout added
+        ).timeout(const Duration(seconds: 30)); 
 
         if (response.statusCode == 200 || response.statusCode == 201) {
             // SUCCESS
@@ -1199,20 +1177,17 @@ class _BookingScreenState extends State<BookingScreen> {
                       backgroundColor: Colors.green,
                    )
                  );
-                 // Navigate to Bookings Tab/Home
                  Navigator.of(context).pushAndRemoveUntil(
                    MaterialPageRoute(builder: (context) => MainNavigator()), 
                    (Route<dynamic> route) => false
                  );
             }
         } else {
-            // FAILURE: Agar server se error (e.g., 400, 500) aaya
             final errorData = json.decode(response.body);
             error = errorData['message'] ?? 'Booking failed with status code ${response.statusCode}';
         }
 
     } catch (e) {
-        // NETWORK/CONNECTION ERROR
         if (e is TimeoutException) {
             error = 'Network Timeout: Server took too long to respond. Please try again.';
         } else {
@@ -1364,7 +1339,7 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 }
 
-// ------------------ 🟢 HELPER DETAIL PAGE ------------------
+// ------------------ 🟢 HELPER DETAIL PAGE (No Change) ------------------
 class HelperDetailPage extends StatelessWidget {
   final String helperName;
   final String helperSkill;
