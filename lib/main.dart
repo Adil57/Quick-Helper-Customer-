@@ -666,51 +666,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
 
-  // 🟢 NEW FUNCTION: Register User as Helper (Temporary Test)
+  // 🟢 UPDATED FUNCTION: Register User as Helper (BYPASS VERSION)
   Future<void> _registerHelper() async {
-      // Check: Ensure user is logged in/registered (tempAuth.user must be set)
-      if (tempAuth.user == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Please register/login first."), backgroundColor: Colors.red)
-        );
-        return;
-      }
+      // 🛑 LOGIN CHECK REMOVED: Testing ke liye login check bypass kiya
+      // Ab aap bina login kiye bhi button daba sakte ho.
 
       setState(() => isLoading = true);
       String? error;
       
-      // Hardcoded dummy values for testing the API
+      // Dummy values for testing the API
       final helperPayload = {
-        'userId': tempAuth.userId, 
-        'name': tempAuth.user?.name ?? name.text.trim(), 
+        // Agar user login nahi hai, toh ek dummy ID use karega
+        'userId': tempAuth.user?.sub ?? "DUMMY_TEST_USER_99", 
+        'name': name.text.isEmpty ? "Test Helper" : name.text.trim(), 
         'skill': "Electrician", 
         'price': 500,           
-        'latitude': 19.0760,    // Dummy Location (Mumbai)
+        'latitude': 19.0760,    // Mumbai Location
         'longitude': 72.8777,
       };
 
       try {
-          // 🌟 FINAL FIX 1: URL ko hardcode kiya
           final response = await http.post(
             Uri.parse('https://quick-helper-backend.onrender.com/api/helpers/register'), 
             headers: {'Content-Type': 'application/json'},
             body: json.encode(helperPayload),
-            // 🌟 FINAL FIX 2: Timeout ko 15s kiya
           ).timeout(const Duration(seconds: 15));
 
           if (response.statusCode == 200 || response.statusCode == 201) { 
              if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Successfully registered as a Helper! Check Home tab."), backgroundColor: Colors.green)
+                  const SnackBar(content: Text("SUCCESS! Saved in MongoDB Atlas."), backgroundColor: Colors.green)
                 );
              }
              return; 
           } else {
              final errorData = json.decode(response.body);
-             error = errorData['message'] ?? 'Helper registration failed. Status: ${response.statusCode}';
+             error = errorData['message'] ?? 'Status: ${response.statusCode}';
           }
       } catch (e) {
-          error = 'Network error during Helper Registration.';
+          error = 'Network error: Check if Server is awake.';
           print('Helper Registration Error: $e');
       }
 
@@ -957,7 +951,7 @@ class _HomePageState extends State<HomePage> {
     setState(() => loading = true);
     String? error;
     
-    // 🌟 FINAL FIX 1: Uri.https use kiya (URL Encoding Fix)
+     // 🌟 FINAL FIX 1: Uri.https use kiya (URL Encoding Fix)
     final uri = Uri.https(
         'quick-helper-backend.onrender.com', 
         'api/helpers/list'                  
