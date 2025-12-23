@@ -13,7 +13,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart' as Geo;
 
 // -----------------------------------------------------------------------------
-// GLOBAL CONFIGURATION (UPDATED WITH NEW AUTH0 VALUES)
+// GLOBAL CONFIGURATION (LATEST AUTH0 VALUES)
 // -----------------------------------------------------------------------------
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api";
 const String auth0Domain = "quickhelper.us.auth0.com";
@@ -139,7 +139,7 @@ class AuthGate extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// LOGIN CHOICE SCREEN (WITH LATEST AUTH0 FIX)
+// LOGIN CHOICE SCREEN (WITH LATEST LOGIN FIX)
 // -----------------------------------------------------------------------------
 class LoginChoiceScreen extends StatefulWidget {
   const LoginChoiceScreen({super.key});
@@ -158,13 +158,15 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
       isLoading = true;
     });
     try {
-      // 🌟 FIX: Scheme ko hardcode kar diya taaki mismatch na ho
+      // 🌟 FIX: Scheme ko direct string mein likho, dynamic split mat karo
       final result = await auth0
           .webAuthentication(scheme: 'com.quickhelper.app')
           .login();
 
+      print("Auth0 Success: ${result.user.name}");
+
       if (mounted) {
-        // 🌟 FIX: 'await' zaroori hai persistence ke liye
+        // 🌟 FIX: Isse pehle 'await' lagao taaki data save hone ke baad hi aage badhe
         await tempAuth.setUser(
           AppUserProfile(
             name: result.user.name ?? "User",
@@ -173,18 +175,20 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
           token: result.accessToken,
         );
 
+        // Redirect to Main App
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => MainNavigator())
+          MaterialPageRoute(builder: (_) => MainNavigator()),
         );
       }
-    } on Exception catch (e) {
+    } catch (e) {
+      print("Auth0 Error: $e");
       if (mounted) {
-        setState(() => _error = 'Login Failed: $e');
-        print('Auth0 Error: $e');
+        setState(() {
+          _error = 'Login failed. Please try again.';
+          isLoading = false;
+        });
       }
-    } finally {
-      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -302,7 +306,7 @@ class MainNavigator extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// ACCOUNT SCREEN (WITH HELPER REGISTRATION)
+// ACCOUNT SCREEN
 // -----------------------------------------------------------------------------
 class AccountScreen extends StatefulWidget {
   @override
