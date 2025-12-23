@@ -25,7 +25,7 @@ const String auth0RedirectUri = "com.quickhelper.app://adil888.us.auth0.com/andr
 final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
 
 // -----------------------------------------------------------------------------
-// DUMMY STATE MANAGEMENT (No Change)
+// DUMMY STATE MANAGEMENT (Updated: Token Getter Added)
 // -----------------------------------------------------------------------------
 class AppUserProfile {
   final String name;
@@ -40,6 +40,7 @@ class UserAuth {
   UserAuth() {}
 
   AppUserProfile? get user => _user;
+  String? get token => _token;
   bool get isAuthenticated => _user != null;
 
   void setUser(AppUserProfile? user, {String? token}) { 
@@ -254,30 +255,99 @@ class MainNavigator extends StatelessWidget {
   }
 }
 
-// ---------------- ACCOUNT SCREEN (No Change) ---------------- //
-class AccountScreen extends StatelessWidget {
-  AccountScreen({super.key}); 
+// ---------------- ACCOUNT SCREEN (Updated: Stateful with Helper Registration) ---------------- //
+class AccountScreen extends StatefulWidget {
+  @override
+  State<AccountScreen> createState() => _AccountScreenState();
+}
+
+class _AccountScreenState extends State<AccountScreen> {
+  bool isRegistering = false;
+
+  Future<void> _registerAsHelperFromAccount() async {
+    setState(() => isRegistering = true);
+    
+    // Yahan hum direct tempAuth se token aur userId le rahe hain
+    final String? token = tempAuth.token; 
+    final String? userId = tempAuth.userId;
+
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error: No Token Found!")));
+      setState(() => isRegistering = false);
+      return;
+    }
+
+    final helperPayload = {
+      'userId': userId,
+      'name': tempAuth.user?.name ?? "Logged In User",
+      'skill': "Electrician",
+      'price': 500,
+      'latitude': 19.0760,
+      'longitude': 72.8777,
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://quick-helper-backend.onrender.com/api/helpers/register'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // 🟢 Real Token use ho raha hai
+        },
+        body: json.encode(helperPayload),
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("SUCCESS! Helper Registered."), backgroundColor: Colors.green));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed: ${response.statusCode}"), backgroundColor: Colors.red));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Network Error!"), backgroundColor: Colors.red));
+    } finally {
+      setState(() => isRegistering = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("My Account")),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("Logged in as: ${tempAuth.user?.name ?? 'N/A'}"),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 50,
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => tempAuth.logout(context),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text("Logout", style: TextStyle(color: Colors.white)),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text("Logged in as: ${tempAuth.user?.name ?? 'N/A'}", style: const TextStyle(fontSize: 18)),
+              const SizedBox(height: 30),
+              
+              // 🟢 NEW ORANGE BUTTON
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: isRegistering ? null : _registerAsHelperFromAccount,
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                  child: isRegistering 
+                    ? const CircularProgressIndicator(color: Colors.white) 
+                    : const Text("REGISTER ME AS A HELPER", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
               ),
-            ),
-          ],
+              
+              const SizedBox(height: 15),
+              
+              // LOGOUT BUTTON
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () => tempAuth.logout(context),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  child: const Text("Logout", style: TextStyle(color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1247,7 +1317,7 @@ class _BookingScreenState extends State<BookingScreen> {
             uri,
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ${tempAuth._token}', 
+                'Authorization': 'Bearer ${tempAuth.token}', 
             },
             body: json.encode(bookingPayload),
         ).timeout(const Duration(seconds: 15)); // Timeout 15s
