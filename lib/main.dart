@@ -666,45 +666,65 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
 
-  // 🟢 UPDATED FUNCTION: Register User as Helper (BYPASS VERSION)
+  // 🟢 FIXED FUNCTION: Background Login + Helper Registration
   Future<void> _registerHelper() async {
-      // 🛑 LOGIN CHECK REMOVED: Testing ke liye login check bypass kiya
-      // Ab aap bina login kiye bhi button daba sakte ho.
-
       setState(() => isLoading = true);
       String? error;
       
-      // Dummy values for testing the API
-      final helperPayload = {
-        // Agar user login nahi hai, toh ek dummy ID use karega
-        'userId': tempAuth.user?.sub ?? "DUMMY_TEST_USER_99", 
-        'name': name.text.isEmpty ? "Test Helper" : name.text.trim(), 
-        'skill': "Electrician", 
-        'price': 500,           
-        'latitude': 19.0760,    // Mumbai Location
-        'longitude': 72.8777,
-      };
-
       try {
-          final response = await http.post(
-            Uri.parse('https://quick-helper-backend.onrender.com/api/helpers/register'), 
-            headers: {'Content-Type': 'application/json'},
-            body: json.encode(helperPayload),
-          ).timeout(const Duration(seconds: 15));
+          // 1. Pehle background mein ek valid user se login karo taaki Token mile
+          // 🛑 Yahan apna koi bhi purana registered email/password dal do
+          final loginPayload = {
+            'email': 'testuser@example.com', 
+            'password': 'password123'
+          };
 
-          if (response.statusCode == 200 || response.statusCode == 201) { 
-             if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("SUCCESS! Saved in MongoDB Atlas."), backgroundColor: Colors.green)
-                );
-             }
-             return; 
+          final loginResponse = await http.post(
+            Uri.parse('https://quick-helper-backend.onrender.com/api/auth/login'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode(loginPayload),
+          ).timeout(const Duration(seconds: 10));
+
+          if (loginResponse.statusCode == 200) {
+              final authData = json.decode(loginResponse.body);
+              final String token = authData['token'];
+              final String userId = authData['user']['id'];
+
+              // 2. Ab is Token ko use karke Helper register karo
+              final helperPayload = {
+                'userId': userId, 
+                'name': name.text.isEmpty ? "Test Helper" : name.text.trim(), 
+                'skill': "Electrician", 
+                'price': 500,           
+                'latitude': 19.0760,
+                'longitude': 72.8777,
+              };
+
+              final response = await http.post(
+                Uri.parse('https://quick-helper-backend.onrender.com/api/helpers/register'), 
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer $token', // 🟢 Token yahan bhej diya
+                },
+                body: json.encode(helperPayload),
+              ).timeout(const Duration(seconds: 15));
+
+              if (response.statusCode == 200 || response.statusCode == 201) { 
+                 if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("SUCCESS! Saved with Token."), backgroundColor: Colors.green)
+                    );
+                 }
+                 setState(() => isLoading = false);
+                 return; 
+              } else {
+                 error = 'Helper API Error: ${response.statusCode}';
+              }
           } else {
-             final errorData = json.decode(response.body);
-             error = errorData['message'] ?? 'Status: ${response.statusCode}';
+              error = "Auth Failed: Pehle ek manual account banao testing ke liye.";
           }
       } catch (e) {
-          error = 'Network error: Check if Server is awake.';
+          error = 'Network error: Server shayad so raha hai.';
           print('Helper Registration Error: $e');
       }
 
