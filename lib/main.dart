@@ -6,6 +6,7 @@ import 'package:auth0_flutter_platform_interface/auth0_flutter_platform_interfac
 import 'dart:async'; 
 import 'dart:convert';
 import 'package:http/http.dart' as http; 
+import 'package:shared_preferences/shared_preferences.dart';
 
 // 🟢 MAP IMPORTS
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'; 
@@ -25,7 +26,7 @@ const String auth0RedirectUri = "com.quickhelper.app://adil888.us.auth0.com/andr
 final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
 
 // -----------------------------------------------------------------------------
-// DUMMY STATE MANAGEMENT (Updated: Token Getter Added)
+// DUMMY STATE MANAGEMENT (Updated: SharedPreferences Integration)
 // -----------------------------------------------------------------------------
 class AppUserProfile {
   final String name;
@@ -40,16 +41,40 @@ class UserAuth {
   UserAuth() {}
 
   AppUserProfile? get user => _user;
-  String? get token => _token;
   bool get isAuthenticated => _user != null;
+  String? get token => _token; // Orange button ke liye token zaroori hai
+  String? get userId => _user?.sub;
 
-  void setUser(AppUserProfile? user, {String? token}) { 
+  // 🟢 Token aur User data save karne wala function
+  Future<void> setUser(AppUserProfile? user, {String? token}) async { 
     _user = user; 
     _token = token;
+
+    if (token != null && user != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('auth_token', token);
+      await prefs.setString('user_id', user.sub);
+      await prefs.setString('user_name', user.name);
+    }
   }
-  String? get userId => _user?.sub ?? "temp_user_id_001";
+
+  // 🟢 App khulne par purana data check karne wala function
+  Future<void> loadSavedAuth() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? savedToken = prefs.getString('auth_token');
+    final String? savedId = prefs.getString('user_id');
+    final String? savedName = prefs.getString('user_name');
+
+    if (savedToken != null && savedId != null && savedName != null) {
+      _token = savedToken;
+      _user = AppUserProfile(name: savedName, sub: savedId);
+    }
+  }
   
+  // 🟢 Logout par data memory se delete karne ke liye
   Future<void> logout(BuildContext context) async {
+     final prefs = await SharedPreferences.getInstance();
+     await prefs.clear(); // Yeh memory se sab uda dega
      _user = null;
      _token = null;
      if (context.mounted) {
@@ -63,12 +88,16 @@ class UserAuth {
 final UserAuth tempAuth = UserAuth();
 
 // -----------------------------------------------------------------------------
-// MAIN ENTRY & APP THEME (No Change)
+// MAIN ENTRY & APP THEME (Updated: Async with LoadSavedAuth)
 // -----------------------------------------------------------------------------
-void main() {
+void main() async {
+  // 🟢 Yeh line zaroori hai async calls ke liye
   WidgetsFlutterBinding.ensureInitialized();
-  String accessToken = const String.fromEnvironment('ACCESS_TOKEN');
   
+  // 🟢 Saved data load karo
+  await tempAuth.loadSavedAuth();
+
+  String accessToken = const String.fromEnvironment('ACCESS_TOKEN');
   if (accessToken.isNotEmpty) {
       MapboxOptions.setAccessToken(accessToken);
   } else {
@@ -114,7 +143,7 @@ class AuthGate extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// LOGIN CHOICE SCREEN (No Change)
+// LOGIN CHOICE SCREEN (Updated: Await setUser)
 // -----------------------------------------------------------------------------
 class LoginChoiceScreen extends StatefulWidget {
   const LoginChoiceScreen({super.key});
@@ -133,7 +162,7 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
       try {
         final result = await auth0.webAuthentication(scheme: auth0RedirectUri.split('://').first).login();
         if (mounted) {
-          tempAuth.setUser(AppUserProfile(name: result.user.name ?? "User", sub: result.user.sub ?? ""), token: result.accessToken); 
+          await tempAuth.setUser(AppUserProfile(name: result.user.name ?? "User", sub: result.user.sub ?? ""), token: result.accessToken); 
           Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => MainNavigator()));
         }
       } on Exception catch (e) {
@@ -519,7 +548,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
 }
 
 // -----------------------------------------------------------------------------
-// CUSTOM LOGIN SCREEN (No Change)
+// CUSTOM LOGIN SCREEN (Updated: Await setUser)
 // -----------------------------------------------------------------------------
 class CustomLoginScreen extends StatefulWidget {
   const CustomLoginScreen({super.key});
@@ -561,7 +590,7 @@ class _CustomLoginScreenState extends State<CustomLoginScreen> {
             final token = responseData['token'];
             final user = responseData['user']; 
             
-            tempAuth.setUser(
+            await tempAuth.setUser(
               AppUserProfile(name: user['name'] ?? 'Local User', sub: user['id'] ?? user['email']), 
               token: token
             );
@@ -871,7 +900,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
-// ---------------- NEW: OTP VERIFICATION SCREEN (No Change) ---------------- //
+// ---------------- NEW: OTP VERIFICATION SCREEN (Updated: Await setUser) ---------------- //
 class OTPVerificationScreen extends StatefulWidget {
   final String email;
   final String name;
@@ -925,7 +954,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         final token = data['token'];
         final user = data['user']; 
         
-        tempAuth.setUser(
+        await tempAuth.setUser(
           AppUserProfile(name: user['name'] ?? widget.name, sub: user['id'] ?? widget.email), 
           token: token
         );
@@ -1263,7 +1292,7 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// ------------------ 🟢 BOOKING SCREEN (No Change) ------------------
+// ------------------ 🟢 BOOKING SCREEN (Updated: Use token getter) ------------------
 class BookingScreen extends StatefulWidget {
   final String helperName;
   final String helperSkill;
