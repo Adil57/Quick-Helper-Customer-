@@ -1,4 +1,4 @@
-// lib/main.dart - PART 1/2 (FINAL WITH LATEST LOGIN FIX)
+// lib/main.dart - PART 1/2 (FINAL BABY FIX INCLUDED)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
@@ -13,7 +13,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart' as Geo;
 
 // -----------------------------------------------------------------------------
-// GLOBAL CONFIGURATION (LATEST AUTH0 VALUES)
+// GLOBAL CONFIGURATION
 // -----------------------------------------------------------------------------
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api";
 const String auth0Domain = "quickhelper.us.auth0.com";
@@ -139,7 +139,7 @@ class AuthGate extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// LOGIN CHOICE SCREEN (WITH LATEST FINAL LOGIN FIX)
+// LOGIN CHOICE SCREEN (BABY'S FINAL FIX)
 // -----------------------------------------------------------------------------
 class LoginChoiceScreen extends StatefulWidget {
   const LoginChoiceScreen({super.key});
@@ -155,19 +155,15 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
   Future<void> loginWithAuth0() async {
     setState(() {
       _error = null;
-      isLoading = true; // Button ko loading state mein daalo
+      isLoading = true;
     });
-    
     try {
-      // 🌟 Auth0 login start
+      // Scheme XML se exact match honi chahiye
       final result = await auth0
           .webAuthentication(scheme: 'com.quickhelper.app')
           .login();
 
-      print("Auth0 Success: ${result.user.name}");
-
       if (mounted) {
-        // Data save hone ka wait karo
         await tempAuth.setUser(
           AppUserProfile(
             name: result.user.name ?? "User",
@@ -176,26 +172,22 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
           token: result.accessToken,
         );
 
-        // Home screen par bhejo
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => MainNavigator()),
         );
       }
     } catch (e) {
-      print("Auth0 Error Details: $e");
+      // Console nahi hai toh screen par error dikhega
       if (mounted) {
         setState(() {
-          _error = 'Login cancel ya fail ho gaya. Dubara try karein.';
+          _error = "Redirection/Auth Error: ${e.toString()}";
         });
       }
     } finally {
-      // 🌟 YEH LINE SABSE ZAROORI HAI
-      // Login success ho ya fail, button ko wapas normal kar do
+      // Isse button 'Logging in...' se hat kar wapas normal ho jayega
       if (mounted) {
-        setState(() {
-          isLoading = false; 
-        });
+        setState(() => isLoading = false);
       }
     }
   }
