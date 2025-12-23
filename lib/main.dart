@@ -1,4 +1,4 @@
-// lib/main.dart - PART 1/2
+// lib/main.dart - PART 1/2 (FINAL WITH LATEST LOGIN FIX)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
@@ -139,7 +139,7 @@ class AuthGate extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// LOGIN CHOICE SCREEN (WITH LATEST LOGIN FIX)
+// LOGIN CHOICE SCREEN (WITH LATEST FINAL LOGIN FIX)
 // -----------------------------------------------------------------------------
 class LoginChoiceScreen extends StatefulWidget {
   const LoginChoiceScreen({super.key});
@@ -155,10 +155,11 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
   Future<void> loginWithAuth0() async {
     setState(() {
       _error = null;
-      isLoading = true;
+      isLoading = true; // Button ko loading state mein daalo
     });
+    
     try {
-      // 🌟 FIX: Scheme ko direct string mein likho, dynamic split mat karo
+      // 🌟 Auth0 login start
       final result = await auth0
           .webAuthentication(scheme: 'com.quickhelper.app')
           .login();
@@ -166,7 +167,7 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
       print("Auth0 Success: ${result.user.name}");
 
       if (mounted) {
-        // 🌟 FIX: Isse pehle 'await' lagao taaki data save hone ke baad hi aage badhe
+        // Data save hone ka wait karo
         await tempAuth.setUser(
           AppUserProfile(
             name: result.user.name ?? "User",
@@ -175,18 +176,25 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
           token: result.accessToken,
         );
 
-        // Redirect to Main App
+        // Home screen par bhejo
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => MainNavigator()),
         );
       }
     } catch (e) {
-      print("Auth0 Error: $e");
+      print("Auth0 Error Details: $e");
       if (mounted) {
         setState(() {
-          _error = 'Login failed. Please try again.';
-          isLoading = false;
+          _error = 'Login cancel ya fail ho gaya. Dubara try karein.';
+        });
+      }
+    } finally {
+      // 🌟 YEH LINE SABSE ZAROORI HAI
+      // Login success ho ya fail, button ko wapas normal kar do
+      if (mounted) {
+        setState(() {
+          isLoading = false; 
         });
       }
     }
