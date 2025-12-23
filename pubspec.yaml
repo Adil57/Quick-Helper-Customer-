@@ -12,13 +12,14 @@ dependencies:
   # 🟢 AUTH & API
   auth0_flutter: ^1.14.0 
   http: ^1.2.1 
+  shared_preferences: ^2.3.5 # 👈 Persistent login ke liye add kiya
   
   # 🟢 MAP SYSTEM (MapBox)
   mapbox_maps_flutter: ^2.17.0  
   
-  # 🟢 GPS/LOCATION FIX (Zaroori packages for runtime permission and coordinates)
-  permission_handler: ^11.3.1 # Run-time permission maangne ke liye
-  geolocator: ^11.0.0 # Actual GPS coordinates fetch karne ke liye
+  # 🟢 GPS/LOCATION FIX
+  permission_handler: ^11.3.1 
+  geolocator: ^11.0.0 
   
   # UI/Icons
   cupertino_icons: ^1.0.2
