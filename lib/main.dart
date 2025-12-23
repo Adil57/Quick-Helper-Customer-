@@ -1,4 +1,4 @@
-// lib/main.dart - PART 1/2 (Imports to HomePage)
+// lib/main.dart - PART 1/2
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
@@ -13,7 +13,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart' as Geo;
 
 // -----------------------------------------------------------------------------
-// GLOBAL CONFIG
+// GLOBAL CONFIGURATION (UPDATED WITH NEW AUTH0 VALUES)
 // -----------------------------------------------------------------------------
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api";
 const String auth0Domain = "quickhelper.us.auth0.com";
@@ -139,7 +139,7 @@ class AuthGate extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// LOGIN CHOICE SCREEN
+// LOGIN CHOICE SCREEN (WITH LATEST AUTH0 FIX)
 // -----------------------------------------------------------------------------
 class LoginChoiceScreen extends StatefulWidget {
   const LoginChoiceScreen({super.key});
@@ -158,20 +158,30 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
       isLoading = true;
     });
     try {
-      final result = await auth0.webAuthentication(scheme: auth0RedirectUri.split('://').first).login();
+      // 🌟 FIX: Scheme ko hardcode kar diya taaki mismatch na ho
+      final result = await auth0
+          .webAuthentication(scheme: 'com.quickhelper.app')
+          .login();
+
       if (mounted) {
+        // 🌟 FIX: 'await' zaroori hai persistence ke liye
         await tempAuth.setUser(
-          AppUserProfile(name: result.user.name ?? "User", sub: result.user.sub ?? ""),
+          AppUserProfile(
+            name: result.user.name ?? "User",
+            sub: result.user.sub ?? ""
+          ),
           token: result.accessToken,
         );
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => MainNavigator()));
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => MainNavigator())
+        );
       }
     } on Exception catch (e) {
       if (mounted) {
-        String message = 'Auth0 Login Failed. Check redirect URL in Auth0 Dashboard.';
-        setState(() => _error = message);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-        print('Auth0 Login Error: $e');
+        setState(() => _error = 'Login Failed: $e');
+        print('Auth0 Error: $e');
       }
     } finally {
       if (mounted) setState(() => isLoading = false);
@@ -292,7 +302,7 @@ class MainNavigator extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// ACCOUNT SCREEN
+// ACCOUNT SCREEN (WITH HELPER REGISTRATION)
 // -----------------------------------------------------------------------------
 class AccountScreen extends StatefulWidget {
   @override
@@ -479,7 +489,6 @@ class _MapViewScreenState extends State<MapViewScreen> {
       _startListeningToLocationUpdates();
     }
 
-    // Dummy Annotations
     var options1 = PointAnnotationOptions(
       geometry: Point(coordinates: Position(72.87, 19.07)),
       textField: "Ramesh - Plumber",
@@ -1237,7 +1246,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-// lib/main.dart - PART 2/2 (BookingScreen & HelperDetailPage)
+// lib/main.dart - PART 2/2
 
 // -----------------------------------------------------------------------------
 // BOOKING SCREEN
@@ -1506,7 +1515,7 @@ class HelperDetailPage extends StatelessWidget {
             Text("Rate: ₹$price / hour", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
             const SizedBox(height: 20),
             const Divider(),
-            const Text("About the Helper", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text("About the Helper", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             const Text(
               "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Rating, location, and review details will be loaded here.",
