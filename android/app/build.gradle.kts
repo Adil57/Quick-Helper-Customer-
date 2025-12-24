@@ -41,7 +41,7 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // FIX: Ensuring naye domain sync
+        // Direct Domain Sync
         manifestPlaceholders["auth0Domain"] = "quickhelper.us.auth0.com"
         manifestPlaceholders["auth0Scheme"] = "com.quickhelper.app"
 
