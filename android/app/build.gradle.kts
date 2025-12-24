@@ -41,13 +41,13 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        manifestPlaceholders["auth0Domain"] = "adil888.us.auth0.com"
+        // FIX: Domain ko naye domain 'quickhelper' se update kiya hai
+        manifestPlaceholders["auth0Domain"] = "quickhelper.us.auth0.com"
         manifestPlaceholders["auth0Scheme"] = "com.quickhelper.app"
 
         resValue(
             "string",
             "mapbox_access_token",
-            // === Token ko environment variable se uthaya ja raha hai (Mapbox fix) ===
             System.getenv("MAPBOX_ACCESS_TOKEN") ?: ""
         )
     }
