@@ -35,9 +35,9 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:host="${auth0Domain}"
-                    android:pathPrefix="/android/${applicationId}/callback"
-                    android:scheme="${auth0Scheme}" />
+                    android:host="quickhelper.us.auth0.com"
+                    android:pathPrefix="/android/com.example.quick_helper_customer/callback"
+                    android:scheme="com.quickhelper.app" />
             </intent-filter>
 
         </activity>
