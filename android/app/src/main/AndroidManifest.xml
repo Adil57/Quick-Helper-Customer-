@@ -35,8 +35,8 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:scheme="com.quickhelper.app"
-                    android:host="quickhelper.us.auth0.com"
+                    android:scheme="${auth0Scheme}"  <!-- Yeh placeholder use kar: build time pe "com.example.quick_helper_customer" inject hoga -->
+                    android:host="${auth0Domain}"
                     android:pathPrefix="/android/com.example.quick_helper_customer/callback" />
             </intent-filter>
 
