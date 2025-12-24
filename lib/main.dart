@@ -1,4 +1,4 @@
-// lib/main.dart - PART 1/2 (LATEST VERSION)
+// lib/main.dart - PART 1/2 (FINAL WITH GLOBAL REDIRECTURI & LOADER FIX)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
@@ -139,7 +139,7 @@ class AuthGate extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// LOGIN CHOICE SCREEN (LATEST FIX)
+// LOGIN CHOICE SCREEN (WITH GLOBAL REDIRECTURI & LOADER FIX)
 // -----------------------------------------------------------------------------
 class LoginChoiceScreen extends StatefulWidget {
   const LoginChoiceScreen({super.key});
@@ -155,13 +155,13 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
   Future<void> loginWithAuth0() async {
     setState(() {
       _error = null;
-      isLoading = true;
+      isLoading = true; // Screenshot mein yahi true reh jata hai
     });
     try {
-      // Scheme XML se exact match honi chahiye
+      // 1. Line 22 wala global variable hi use karo mismatch se bachne ke liye
       final result = await auth0
           .webAuthentication(scheme: 'com.quickhelper.app')
-          .login();
+          .login(redirectUrl: auth0RedirectUri); // Global variable use karein
 
       if (mounted) {
         await tempAuth.setUser(
@@ -172,22 +172,22 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
           token: result.accessToken,
         );
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => MainNavigator()),
-        );
+        if (context.mounted) {
+          // 2. Yahan loader band karke navigate karein
+          setState(() => isLoading = false); 
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => MainNavigator()),
+          );
+        }
       }
     } catch (e) {
-      // Console nahi hai toh screen par error dikhega
+      print("Auth0 Debug Error: $e");
       if (mounted) {
         setState(() {
-          _error = "Redirection/Auth Error: ${e.toString()}";
+          _error = "Login Error: ${e.toString()}";
+          isLoading = false; 
         });
-      }
-    } finally {
-      // Isse button 'Logging in...' se hat kar wapas normal ho jayega
-      if (mounted) {
-        setState(() => isLoading = false);
       }
     }
   }
