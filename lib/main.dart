@@ -18,7 +18,7 @@ import 'package:geolocator/geolocator.dart' as Geo;
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api";
 const String auth0Domain = "quickhelper.us.auth0.com";
 const String auth0ClientId = "pH7boW1NyTnQbDNQle67DWiNUWa32QZ6";
-const String auth0RedirectUri = "com.quickhelper.app://callback";
+const String auth0RedirectUri = "com.example.quick_helper_customer://quickhelper.us.auth0.com/android/com.example.quick_helper_customer/callback";
 
 final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
 
@@ -160,7 +160,7 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
     try {
       // 1. Line 22 wala global variable hi use karo mismatch se bachne ke liye
       final result = await auth0
-          .webAuthentication(scheme: 'com.quickhelper.app')
+          .webAuthentication(scheme: 'com.example.quick_helper_customer')
           .login(redirectUrl: auth0RedirectUri); // Global variable use karein
 
       if (mounted) {
