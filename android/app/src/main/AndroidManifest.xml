@@ -34,10 +34,8 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="com.quickhelper.app"
-                    android:host="quickhelper.us.auth0.com"
-                    android:pathPrefix="/android/com.example.quick_helper_customer/callback" />
+                
+                <data android:scheme="com.quickhelper.app" />
             </intent-filter>
 
         </activity>
