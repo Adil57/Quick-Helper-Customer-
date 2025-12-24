@@ -1,4 +1,4 @@
-// lib/main.dart - PART 1/2 (FINAL BABY FIX INCLUDED)
+// lib/main.dart - PART 1/2 (LATEST VERSION)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
@@ -139,7 +139,7 @@ class AuthGate extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// LOGIN CHOICE SCREEN (BABY'S FINAL FIX)
+// LOGIN CHOICE SCREEN (LATEST FIX)
 // -----------------------------------------------------------------------------
 class LoginChoiceScreen extends StatefulWidget {
   const LoginChoiceScreen({super.key});
