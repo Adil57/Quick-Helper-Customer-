@@ -41,12 +41,9 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // ---------------------------------------------------------------------
-        // AUTH0 CONFIGURATION (FIXED)
-        // ---------------------------------------------------------------------
-        // manifestPlaceholders humare main.dart aur XML se match hone chahiye
+        // RESET TO ORIGINAL PACKAGE NAME SCHEME
         manifestPlaceholders["auth0Domain"] = "quickhelper.us.auth0.com"
-        manifestPlaceholders["auth0Scheme"] = "com.quickhelper.app" 
+        manifestPlaceholders["auth0Scheme"] = "com.example.quick_helper_customer" 
 
         resValue(
             "string",
