@@ -43,7 +43,7 @@ android {
 
         // Direct Domain Sync
         manifestPlaceholders["auth0Domain"] = "quickhelper.us.auth0.com"
-        manifestPlaceholders["auth0Scheme"] = "com.quickhelper.app"
+        manifestPlaceholders["auth0Scheme"] = "com.example.quick_helper_customer"  // Yeh change kiya: actual package se match
 
         resValue(
             "string",
