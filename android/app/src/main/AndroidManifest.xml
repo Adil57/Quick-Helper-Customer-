@@ -14,7 +14,6 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:taskAffinity="" 
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
@@ -35,7 +34,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:scheme="com.quickhelper.app"
+                    android:scheme="com.example.quick_helper_customer"
                     android:host="quickhelper.us.auth0.com"
                     android:pathPrefix="/android/com.example.quick_helper_customer/callback" />
             </intent-filter>
