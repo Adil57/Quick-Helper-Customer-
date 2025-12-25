@@ -9,7 +9,7 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
-        
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -18,7 +18,7 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-            
+
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
@@ -29,13 +29,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
+            <!-- Auth0 Callback: Even more specific - query params ignore karne ke liye -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:host="quickhelper.us.auth0.com"
-                    android:pathPrefix="/android/com.example.quick_helper_customer/callback"
+                    android:path="/android/com.example.quick_helper_customer/callback"
                     android:scheme="quickhelper" />
             </intent-filter>
 
