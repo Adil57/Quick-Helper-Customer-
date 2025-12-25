@@ -29,7 +29,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!-- Package auto intent-filter add karega – manual mat daal -->
+            <!-- Koi manual callback intent-filter mat daal – package https App Links se handle karega -->
 
         </activity>
 
@@ -37,10 +37,8 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- Extra activities suppress for clean merge -->
-        <activity
-            android:name="com.auth0.android.provider.AuthenticationActivity"
-            tools:node="remove" />
+        <!-- AuthenticationActivity ko remove MAT kar – yeh zaroori hai login browser ke liye -->
+        <!-- RedirectActivity ko bhi remove mat kar -->
 
     </application>
 
