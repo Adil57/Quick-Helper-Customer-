@@ -33,10 +33,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="quickhelper"
-                    android:host="quickhelper.us.auth0.com"
-                    android:pathPrefix="/android/com.example.quick_helper_customer/callback" />
+                <data android:scheme="quickhelper" />
             </intent-filter>
 
         </activity>
@@ -53,8 +50,9 @@
             <data android:scheme="https" />
         </intent>
         <intent>
-            <action android:name="android.intent.action.PROCESS_TEXT"/>
-            <data android:mimeType="text/plain"/>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="quickhelper" />
         </intent>
     </queries>
 </manifest>
