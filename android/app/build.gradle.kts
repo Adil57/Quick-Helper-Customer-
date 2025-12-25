@@ -41,9 +41,10 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // RESET TO ORIGINAL PACKAGE NAME SCHEME
+        // --- HTTPS SCHEME UPDATE ---
         manifestPlaceholders["auth0Domain"] = "quickhelper.us.auth0.com"
-        manifestPlaceholders["auth0Scheme"] = "quickhelper" 
+        manifestPlaceholders["auth0Scheme"] = "https" // Yahan "https" hona zaruri hai
+        // ---------------------------
 
         resValue(
             "string",
