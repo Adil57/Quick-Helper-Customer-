@@ -29,11 +29,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <intent-filter>
+            <intent-filter android:label="filter_auth0">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="quickhelper" />
+                <data
+                    android:host="quickhelper.us.auth0.com"
+                    android:pathPrefix="/android/com.example.quick_helper_customer/callback"
+                    android:scheme="quickhelper" />
             </intent-filter>
 
         </activity>
