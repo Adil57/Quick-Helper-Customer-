@@ -1,4 +1,4 @@
-// lib/main.dart - PART 1/2 (LATEST CHANGE: NO SCHEME, SCOPES ADDED)
+// lib/main.dart - PART 1/2
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
@@ -13,12 +13,13 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart' as Geo;
 
 // -----------------------------------------------------------------------------
-// GLOBAL CONFIGURATION
+// GLOBAL CONFIGURATION (NEW HTTPS REDIRECT URI)
 // -----------------------------------------------------------------------------
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api";
 const String auth0Domain = "quickhelper.us.auth0.com";
 const String auth0ClientId = "pH7boW1NyTnQbDNQle67DWiNUWa32QZ6";
 const String auth0RedirectUri = "https://quickhelper.us.auth0.com/android/com.example.quick_helper_customer/callback";
+
 final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
 
 // -----------------------------------------------------------------------------
@@ -118,10 +119,6 @@ class MyApp extends StatelessWidget {
         ),
       ),
       home: const AuthGate(),
-      // Agar named routes use karna chahe toh yahan add kar sakta hai:
-      // routes: {
-      //   '/home': (context) => MainNavigator(),
-      // },
     );
   }
 }
@@ -142,7 +139,7 @@ class AuthGate extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// LOGIN CHOICE SCREEN (LATEST CHANGE: NO SCHEME, SCOPES ADDED)
+// LOGIN CHOICE SCREEN (LOGOUT BEFORE LOGIN + HTTPS URI)
 // -----------------------------------------------------------------------------
 class LoginChoiceScreen extends StatefulWidget {
   const LoginChoiceScreen({super.key});
@@ -161,12 +158,14 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
       isLoading = true;
     });
     try {
-      // Yeh line – scheme mat daal
+      // Pehle logout kar ke session clear kar
+      await auth0.webAuthentication().logout();
+
+      // Phir fresh login
       final result = await auth0
           .webAuthentication()
           .login(
             scopes: {'openid', 'profile', 'email'},
-            // redirectUrl: auth0RedirectUri,  // Yeh comment kar diya (mismatch se bachne ke liye)
           );
 
       if (mounted) {
@@ -180,8 +179,6 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
 
         if (context.mounted) {
           setState(() => isLoading = false);
-          // Success: Home pe jaa
-          // Navigator.pushReplacementNamed(context, '/home');  // Named route agar add kiya ho toh use kar
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => MainNavigator()),
@@ -189,7 +186,7 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
         }
       }
     } catch (e) {
-      print('Error: $e');
+      print('Login error: $e');
       if (mounted) {
         setState(() {
           _error = "Login Error: ${e.toString()}";
