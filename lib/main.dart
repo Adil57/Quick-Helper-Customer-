@@ -1,4 +1,4 @@
-// lib/main.dart - PART 1/2 (FINAL WITH GLOBAL REDIRECTURI & LOADER FIX)
+// lib/main.dart - PART 1/2 (LATEST CHANGE: NO SCHEME, SCOPES ADDED)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
@@ -18,7 +18,7 @@ import 'package:geolocator/geolocator.dart' as Geo;
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api";
 const String auth0Domain = "quickhelper.us.auth0.com";
 const String auth0ClientId = "pH7boW1NyTnQbDNQle67DWiNUWa32QZ6";
-const String auth0RedirectUri = "https://quickhelper.us.auth0.com/android/com.example.quick_helper_customer/callback";
+const String auth0RedirectUri = "com.quickhelper.app://quickhelper.us.auth0.com/android/com.example.quick_helper_customer/callback";
 
 final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
 
@@ -119,6 +119,10 @@ class MyApp extends StatelessWidget {
         ),
       ),
       home: const AuthGate(),
+      // Agar named routes use karna chahe toh yahan add kar sakta hai:
+      // routes: {
+      //   '/home': (context) => MainNavigator(),
+      // },
     );
   }
 }
@@ -139,7 +143,7 @@ class AuthGate extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// LOGIN CHOICE SCREEN (WITH GLOBAL REDIRECTURI & LOADER FIX)
+// LOGIN CHOICE SCREEN (LATEST CHANGE: NO SCHEME, SCOPES ADDED)
 // -----------------------------------------------------------------------------
 class LoginChoiceScreen extends StatefulWidget {
   const LoginChoiceScreen({super.key});
@@ -155,13 +159,16 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
   Future<void> loginWithAuth0() async {
     setState(() {
       _error = null;
-      isLoading = true; // Screenshot mein yahi true reh jata hai
+      isLoading = true;
     });
     try {
-      // 1. Line 22 wala global variable hi use karo mismatch se bachne ke liye
+      // Yeh line – scheme mat daal
       final result = await auth0
-          .webAuthentication(scheme: 'quickhelper')
-          .login(redirectUrl: auth0RedirectUri); // Global variable use karein
+          .webAuthentication()
+          .login(
+            scopes: {'openid', 'profile', 'email'},
+            // redirectUrl: auth0RedirectUri,  // Yeh comment kar diya (mismatch se bachne ke liye)
+          );
 
       if (mounted) {
         await tempAuth.setUser(
@@ -173,8 +180,9 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
         );
 
         if (context.mounted) {
-          // 2. Yahan loader band karke navigate karein
-          setState(() => isLoading = false); 
+          setState(() => isLoading = false);
+          // Success: Home pe jaa
+          // Navigator.pushReplacementNamed(context, '/home');  // Named route agar add kiya ho toh use kar
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => MainNavigator()),
@@ -182,11 +190,11 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
         }
       }
     } catch (e) {
-      print("Auth0 Debug Error: $e");
+      print('Error: $e');
       if (mounted) {
         setState(() {
           _error = "Login Error: ${e.toString()}";
-          isLoading = false; 
+          isLoading = false;
         });
       }
     }
