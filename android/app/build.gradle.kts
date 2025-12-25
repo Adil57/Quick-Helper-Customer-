@@ -43,7 +43,7 @@ android {
 
         // RESET TO ORIGINAL PACKAGE NAME SCHEME
         manifestPlaceholders["auth0Domain"] = "quickhelper.us.auth0.com"
-        manifestPlaceholders["auth0Scheme"] = "com.example.quick_helper_customer" 
+        manifestPlaceholders["auth0Scheme"] = "quickhelper" 
 
         resValue(
             "string",
