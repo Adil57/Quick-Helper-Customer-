@@ -43,7 +43,7 @@ android {
 
         // --- HTTPS SCHEME UPDATE ---
         manifestPlaceholders["auth0Domain"] = "quickhelper.us.auth0.com"
-        manifestPlaceholders["auth0Scheme"] = "https" // Yahan "https" hona zaruri hai
+        manifestPlaceholders["auth0Scheme"] = "qhcustomerapp" // Yahan "https" hona zaruri hai
         // ---------------------------
 
         resValue(
