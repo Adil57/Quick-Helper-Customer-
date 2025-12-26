@@ -1,4 +1,4 @@
-// lib/main.dart - PART 1/2
+// lib/main.dart - PART 1/2 (FINAL VERSION WITH YOUR LATEST CHANGES)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
@@ -13,7 +13,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart' as Geo;
 
 // -----------------------------------------------------------------------------
-// GLOBAL CONFIGURATION (NEW HTTPS REDIRECT URI)
+// GLOBAL CONFIGURATION (LATEST REDIRECT URI AS PER YOUR REQUEST)
 // -----------------------------------------------------------------------------
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api";
 const String auth0Domain = "quickhelper.us.auth0.com";
@@ -139,7 +139,7 @@ class AuthGate extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// LOGIN CHOICE SCREEN (LOGOUT BEFORE LOGIN + HTTPS URI)
+// LOGIN CHOICE SCREEN (FINAL LOGIN FIX WITH SCHEME + LOGOUT)
 // -----------------------------------------------------------------------------
 class LoginChoiceScreen extends StatefulWidget {
   const LoginChoiceScreen({super.key});
@@ -158,12 +158,12 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
       isLoading = true;
     });
     try {
-      // Pehle logout kar ke session clear kar
+      // Pehle logout kar ke purani session clear kar dein
       await auth0.webAuthentication().logout();
 
-      // Phir fresh login
+      // Phir fresh login with exact scheme
       final result = await auth0
-          .webAuthentication()
+          .webAuthentication(scheme: "com.example.quick_helper_customer") // Yeh add kiya
           .login(
             scopes: {'openid', 'profile', 'email'},
           );
