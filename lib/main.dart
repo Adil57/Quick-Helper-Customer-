@@ -18,7 +18,7 @@ import 'package:geolocator/geolocator.dart' as Geo;
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api";
 const String auth0Domain = "quickhelper.us.auth0.com";
 const String auth0ClientId = "pH7boW1NyTnQbDNQle67DWiNUWa32QZ6";
-const String auth0RedirectUri = "https://quickhelper.us.auth0.com/android/com.example.quick_helper_customer/callback";
+const String auth0RedirectUri = "quickhelper://quickhelper.us.auth0.com/android/com.example.quick_helper_customer/callback";
 
 final Auth0 auth0 = Auth0(auth0Domain, auth0ClientId);
 
