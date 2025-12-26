@@ -9,7 +9,7 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
-
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -18,7 +18,7 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-
+            
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme" />
@@ -28,17 +28,16 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!-- 1. Custom Scheme (MOST RELIABLE - Fixes 'Open with' issue) -->
-            <!-- Ensure you add 'quickhelper://quickhelper.us.auth0.com/...' to Auth0 Allowed Callbacks -->
+            <!-- FIX: Add this Custom Scheme. It is much more reliable for Login. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <!-- This creates a unique link like quickhelper://... -->
                 <data android:scheme="quickhelper" android:host="quickhelper.us.auth0.com" />
             </intent-filter>
 
-            <!-- 2. App Link (HTTPS) -->
-            <!-- If this fails verification, the custom scheme above will still work -->
+            <!-- Keep this for production App Links -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -60,7 +59,7 @@
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="https" />
         </intent>
-        <!-- Allow querying custom scheme as well -->
+        <!-- Allow querying the custom scheme too -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="quickhelper" />
