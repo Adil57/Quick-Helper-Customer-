@@ -2,6 +2,8 @@
     package="com.example.quick_helper_customer">
 
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:label="quick_helper_customer"
@@ -26,11 +28,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <intent-filter>
+            <intent-filter android:label="filter_auth0">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="qhcustomerapp" />
+                <data
+                    android:host="quickhelper.us.auth0.com"
+                    android:scheme="com.example.quick_helper_customer"
+                    android:pathPrefix="/android/com.example.quick_helper_customer/callback" />
             </intent-filter>
 
         </activity>
