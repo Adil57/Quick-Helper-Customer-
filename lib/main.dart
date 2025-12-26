@@ -1,4 +1,4 @@
-// lib/main.dart - PART 1/2 (FINAL VERSION WITH YOUR LATEST CHANGES)
+// lib/main.dart - PART 1/2 (FINAL WITH YOUR LATEST LOGIN CODE)
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
@@ -13,7 +13,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart' as Geo;
 
 // -----------------------------------------------------------------------------
-// GLOBAL CONFIGURATION (LATEST REDIRECT URI AS PER YOUR REQUEST)
+// GLOBAL CONFIGURATION (YOUR LATEST REDIRECT URI)
 // -----------------------------------------------------------------------------
 const String mongoApiBase = "https://quick-helper-backend.onrender.com/api";
 const String auth0Domain = "quickhelper.us.auth0.com";
@@ -139,7 +139,7 @@ class AuthGate extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// LOGIN CHOICE SCREEN (FINAL LOGIN FIX WITH SCHEME + LOGOUT)
+// LOGIN CHOICE SCREEN (YOUR EXACT LATEST CODE)
 // -----------------------------------------------------------------------------
 class LoginChoiceScreen extends StatefulWidget {
   const LoginChoiceScreen({super.key});
@@ -158,14 +158,17 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
       isLoading = true;
     });
     try {
-      // Pehle logout kar ke purani session clear kar dein
+      // 1. Pehle purani session clear karein
       await auth0.webAuthentication().logout();
 
-      // Phir fresh login with exact scheme
+      // 2. Login call with CORRECT SCHEME (Must match your AndroidManifest package name)
       final result = await auth0
-          .webAuthentication(scheme: "com.example.quick_helper_customer") // Yeh add kiya
+          .webAuthentication(scheme: "com.example.quick_helper_customer") 
           .login(
             scopes: {'openid', 'profile', 'email'},
+            // Optional: Agar dashboard mein redirect URI set hai toh manually dene ki zarurat nahi hoti
+            // par error aaye toh niche wali line uncomment kar dena:
+            // redirectUri: auth0RedirectUri, 
           );
 
       if (mounted) {
@@ -186,7 +189,7 @@ class _LoginChoiceScreenState extends State<LoginChoiceScreen> {
         }
       }
     } catch (e) {
-      print('Login error: $e');
+      print('Login error details: $e'); // Debugging ke liye full error dekhein
       if (mounted) {
         setState(() {
           _error = "Login Error: ${e.toString()}";
