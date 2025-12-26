@@ -27,18 +27,18 @@
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+                
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="quickhelper.us.auth0.com" />
             </intent-filter>
-
-            <!-- Koi manual callback intent-filter mat daal – package https App Links se handle karega -->
 
         </activity>
 
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-
-        <!-- AuthenticationActivity ko remove MAT kar – yeh zaroori hai login browser ke liye -->
-        <!-- RedirectActivity ko bhi remove mat kar -->
 
     </application>
 
@@ -50,3 +50,4 @@
         </intent>
     </queries>
 </manifest>
+
